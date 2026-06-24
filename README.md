@@ -51,6 +51,14 @@ node --test web/*.test.js  # frontend pure functions (needs Node.js)
 - **Scaling to Germany:** widen `HAMBURG_QL` to a Germany area; swap
   `web/datasource.js` to a bbox/brand API — the map code is unchanged.
 
+## API & live curation (on the Pi)
+- `uvicorn api.app:app` serves the static site **and** the API on one origin.
+- `POST /api/submit` — anonymous add/correct (rate-limited + honeypot).
+- `/admin` — HTTP Basic (`BEERMAP_ADMIN_PW`) moderation queue; approve = instant re-export.
+- Approved edits are `source="community"`, ranked just below your `manual` curation.yaml.
+- **Docker deploy:** `./docker-run.sh` (build + start + build dataset), `./docker-stop.sh`.
+  Full steps in `deploy/DEPLOY.md`. DNS for `beermap.jakubwaller.eu` is already live.
+
 ## Adding a brand finder
 1. Save the brand's live "where to drink" page; inspect its structure.
 2. Add `pipeline/finders/<brand>.py` subclassing `BaseFinder` (set `serving`).
