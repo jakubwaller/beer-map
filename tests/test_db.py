@@ -1,8 +1,46 @@
 from pipeline.db import (
     get_connection, init_db, upsert_venue, upsert_brand,
     upsert_edge, delete_edges, fetch_venues_with_brands,
+    insert_submission, list_submissions, get_submission,
+    set_submission_status, count_submissions_since,
 )
 from pipeline.models import Venue
+
+
+def _sub(**kw):
+    base = dict(kind="add", venue_osm_id="node/1", venue_name="Bar X", lat=None, lon=None,
+                brand="Astra", serving="fass", note=None, submitter_ip="1.2.3.4")
+    base.update(kw)
+    return base
+
+
+def test_submission_crud_and_status():
+    conn = _conn()
+    sid = insert_submission(conn, _sub(), "2026-06-24T10:00:00")
+    pending = list_submissions(conn, "pending")
+    assert len(pending) == 1 and pending[0]["brand"] == "Astra" and pending[0]["status"] == "pending"
+    set_submission_status(conn, sid, "approved", "2026-06-24T11:00:00")
+    assert get_submission(conn, sid)["status"] == "approved"
+    assert list_submissions(conn, "pending") == []
+
+
+def test_count_submissions_since():
+    conn = _conn()
+    insert_submission(conn, _sub(submitter_ip="9.9.9.9"), "2026-06-24T10:00:00")
+    insert_submission(conn, _sub(submitter_ip="9.9.9.9"), "2026-06-24T10:30:00")
+    insert_submission(conn, _sub(submitter_ip="8.8.8.8"), "2026-06-24T10:30:00")
+    assert count_submissions_since(conn, "9.9.9.9", "2026-06-24T10:15:00") == 1
+    assert count_submissions_since(conn, "9.9.9.9", "2026-06-24T09:00:00") == 2
+
+
+def test_community_ranks_between_manual_and_finder():
+    conn = _conn()
+    vid = upsert_venue(conn, Venue("node/1", "Bar X", 53.5, 10.0), "2026-06-24")
+    for src in ("osm", "finder:Ratsherrn", "community", "manual"):
+        bid = upsert_brand(conn, f"B-{src}")
+        upsert_edge(conn, vid, bid, src, "2026-06-24")
+    order = [b["source"] for b in fetch_venues_with_brands(conn)[0]["brands"]]
+    assert order == ["manual", "community", "finder:Ratsherrn", "osm"]
 
 
 def _conn():
