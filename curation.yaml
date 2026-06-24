@@ -1,0 +1,35 @@
+# Hand-curated venue<->brand truth. Highest trust. Each entry adds or removes
+# one link. Resolve a venue by `osm_id`, or by `lat`+`lon` (creates the venue),
+# or by `venue` name (fuzzy-matched to OSM). `verified` is the date you checked.
+#
+# >>> SEED DATA — verify and correct serving/coords against reality. <<<
+
+# WALD switched away from Pilsner Urquell to Budweiser Budvar tank.
+- venue: WALD
+  brand: Pilsner Urquell
+  action: remove
+  verified: 2026-06-24
+  note: "No longer serves PU."
+
+- venue: WALD
+  brand: Budweiser Budvar
+  serving: tank
+  action: add
+  verified: 2026-06-24
+
+# Venues the official Pilsner Urquell locator misses. Verify serving (fass/tank).
+- venue: The Irishman
+  brand: Pilsner Urquell
+  serving: tank
+  action: add
+  verified: 2026-06-24
+  note: "Not in PU locator — verify serving type."
+
+- venue: Pampa
+  lat: 53.5556
+  lon: 9.9636
+  brand: Pilsner Urquell
+  serving: tank
+  action: add
+  verified: 2026-06-24
+  note: "Coords approximate; not in PU locator — verify."
