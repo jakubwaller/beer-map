@@ -27,6 +27,20 @@ CREATE TABLE IF NOT EXISTS venue_brand (
     last_seen TEXT NOT NULL,
     PRIMARY KEY (venue_id, brand_id, source)
 );
+CREATE TABLE IF NOT EXISTS submissions (
+    id INTEGER PRIMARY KEY,
+    kind TEXT NOT NULL,
+    venue_osm_id TEXT,
+    venue_name TEXT NOT NULL,
+    lat REAL, lon REAL,
+    brand TEXT NOT NULL,
+    serving TEXT NOT NULL DEFAULT 'unknown',
+    note TEXT,
+    submitter_ip TEXT,
+    status TEXT NOT NULL DEFAULT 'pending',
+    created_at TEXT NOT NULL,
+    decided_at TEXT
+);
 """
 
 
@@ -34,6 +48,7 @@ def get_connection(path: str) -> sqlite3.Connection:
     conn = sqlite3.connect(path)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys = ON")
+    conn.execute("PRAGMA journal_mode = WAL")
     return conn
 
 
@@ -90,8 +105,10 @@ def fetch_venues_with_brands(conn) -> list[dict]:
             FROM venue_brand vb JOIN brands b ON b.id = vb.brand_id
             WHERE vb.venue_id = ?
             ORDER BY
-                CASE WHEN vb.source='manual' THEN 0
-                     WHEN vb.source LIKE 'finder:%' THEN 1 ELSE 2 END,
+                CASE vb.source
+                     WHEN 'manual' THEN 0
+                     WHEN 'community' THEN 1
+                     ELSE CASE WHEN vb.source LIKE 'finder:%' THEN 2 ELSE 3 END END,
                 b.name
             """,
             (v["id"],),
@@ -102,3 +119,43 @@ def fetch_venues_with_brands(conn) -> list[dict]:
             "brands": [dict(e) for e in edges],
         })
     return out
+
+
+_SUB_COLS = ("kind", "venue_osm_id", "venue_name", "lat", "lon",
+             "brand", "serving", "note", "submitter_ip")
+
+
+def insert_submission(conn, sub: dict, created_at: str) -> int:
+    cols = list(_SUB_COLS) + ["status", "created_at"]
+    vals = [sub.get(c) for c in _SUB_COLS] + ["pending", created_at]
+    placeholders = ", ".join("?" for _ in cols)
+    cur = conn.execute(
+        f"INSERT INTO submissions ({', '.join(cols)}) VALUES ({placeholders})", vals
+    )
+    conn.commit()
+    return cur.lastrowid
+
+
+def list_submissions(conn, status: str = "pending") -> list[dict]:
+    rows = conn.execute(
+        "SELECT * FROM submissions WHERE status=? ORDER BY created_at", (status,)
+    ).fetchall()
+    return [dict(r) for r in rows]
+
+
+def get_submission(conn, sub_id: int) -> dict | None:
+    row = conn.execute("SELECT * FROM submissions WHERE id=?", (sub_id,)).fetchone()
+    return dict(row) if row else None
+
+
+def set_submission_status(conn, sub_id: int, status: str, decided_at: str) -> None:
+    conn.execute("UPDATE submissions SET status=?, decided_at=? WHERE id=?",
+                 (status, decided_at, sub_id))
+    conn.commit()
+
+
+def count_submissions_since(conn, ip: str, since_iso: str) -> int:
+    return conn.execute(
+        "SELECT COUNT(*) AS n FROM submissions WHERE submitter_ip=? AND created_at >= ?",
+        (ip, since_iso),
+    ).fetchone()["n"]
