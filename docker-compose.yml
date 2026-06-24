@@ -3,8 +3,8 @@ services:
     build: .
     container_name: beermap
     restart: unless-stopped
-    ports:
-      - "127.0.0.1:8011:8011"   # only localhost; Caddy reverse-proxies to it
+    # No host port: the only ingress is Caddy over web_proxy (reverse_proxy
+    # beermap:8011). This keeps X-Forwarded-For trustworthy.
     env_file:
       - deploy/beermap.env
     environment:
