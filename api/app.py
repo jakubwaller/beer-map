@@ -65,7 +65,8 @@ def create_app() -> FastAPI:
         if conn.execute("SELECT 1 FROM venues WHERE osm_id=?",
                         (sub.venue_osm_id,)).fetchone() is None:
             raise HTTPException(400, "unknown venue")
-        ip = request.client.host if request.client else "unknown"
+        ip = (request.headers.get("x-forwarded-for", "").split(",")[0].strip()
+              or (request.client.host if request.client else "unknown"))
         if not submissions.within_rate_limit(conn, ip, datetime.now()):
             raise HTTPException(429, "rate limit exceeded")
         payload["venue_name"] = sub.venue_osm_id
