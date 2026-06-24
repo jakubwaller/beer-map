@@ -3,6 +3,11 @@ import { loadVenues, buildBrandList, venuesByBrand, venuesByServing } from "./da
 const SERVING_LABEL = { tank: "Tankbier", fass: "Fassbier", unknown: "" };
 const SOURCE_LABEL = { manual: "✓ verifiziert", osm: "OSM" };
 
+// Venue names/addresses/brands originate from OpenStreetMap (publicly editable),
+// so every interpolated value MUST be HTML-escaped before going into a popup.
+const esc = (s) => String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;")
+  .replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+
 const OSM_STYLE = {
   version: 8,
   sources: { osm: { type: "raster", tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],
@@ -19,10 +24,11 @@ let allVenues = [];
 function toFC(venues) {
   return { type: "FeatureCollection", features: venues.map((v) => ({
     type: "Feature", geometry: { type: "Point", coordinates: [v.lon, v.lat] },
-    properties: { html: `<strong>${v.name}</strong><br>${v.address || ""}<br>` + v.brands.map((b) => {
-      const parts = [SERVING_LABEL[b.serving], SOURCE_LABEL[b.source] || b.source, b.last_seen].filter(Boolean);
+    properties: { html: `<strong>${esc(v.name)}</strong><br>${esc(v.address || "")}<br>` + v.brands.map((b) => {
+      const parts = [SERVING_LABEL[b.serving], SOURCE_LABEL[b.source] || b.source, b.last_seen]
+        .filter(Boolean).map(esc);
       const cls = b.source === "manual" ? "badge manual" : "badge";
-      return `${b.brand}<span class="${cls}">${parts.join(" · ")}</span>`;
+      return `${esc(b.brand)}<span class="${cls}">${parts.join(" · ")}</span>`;
     }).join("<br>") } })) };
 }
 
