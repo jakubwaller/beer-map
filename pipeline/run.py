@@ -3,7 +3,7 @@ from __future__ import annotations
 import sys
 from datetime import date
 
-from . import curation, osm
+from . import curation, osm, submissions
 from .config import CURATION_PATH, DB_PATH, OUT_PATH, normalize_brand
 from .db import get_connection, init_db, upsert_brand, upsert_edge, upsert_venue
 from .export import export_geojson
@@ -42,12 +42,13 @@ def run_pipeline(db_path=DB_PATH, out_path=OUT_PATH, curation_path=CURATION_PATH
             finder_edges += 1
 
     cur = curation.apply_curation(conn, curation.load_curation(curation_path), venues, today)
+    community = submissions.apply_approved(conn, today)
     conn.commit()
     exported = export_geojson(conn, out_path)
     return {
         "venues": len(venues), "osm_edges": len(osm_edges), "finder_edges": finder_edges,
         "unmatched": unmatched_total, "manual_added": cur["added"],
-        "manual_removed": cur["removed"], "exported": exported,
+        "manual_removed": cur["removed"], "community": community, "exported": exported,
     }
 
 
