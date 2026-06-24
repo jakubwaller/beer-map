@@ -13,11 +13,13 @@ cp deploy/beermap.env.example deploy/beermap.env
 ./docker-run.sh          # build image, start container, build the first dataset
 ```
 
-Wire Caddy (auto-TLS) — add the block from `deploy/beermap.caddy` to the Pi's Caddy
-config (append to the Caddyfile, or `import` it), then:
+Wire Caddy (auto-TLS). Caddy runs as the `elternschule-caddy-1` container over the
+shared `web_proxy` network and reverse-proxies to containers by name. Append the
+beermap block to its Caddyfile and reload:
 
 ```bash
-sudo systemctl reload caddy
+cat deploy/beermap.caddy >> /home/ubuntu/elternschule/Caddyfile
+docker exec elternschule-caddy-1 caddy reload --config /etc/caddy/Caddyfile
 ```
 
 ## Daily data refresh
