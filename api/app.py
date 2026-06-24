@@ -10,6 +10,7 @@ from fastapi.responses import HTMLResponse
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
+from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
 
 from pipeline import config, submissions
 from pipeline.db import get_connection, init_db, insert_submission, list_submissions
@@ -48,6 +49,10 @@ def _require_admin(creds: HTTPBasicCredentials = Depends(_basic)):
 
 def create_app() -> FastAPI:
     app = FastAPI()
+    # Derive the real client IP from X-Forwarded-For set by Caddy. trusted_hosts="*"
+    # is safe because the container is only reachable via Caddy on the web_proxy
+    # network (no public host port), so the immediate peer is always the proxy.
+    app.add_middleware(ProxyHeadersMiddleware, trusted_hosts="*")
 
     @app.get("/api/brands")
     def brands(conn=Depends(_db)):
@@ -65,8 +70,10 @@ def create_app() -> FastAPI:
         if conn.execute("SELECT 1 FROM venues WHERE osm_id=?",
                         (sub.venue_osm_id,)).fetchone() is None:
             raise HTTPException(400, "unknown venue")
-        ip = (request.headers.get("x-forwarded-for", "").split(",")[0].strip()
-              or (request.client.host if request.client else "unknown"))
+        # request.client.host is set from X-Forwarded-For by ProxyHeadersMiddleware,
+        # which only trusts the immediate peer (Caddy — the sole ingress). A client
+        # cannot spoof it because it never connects to this app directly.
+        ip = request.client.host if request.client else "unknown"
         if not submissions.within_rate_limit(conn, ip, datetime.now()):
             raise HTTPException(429, "rate limit exceeded")
         payload["venue_name"] = sub.venue_osm_id
