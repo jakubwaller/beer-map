@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import sys
 from datetime import date
 
 from . import curation, osm
@@ -28,7 +29,12 @@ def run_pipeline(db_path=DB_PATH, out_path=OUT_PATH, curation_path=CURATION_PATH
 
     finder_edges = unmatched_total = 0
     for f in finders:
-        matched, unmatched = match_entries(f.run(), venues)
+        try:
+            results = f.run()
+        except Exception as exc:  # a broken/blocked finder must not kill the build
+            print(f"WARN: finder {f.brand} failed: {exc}", file=sys.stderr)
+            results = []
+        matched, unmatched = match_entries(results, venues)
         unmatched_total += len(unmatched)
         for entry, venue in matched:
             _store_edge(conn, id_by_osm[venue.osm_id], entry.brand,
