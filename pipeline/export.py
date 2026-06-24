@@ -12,7 +12,7 @@ def export_geojson(conn, out_path: str) -> int:
         "type": "Feature",
         "geometry": {"type": "Point", "coordinates": [r["lon"], r["lat"]]},
         "properties": {
-            "name": r["name"], "address": r["address"],
+            "name": r["name"], "address": r["address"], "osm_id": r["osm_id"],
             "website": r["website"], "brands": r["brands"],
         },
     } for r in rows]
