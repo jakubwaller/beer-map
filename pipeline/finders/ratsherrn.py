@@ -1,32 +1,35 @@
 from __future__ import annotations
 
-import re
-
 from bs4 import BeautifulSoup
 
 from ..models import FinderEntry
 from .base import BaseFinder
 
-_ADDR = re.compile(r"\b\d{5}\s+[A-Za-zÄÖÜäöüß.\- ]+")
+# Heading texts on the page that are section titles, not venue names.
+_SKIP = {"unsere locations", "locations", "braugasthaus"}
 
 
 class RatsherrnFinder(BaseFinder):
+    """Scrapes Ratsherrn's own gastro page (static HTML list of their venues).
+
+    Addresses are not co-located with the name headings in the markup, so we
+    emit the heading names and let OSM matching geo-filter them to Hamburg:
+    non-Hamburg names (e.g. "Dolden Mädel Berlin") find no Hamburg venue and
+    are dropped. Ratsherrn-operated venues serve Ratsherrn on Fassbier.
+    """
+
     brand = "Ratsherrn"
     serving = "fass"
     url = "https://ratsherrn.de/ratsherrn-gastro/"
 
     def parse(self, raw: str) -> list[FinderEntry]:
         soup = BeautifulSoup(raw, "lxml")
-        entries: list[FinderEntry] = []
-        for heading in soup.find_all(["h2", "h3"]):
-            name = heading.get_text(strip=True)
-            if not name:
+        seen, entries = set(), []
+        for h in soup.find_all(["h2", "h3"]):
+            name = " ".join(h.get_text(" ", strip=True).split())
+            key = name.lower()
+            if len(name) < 4 or key in _SKIP or key in seen:
                 continue
-            block = heading.find_parent(["section", "div"]) or heading.parent
-            text = block.get_text(" ", strip=True) if block else ""
-            m = _ADDR.search(text)
-            if not m or "Hamburg" not in m.group(0):
-                continue
-            entries.append(FinderEntry(name=name, brand=self.brand,
-                                       address=m.group(0).strip(), serving=self.serving))
+            seen.add(key)
+            entries.append(FinderEntry(name=name, brand=self.brand, serving=self.serving))
         return entries

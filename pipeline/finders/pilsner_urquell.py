@@ -9,6 +9,15 @@ _CITY = "Hamburg"
 
 
 class PilsnerUrquellFinder(BaseFinder):
+    """Official Pilsner Urquell Tankovna (tank-bar) locator.
+
+    NOTE: the live page sits behind a cookie + age gate and renders its pub
+    list via JavaScript, so a static fetch yields no venues yet. Tank venues
+    are covered by curation.yaml meanwhile; wiring a headless fetch here is part
+    of the post-launch scraping phase. The parser below is correct for the
+    post-gate HTML and is exercised by a fixture test.
+    """
+
     brand = "Pilsner Urquell"
     serving = "tank"
     url = "https://www.pilsnerurquell.com/pubs/"

@@ -3,11 +3,10 @@ from pipeline.finders.ratsherrn import RatsherrnFinder
 from pipeline.models import FinderEntry
 
 FIXTURE = """
-<html><body>
-  <section><h2>Altes Mädchen</h2><p>Lagerstraße 28b, 20357 Hamburg</p></section>
-  <section><h2>Ratsherrn Bar Schanze</h2><p>Lagerstraße 30a, 20357 Hamburg</p></section>
-  <section><h2>Dolden Mädel Berlin</h2><p>Skalitzer Straße 25, 10999 Berlin</p></section>
-</body></html>
+<div><h2>UNSERE LOCATIONS</h2></div>
+<div class="card"><h3>Braugasthaus Altes Mädchen</h3></div>
+<div class="card"><h3>RATSHERRN BAR MÜHLENKAMP</h3></div>
+<div class="card"><h3>Dolden Mädel Berlin</h3></div>
 """
 
 
@@ -21,13 +20,15 @@ def test_basefinder_run_calls_fetch_then_parse():
     assert Fake().run() == [FinderEntry(name="Foo", brand="Test")]
 
 
-def test_ratsherrn_parses_hamburg_venues_as_fassbier():
+def test_ratsherrn_extracts_venue_headings_as_fassbier():
     entries = RatsherrnFinder().parse(FIXTURE)
-    assert {e.name for e in entries} == {"Altes Mädchen", "Ratsherrn Bar Schanze"}  # Berlin dropped
+    names = {e.name for e in entries}
+    assert "Braugasthaus Altes Mädchen" in names
+    assert "RATSHERRN BAR MÜHLENKAMP" in names
+    assert "UNSERE LOCATIONS" not in names  # generic section title skipped
     for e in entries:
         assert e.brand == "Ratsherrn"
         assert e.serving == "fass"
-        assert "Hamburg" in (e.address or "")
 
 
 PU_FIXTURE = """
