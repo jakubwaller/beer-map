@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import os
+
 USER_AGENT = "beer-map/0.1 (+https://github.com/; contact: set-me@example.com)"
 OVERPASS_URL = "https://overpass-api.de/api/interpreter"
 HAMBURG_QL = (
@@ -29,3 +31,16 @@ BRAND_ALIASES = {
 
 def normalize_brand(name: str) -> str:
     return BRAND_ALIASES.get(name.strip().lower(), name.strip())
+
+
+# --- Live-curation / API settings (env-overridable for Docker deploy) ---
+DB_PATH = os.environ.get("BEERMAP_DB_PATH", DB_PATH)
+OUT_PATH = os.environ.get("BEERMAP_OUT_PATH", OUT_PATH)
+ADMIN_USER = os.environ.get("BEERMAP_ADMIN_USER", "admin")
+ADMIN_PW = os.environ.get("BEERMAP_ADMIN_PW", "")
+RATE_LIMIT = int(os.environ.get("BEERMAP_RATE_LIMIT", "10"))
+RATE_WINDOW_S = int(os.environ.get("BEERMAP_RATE_WINDOW_S", "3600"))
+WEB_DIR = os.environ.get("BEERMAP_WEB_DIR", "web")
+RESEND_API_KEY = os.environ.get("RESEND_API_KEY", "")
+NOTIFY_TO = os.environ.get("BEERMAP_NOTIFY_TO", "")
+NOTIFY_FROM = os.environ.get("BEERMAP_NOTIFY_FROM", "")
