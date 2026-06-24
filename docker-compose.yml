@@ -13,3 +13,9 @@ services:
     volumes:
       - ./data:/app/web/data        # sqlite + venues.json persist on the host
       - ./curation.yaml:/app/curation.yaml   # edit curation without rebuilding
+    networks:
+      - web_proxy                   # shared net the Caddy container reverse-proxies over
+
+networks:
+  web_proxy:
+    external: true
