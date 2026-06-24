@@ -1,0 +1,10 @@
+.git/
+.venv/
+__pycache__/
+*.pyc
+*.sqlite
+data/
+docs/
+tests/
+deploy/beermap.env
+web/data/venues.json

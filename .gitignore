@@ -2,4 +2,8 @@ __pycache__/
 *.pyc
 .venv/
 *.sqlite
+*.sqlite-wal
+*.sqlite-shm
 web/data/venues.json
+/data/
+deploy/beermap.env

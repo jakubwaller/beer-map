@@ -1,0 +1,15 @@
+services:
+  beermap:
+    build: .
+    container_name: beermap
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8011:8011"   # only localhost; Caddy reverse-proxies to it
+    env_file:
+      - deploy/beermap.env
+    environment:
+      - BEERMAP_DB_PATH=/app/web/data/beer-map.sqlite
+      - BEERMAP_OUT_PATH=/app/web/data/venues.json
+    volumes:
+      - ./data:/app/web/data        # sqlite + venues.json persist on the host
+      - ./curation.yaml:/app/curation.yaml   # edit curation without rebuilding
