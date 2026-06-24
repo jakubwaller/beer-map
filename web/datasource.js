@@ -1,7 +1,8 @@
 function rank(source) {
   if (source === "manual") return 0;
-  if (source.startsWith("finder:")) return 1;
-  return 2;
+  if (source === "community") return 1;
+  if (source.startsWith("finder:")) return 2;
+  return 3;
 }
 
 export function loadVenues(fc) {
@@ -11,6 +12,7 @@ export function loadVenues(fc) {
     lon: f.geometry.coordinates[0],
     address: f.properties.address,
     website: f.properties.website,
+    osm_id: f.properties.osm_id ?? "",
     brands: [...(f.properties.brands || [])].sort(
       (a, b) => rank(a.source) - rank(b.source) || a.brand.localeCompare(b.brand, "de")),
   }));
