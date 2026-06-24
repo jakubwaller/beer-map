@@ -32,8 +32,8 @@ python -m http.server -d web 8000   # http://localhost:8000
 
 ## Tests
 ```bash
-pytest -v          # pipeline (Python)
-node --test web/   # frontend pure functions (needs Node.js)
+pytest -v                  # pipeline (Python)
+node --test web/*.test.js  # frontend pure functions (needs Node.js)
 ```
 
 ## Cron (Raspberry Pi)
