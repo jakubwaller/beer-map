@@ -74,3 +74,17 @@ def test_admin_requires_auth_and_approve_exports(client):
 def test_brands_endpoint_empty(client):
     c, _ = client
     assert c.get("/api/brands").json() == []
+
+
+def test_notify_is_best_effort(monkeypatch):
+    from api import notify
+    monkeypatch.setattr(config, "RESEND_API_KEY", "")  # unconfigured -> no-op
+    assert notify.notify_new_submission("Astra", "node/1") is None
+    monkeypatch.setattr(config, "RESEND_API_KEY", "x")
+    monkeypatch.setattr(config, "NOTIFY_TO", "me@example.com")
+    monkeypatch.setattr(config, "NOTIFY_FROM", "bot@example.com")
+
+    def boom(*a, **k):
+        raise RuntimeError("network down")
+    monkeypatch.setattr(notify.httpx, "post", boom)
+    assert notify.notify_new_submission("Astra", "node/1") is None  # swallowed
