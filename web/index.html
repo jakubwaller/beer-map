@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Bier vom Fass – Hamburg</title>
+  <link rel="stylesheet" href="vendor/maplibre-gl.css" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="map"></div>
+  <div id="panel">
+    <h1>Bier vom Fass – Hamburg</h1>
+    <label for="brand">Marke</label>
+    <select id="brand"><option value="">Alle Marken</option></select>
+    <label for="serving">Ausschank</label>
+    <select id="serving">
+      <option value="">Fass &amp; Tank</option>
+      <option value="fass">nur Fassbier</option>
+      <option value="tank">nur Tankbier</option>
+    </select>
+    <p id="count"></p>
+  </div>
+  <footer>
+    © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>
+    · <a href="impressum.html">Impressum</a> · <a href="datenschutz.html">Datenschutz</a>
+  </footer>
+  <script src="vendor/maplibre-gl.js"></script>
+  <script type="module" src="app.js"></script>
+</body>
+</html>
