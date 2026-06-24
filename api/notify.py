@@ -6,17 +6,15 @@ from pipeline import config
 
 
 def notify_new_submission(brand: str, venue_osm_id: str) -> None:
-    if not (config.RESEND_API_KEY and config.NOTIFY_TO and config.NOTIFY_FROM):
+    if not (config.TELEGRAM_BOT_TOKEN and config.TELEGRAM_CHAT_ID):
         return None
     try:
         httpx.post(
-            "https://api.resend.com/emails",
-            headers={"Authorization": f"Bearer {config.RESEND_API_KEY}"},
+            f"https://api.telegram.org/bot{config.TELEGRAM_BOT_TOKEN}/sendMessage",
             json={
-                "from": config.NOTIFY_FROM,
-                "to": [config.NOTIFY_TO],
-                "subject": "beermap: neue Einreichung",
-                "text": f"Neue Einreichung: {brand} @ {venue_osm_id}\nPruefen: /admin",
+                "chat_id": config.TELEGRAM_CHAT_ID,
+                "text": (f"\U0001f37a beermap: neue Einreichung — {brand} @ {venue_osm_id}\n"
+                         f"Pruefen: {config.PUBLIC_URL}/admin"),
             },
             timeout=10,
         )
