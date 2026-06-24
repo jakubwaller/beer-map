@@ -29,30 +29,32 @@ A public web map of drinking venues, each tagged with the **draft (vom Fass) bee
 
 **Venue universe:** OpenStreetMap via Overpass (`amenity=pub|bar|biergarten|restaurant|cafe`). Free, geolocated, with name + website. Licensed ODbL.
 
-**Tap-brand data — assembled in layers** (no single source has it; this assembly *is* the project):
-1. **OSM `brewery=*` tags** — free seed data (~77 tagged venues in Hamburg today).
-2. **Brand "where to drink" finders (MVP core)** — one small scraper per brand finder. Confirmed: Ratsherrn (`ratsherrn.de/ratsherrn-gastro/`). To verify: Astra, Holsten, Störtebeker, and Pilsner Urquell's German importer. Gives authoritative venue↔brand links straight from the source.
-3. **Venue-menu LLM extraction (Phase 2)** — fetch a venue's website/menu, LLM extracts the draft list. Captures craft / multi-tap bars and brands without finders. Stored with a timestamp. (LLM used offline in the pipeline — not per-user, never phone calls.)
-4. **Manual corrections (Phase 2)** — a "fix this" form → Resend notifies the maintainer → manual edit.
+**Tap-brand data — assembled in trust layers** (no single source is complete or current; assembling *and verifying* it is the project):
+1. **Curated manual layer (`curation.yaml`) — highest trust, the MVP core.** Hand-edited venue↔brand+serving facts with a verified date; can *add or remove* links. This keeps data correct — e.g. catching that WALD switched from Pilsner Urquell to Budvar tank, or adding venues the finders miss (The Irishman, Pampa).
+2. **Brand "where to drink" finders — low-trust dated seeds.** One scraper per finder: Ratsherrn (Fassbier), Pilsner Urquell Tankovna locator (Tankbier). These are **incomplete and go stale**, so they only pre-seed; curation overrides them.
+3. **OSM `brewery=*` tags — low-trust seed** (~77 tagged Hamburg venues).
+4. **Venue-menu LLM extraction — post-launch coverage booster** (offline LLM, never phone calls).
+
+Trust order: **manual > finder > osm**; every link is timestamped, and the frontend shows verified links first. **Serving type:** each link records `fass` / `tank` / `unknown` so Fassbier and Tankbier are filterable; the Pilsner Urquell Tankovna locator is the seed source for tank venues.
 
 **Matching:** finder entries are matched to OSM venues by geo proximity (~50 m) + fuzzy name match (rapidfuzz). Unmatched finder entries become standalone venue records using their own address/geo.
 
 ## 4. Data model (SQLite canonical, PostGIS-ready)
 
-- `venues(id, osm_id, name, lat, lon, address, website, created_at, updated_at)`
-- `brands(id, name, brewery, aliases)`
-- `venue_brand(venue_id, brand_id, source, confidence, first_seen, last_seen)`
-  - `source ∈ {osm, finder:<brand>, menu, manual}`
+- `venues(id, osm_id, name, lat, lon, address, website, updated_at)` — manual-only venues use `osm_id = manual/<slug>`
+- `brands(id, name)`
+- `venue_brand(venue_id, brand_id, source, serving, confidence, first_seen, last_seen)`
+  - `source ∈ {manual, finder:<brand>, osm}` (trust order); `serving ∈ {fass, tank, unknown}`
 
-The `venue_brand` provenance fields are the trust layer surfaced in the UI.
+Provenance + serving + freshness are surfaced in the UI; `manual` links rank first and show a verified badge. The curated facts live in `curation.yaml` (committed to git — it *is* the dataset).
 
 ## 5. Architecture (three isolated pieces)
 
 **A. Data pipeline (Python, Pi, cron)**
 ```
-osm_fetch → finder scrapers → (Phase 2) menu extractor → match/merge → SQLite → export build artifact
+osm_fetch → finder scrapers → curation (apply curation.yaml, last) → SQLite → export build artifact
 ```
-Each finder is a small independent adapter implementing `scrape() -> [{name, lat, lon, address, brand}]`. Adding a brand = adding one adapter.
+Order matters: cheap seeds first, then the curated manual layer overrides (adds/removes stale links). Each finder is a small adapter; the curation step reads `curation.yaml`.
 
 **B. Data-access layer (the swappable seam — key to scaling)**
 The frontend talks to a `DataSource` interface with exactly two queries:
@@ -79,9 +81,9 @@ MapLibre GL JS + OSM-based tiles (no Google/Mapbox bills). Brand search/filter; 
 
 ## 8. MVP scope
 
-**Ship:** OSM Hamburg venue base + 4–5 brand-finder scrapers → SQLite → `venues.json` → MapLibre map with brand filter + provenance badges.
+**Ship (curated-first):** OSM venue base + `brewery=` seeds + Ratsherrn & Pilsner Urquell finders → **curated `curation.yaml` core** → SQLite → `venues.json` → MapLibre map with brand + serving (Fass/Tank) filters and trust-ranked provenance badges.
 
-**Defer to Phase 2:** venue-menu LLM extraction, corrections form, Germany-wide serving API.
+**Defer to post-launch:** venue-menu LLM extraction (coverage booster), public submission form, Germany-wide serving API.
 
 ## 9. Legal / compliance
 
@@ -94,6 +96,6 @@ MapLibre GL JS + OSM-based tiles (no Google/Mapbox bills). Brand search/filter; 
 
 ## 10. Open items to resolve during implementation
 
-- Confirm which Hamburg-relevant brands publish scrapeable finders (Ratsherrn ✓; verify Astra, Holsten, Störtebeker; locate Pilsner Urquell's German importer finder).
+- Brand finders are incomplete/stale (the official Pilsner Urquell locator misses venues like The Irishman/Pampa and lists outdated ones like WALD) — they are seeds only; the curated layer drives coverage + accuracy. Pilsner Urquell (Tankovna) is high priority and already wired.
 - Choose basemap tile provider (OSM raster vs free vector).
 - Pick the static host.
