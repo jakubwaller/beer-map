@@ -28,3 +28,21 @@ def test_ratsherrn_parses_hamburg_venues_as_fassbier():
         assert e.brand == "Ratsherrn"
         assert e.serving == "fass"
         assert "Hamburg" in (e.address or "")
+
+
+PU_FIXTURE = """
+<ul class="pubs">
+  <li class="pub"><a href="/pubs/wald/"><h3>WALD</h3></a><span>Hamburg</span></li>
+  <li class="pub"><a href="/pubs/gloria/"><h3>Gloria</h3></a><span>Hamburg</span></li>
+  <li class="pub"><a href="/pubs/james-june/"><h3>James June</h3></a><span>Berlin</span></li>
+</ul>
+"""
+
+
+def test_pilsner_urquell_parses_hamburg_tank_venues():
+    from pipeline.finders.pilsner_urquell import PilsnerUrquellFinder
+    entries = PilsnerUrquellFinder().parse(PU_FIXTURE)
+    assert {e.name for e in entries} == {"WALD", "Gloria"}  # Berlin dropped
+    for e in entries:
+        assert e.brand == "Pilsner Urquell"
+        assert e.serving == "tank"
