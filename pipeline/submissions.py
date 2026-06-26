@@ -5,25 +5,35 @@ from datetime import datetime, timedelta
 from . import config
 from .db import (
     count_submissions_since, delete_edges, get_submission, list_submissions,
-    set_submission_status, upsert_brand, upsert_edge,
+    set_submission_status, set_venue_hidden, update_venue_address, upsert_brand,
+    upsert_edge,
 )
 from .export import export_geojson
 
 _SERVINGS = {"fass", "tank"}
+_BRAND_KINDS = ("add", "remove")
+_VENUE_KINDS = ("edit_venue", "close_venue")
+KINDS = _BRAND_KINDS + _VENUE_KINDS
 
 
 def validate_submission(payload: dict) -> str | None:
-    if payload.get("kind") not in ("add", "remove"):
-        return "kind must be 'add' or 'remove'"
+    kind = payload.get("kind")
+    if kind not in KINDS:
+        return "kind must be one of " + ", ".join(KINDS)
     if not payload.get("venue_osm_id"):
         return "venue_osm_id required"
-    brand = (payload.get("brand") or "").strip()
-    if not brand or len(brand) > 80:
-        return "brand must be 1-80 chars"
-    if payload.get("kind") == "add" and payload.get("serving") not in _SERVINGS:
-        return "serving must be 'fass' or 'tank'"
     if payload.get("note") and len(payload["note"]) > 300:
         return "note too long"
+    if kind in _BRAND_KINDS:
+        brand = (payload.get("brand") or "").strip()
+        if not brand or len(brand) > 80:
+            return "brand must be 1-80 chars"
+        if kind == "add" and payload.get("serving") not in _SERVINGS:
+            return "serving must be 'fass' or 'tank'"
+    elif kind == "edit_venue":
+        address = (payload.get("address") or "").strip()
+        if not address or len(address) > 200:
+            return "address must be 1-200 chars"
     return None
 
 
@@ -38,11 +48,21 @@ def _venue_id(conn, osm_id):
 
 
 def apply_one(conn, sub: dict, today: str) -> bool:
-    vid = _venue_id(conn, sub.get("venue_osm_id"))
-    if vid is None:
+    osm_id = sub.get("venue_osm_id")
+    if _venue_id(conn, osm_id) is None:
         return False
+    kind = sub.get("kind")
+    # Venue-level edits run after OSM re-imports each build (see run_pipeline), so
+    # an approved address change or "closed" flag keeps overriding the OSM data.
+    if kind == "edit_venue":
+        update_venue_address(conn, osm_id, sub["address"])
+        return True
+    if kind == "close_venue":
+        set_venue_hidden(conn, osm_id, True)
+        return True
+    vid = _venue_id(conn, osm_id)
     bid = upsert_brand(conn, config.normalize_brand(sub["brand"]))
-    if sub.get("kind") == "remove":
+    if kind == "remove":
         delete_edges(conn, vid, bid)
     else:
         upsert_edge(conn, vid, bid, "community", today,

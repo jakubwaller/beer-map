@@ -3,6 +3,7 @@ from pipeline.db import (
     upsert_edge, delete_edges, fetch_venues_with_brands,
     insert_submission, list_submissions, get_submission,
     set_submission_status, count_submissions_since,
+    update_venue_address, set_venue_hidden,
 )
 from pipeline.models import Venue
 
@@ -77,3 +78,29 @@ def test_delete_edges_removes_stale_links():
     upsert_edge(conn, vid, bid, "finder:Pilsner Urquell", "2026-06-24", serving="tank")
     assert delete_edges(conn, vid, bid) == 1
     assert fetch_venues_with_brands(conn)[0]["brands"] == []
+
+
+def test_update_venue_address_overrides_osm_value():
+    conn = _conn()
+    upsert_venue(conn, Venue("node/1", "Bar X", 53.5, 10.0, address="Old St 1"), "2026-06-24")
+    assert update_venue_address(conn, "node/1", "New Allee 2") == 1
+    assert fetch_venues_with_brands(conn)[0]["address"] == "New Allee 2"
+    # A re-import from OSM overwrites the address, but it can be re-applied.
+    upsert_venue(conn, Venue("node/1", "Bar X", 53.5, 10.0, address="Old St 1"), "2026-06-25")
+    assert fetch_venues_with_brands(conn)[0]["address"] == "Old St 1"
+    update_venue_address(conn, "node/1", "New Allee 2")
+    assert fetch_venues_with_brands(conn)[0]["address"] == "New Allee 2"
+
+
+def test_hidden_venue_excluded_from_export_but_survives_reimport():
+    conn = _conn()
+    upsert_venue(conn, Venue("node/1", "Closed Bar", 53.5, 10.0), "2026-06-24")
+    upsert_venue(conn, Venue("node/2", "Open Bar", 53.6, 10.1), "2026-06-24")
+    assert set_venue_hidden(conn, "node/1", True) == 1
+    names = [v["name"] for v in fetch_venues_with_brands(conn)]
+    assert names == ["Open Bar"]
+    # OSM re-import must not resurrect a hidden venue (upsert leaves hidden alone).
+    upsert_venue(conn, Venue("node/1", "Closed Bar", 53.5, 10.0), "2026-06-25")
+    assert [v["name"] for v in fetch_venues_with_brands(conn)] == ["Open Bar"]
+    assert set_venue_hidden(conn, "node/1", False) == 1
+    assert len(fetch_venues_with_brands(conn)) == 2

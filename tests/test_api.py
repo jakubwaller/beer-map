@@ -71,6 +71,34 @@ def test_admin_requires_auth_and_approve_exports(client):
     assert brands[0]["serving"] == "tank"
 
 
+def test_remove_beer_submission_accepted(client):
+    c, _ = client
+    assert _submit(c, kind="remove", brand="Astra", serving="unknown").status_code == 200
+    pending = list_submissions(get_connection(config.DB_PATH), "pending")
+    assert len(pending) == 1 and pending[0]["kind"] == "remove"
+
+
+def test_edit_venue_requires_address(client):
+    c, _ = client
+    assert c.post("/api/submit", json={"venue_osm_id": "node/1",
+                  "kind": "edit_venue"}).status_code == 400
+    ok = c.post("/api/submit", json={"venue_osm_id": "node/1", "kind": "edit_venue",
+                                     "address": "Neue Straße 9"})
+    assert ok.status_code == 200
+    pending = list_submissions(get_connection(config.DB_PATH), "pending")
+    assert pending[0]["kind"] == "edit_venue" and pending[0]["address"] == "Neue Straße 9"
+
+
+def test_close_venue_approval_hides_from_export(client):
+    c, out = client
+    assert c.post("/api/submit", json={"venue_osm_id": "node/1",
+                  "kind": "close_venue"}).status_code == 200
+    sid = list_submissions(get_connection(config.DB_PATH), "pending")[0]["id"]
+    assert c.post(f"/api/admin/{sid}/approve", auth=("admin", "secret")).json() == {"ok": True}
+    fc = json.loads(open(out, encoding="utf-8").read())
+    assert fc["features"] == []
+
+
 def test_brands_endpoint_empty(client):
     c, _ = client
     assert c.get("/api/brands").json() == []

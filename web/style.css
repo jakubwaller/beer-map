@@ -133,6 +133,48 @@ select:focus { outline: none; border-color: var(--gold); box-shadow: 0 0 0 3px r
   line-height: 1.45;
 }
 .maplibregl-popup-content strong { font-size: 15px; }
+.maplibregl-popup-content .addr { color: var(--muted); margin: 2px 0 8px; }
+
+/* Existing beers — each row is editable (correct serving / remove). */
+.beers { list-style: none; margin: 4px 0 0; padding: 0; }
+.beer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 0;
+  border-top: 1px solid var(--line);
+}
+.beer:first-child { border-top: 0; }
+.beer-name { flex: 1 1 auto; }
+.beerform {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.beerform select {
+  width: auto;
+  padding: 4px 22px 4px 8px;
+  font-size: 13px;
+  background-position: right 6px center;
+}
+.beerform button {
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  font-size: 14px;
+  line-height: 1;
+  font-weight: 700;
+  color: #fff;
+  background: var(--good);
+  border: 0;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.beerform button.danger { background: var(--accent); }
+.beerform .msg { flex: 1 1 100%; font-size: 12px; font-weight: 600; color: var(--good); }
+.nobeers { color: var(--muted); font-style: italic; margin: 6px 0; }
+button:disabled { opacity: .55; cursor: default; }
 .maplibregl-popup-close-button {
   width: 28px;
   height: 28px;
@@ -196,6 +238,50 @@ select:focus { outline: none; border-color: var(--gold); box-shadow: 0 0 0 3px r
 .addbeer button:disabled { background: var(--good); cursor: default; }
 .addbeer .hp { position: absolute; left: -9999px; }
 .addbeer .msg { flex: 1 1 100%; font-size: 12px; font-weight: 600; color: var(--good); }
+
+/* ---------- "Ort korrigieren" (edit address / report closed) ---------- */
+.venue-actions {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+  font-size: 13px;
+}
+.venue-actions summary {
+  cursor: pointer;
+  color: var(--muted);
+  font-weight: 600;
+  list-style: none;
+}
+.venue-actions summary::-webkit-details-marker { display: none; }
+.venue-actions summary::before { content: "✎ "; }
+.venueform {
+  margin-top: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.venueform input[name="address"] {
+  flex: 1 1 100%;
+  padding: 8px 10px;
+  font-size: 14px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+}
+.venueform input[name="address"]:focus {
+  outline: none; border-color: var(--gold); box-shadow: 0 0 0 3px rgba(212, 160, 23, .25);
+}
+.venueform button {
+  padding: 7px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff;
+  background: var(--gold);
+  border: 0;
+  border-radius: 9px;
+  cursor: pointer;
+}
+.venueform button.danger { background: var(--accent); }
+.venueform .msg { flex: 1 1 100%; font-size: 12px; font-weight: 600; color: var(--good); }
 
 /* ---------- Footer ---------- */
 footer {
