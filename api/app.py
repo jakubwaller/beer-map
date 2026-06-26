@@ -22,9 +22,10 @@ _basic = HTTPBasic()
 
 class Submission(BaseModel):
     venue_osm_id: str
-    brand: str
+    brand: str = ""           # empty for venue-level kinds (edit_venue/close_venue)
     serving: str = "unknown"
     kind: str = "add"
+    address: Optional[str] = None  # new address for kind="edit_venue"
     note: Optional[str] = None
     hp: Optional[str] = None  # honeypot
 
@@ -79,15 +80,23 @@ def create_app() -> FastAPI:
         payload["venue_name"] = sub.venue_osm_id
         payload["submitter_ip"] = ip
         insert_submission(conn, payload, datetime.now().isoformat())
-        notify.notify_new_submission(sub.brand, sub.venue_osm_id)
+        notify.notify_new_submission(sub.brand or sub.kind, sub.venue_osm_id)
         return {"ok": True}
 
     @app.get("/admin", response_class=HTMLResponse)
     def admin(conn=Depends(_db), _=Depends(_require_admin)):
         rows = list_submissions(conn, "pending")
+
+        def _detail(r):
+            if r["kind"] == "edit_venue":
+                return "→ " + html.escape(r["address"] or "")
+            if r["kind"] == "close_venue":
+                return "(als geschlossen gemeldet)"
+            return f"{html.escape(r['brand'])} ({html.escape(r['serving'])})"
+
         items = "".join(
             f"<li>#{r['id']} <b>{html.escape(r['kind'])}</b> "
-            f"{html.escape(r['brand'])} ({html.escape(r['serving'])}) @ "
+            f"{_detail(r)} @ "
             f"{html.escape(r['venue_osm_id'] or '')} "
             f"<i>{html.escape(r['note'] or '')}</i> "
             f"<button onclick=\"d({r['id']},'approve')\">approve</button> "
