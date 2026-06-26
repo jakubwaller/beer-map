@@ -34,24 +34,80 @@ if (window.matchMedia("(max-width: 600px)").matches) setPanelOpen(false);
 // Keep popups inside the viewport on phones.
 const popupMaxWidth = () => Math.min(340, window.innerWidth - 28) + "px";
 
+// Keep feature properties small: store the raw data and build the (much larger)
+// interactive popup markup lazily on click in buildPopupHtml().
 function toFC(venues) {
   return { type: "FeatureCollection", features: venues.map((v) => ({
     type: "Feature", geometry: { type: "Point", coordinates: [v.lon, v.lat] },
-    properties: { osm_id: v.osm_id || "", html:
-      `<strong>${esc(v.name)}</strong><br>${esc(v.address || "")}<br>` +
-      v.brands.map((b) => {
-        const parts = [SERVING_LABEL[b.serving], SOURCE_LABEL[b.source] || b.source, b.last_seen]
-          .filter(Boolean).map(esc);
-        const cls = (b.source === "manual" || b.source === "community") ? "badge manual" : "badge";
-        return `${esc(b.brand)}<span class="${cls}">${parts.join(" · ")}</span>`;
-      }).join("<br>") +
-      `<form class="addbeer" data-osm="${esc(v.osm_id || "")}">
-         <input name="brand" list="brandlist" placeholder="Marke" required>
-         <label><input type="radio" name="serving" value="fass" checked>Fass</label>
-         <label><input type="radio" name="serving" value="tank">Tank</label>
-         <input class="hp" name="hp" tabindex="-1" autocomplete="off">
-         <button>+ Bier melden</button><span class="msg"></span>
-       </form>` } })) };
+    properties: {
+      osm_id: v.osm_id || "", name: v.name || "", address: v.address || "",
+      brands: JSON.stringify(v.brands || []),
+    } })) };
+}
+
+// One editable row per existing beer: correct the serving or remove it.
+function beerRow(osm, b) {
+  const parts = [SERVING_LABEL[b.serving], SOURCE_LABEL[b.source] || b.source, b.last_seen]
+    .filter(Boolean).map(esc);
+  const cls = (b.source === "manual" || b.source === "community") ? "badge manual" : "badge";
+  const tank = b.serving === "tank";
+  return `<li class="beer">
+    <span class="beer-name">${esc(b.brand)}<span class="${cls}">${parts.join(" · ")}</span></span>
+    <form class="beerform" data-osm="${esc(osm)}" data-brand="${esc(b.brand)}">
+      <select name="serving" aria-label="Ausschank">
+        <option value="fass"${tank ? "" : " selected"}>Fass</option>
+        <option value="tank"${tank ? " selected" : ""}>Tank</option>
+      </select>
+      <button name="act" value="edit" title="Ausschank korrigieren">✓</button>
+      <button name="act" value="remove" class="danger" title="Bier entfernen">✕</button>
+      <span class="msg"></span>
+    </form>
+  </li>`;
+}
+
+function buildPopupHtml(p) {
+  const osm = p.osm_id || "";
+  const brands = JSON.parse(p.brands || "[]");
+  const beers = brands.length
+    ? `<ul class="beers">${brands.map((b) => beerRow(osm, b)).join("")}</ul>`
+    : `<p class="nobeers">Noch keine Biere erfasst.</p>`;
+  return `<strong>${esc(p.name)}</strong>` +
+    (p.address ? `<div class="addr">${esc(p.address)}</div>` : "") +
+    beers +
+    `<form class="addbeer" data-osm="${esc(osm)}">
+       <input name="brand" list="brandlist" placeholder="Marke hinzufügen" required>
+       <label><input type="radio" name="serving" value="fass" checked>Fass</label>
+       <label><input type="radio" name="serving" value="tank">Tank</label>
+       <input class="hp" name="hp" tabindex="-1" autocomplete="off">
+       <button>+ Bier melden</button><span class="msg"></span>
+     </form>
+     <details class="venue-actions">
+       <summary>Ort korrigieren</summary>
+       <form class="venueform" data-osm="${esc(osm)}">
+         <input name="address" placeholder="Adresse" value="${esc(p.address || "")}">
+         <button name="act" value="edit_venue">Adresse speichern</button>
+         <button name="act" value="close_venue" class="danger">Als geschlossen melden</button>
+         <span class="msg"></span>
+       </form>
+     </details>`;
+}
+
+// Translate a submitted popup form into an /api/submit body. Returns null if the
+// form isn't one we handle.
+function submissionBody(form, action) {
+  const osm = form.dataset.osm;
+  if (form.classList.contains("addbeer"))
+    return { venue_osm_id: osm, brand: form.brand.value.trim(),
+             serving: form.serving.value, kind: "add", hp: form.hp.value };
+  if (form.classList.contains("beerform"))
+    return action === "remove"
+      ? { venue_osm_id: osm, brand: form.dataset.brand, kind: "remove" }
+      : { venue_osm_id: osm, brand: form.dataset.brand, serving: form.serving.value, kind: "add" };
+  if (form.classList.contains("venueform"))
+    return action === "close_venue"
+      ? { venue_osm_id: osm, kind: "close_venue" }
+      : { venue_osm_id: osm, kind: "edit_venue", address: form.address.value.trim() };
+  return null;
 }
 
 function render(venues) {
@@ -86,7 +142,7 @@ map.on("load", async () => {
   map.on("click", "dots", (e) => {
     const coords = e.features[0].geometry.coordinates.slice();
     new maplibregl.Popup({ maxWidth: popupMaxWidth(), focusAfterOpen: false })
-      .setLngLat(coords).setHTML(e.features[0].properties.html).addTo(map);
+      .setLngLat(coords).setHTML(buildPopupHtml(e.features[0].properties)).addTo(map);
     // Pan so the popup (which opens above the dot) isn't hidden under the panel/edge.
     map.easeTo({ center: coords, offset: [0, 90], duration: 400 });
   });
@@ -96,14 +152,18 @@ map.on("load", async () => {
   servingSelect.addEventListener("change", applyFilters);
 
   document.getElementById("map").addEventListener("submit", async (ev) => {
-    if (!ev.target.classList.contains("addbeer")) return;
+    const f = ev.target;
+    if (!f.matches(".addbeer, .beerform, .venueform")) return;
     ev.preventDefault();
-    const f = ev.target, msg = f.querySelector(".msg");
-    const body = { venue_osm_id: f.dataset.osm, brand: f.brand.value.trim(),
-                   serving: f.serving.value, kind: "add", hp: f.hp.value };
+    const action = ev.submitter && ev.submitter.value;  // distinguishes multi-button forms
+    if (action === "close_venue" &&
+        !confirm("Diesen Ort wirklich als dauerhaft geschlossen melden?")) return;
+    const body = submissionBody(f, action);
+    if (!body) return;
+    const msg = f.querySelector(".msg");
     const r = await fetch("/api/submit", { method: "POST",
       headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
-    msg.textContent = r.ok ? " Danke, wird geprüft!" : " Fehler";
-    if (r.ok) f.querySelector("button").disabled = true;
+    if (msg) msg.textContent = r.ok ? " Danke, wird geprüft!" : " Fehler";
+    if (r.ok) f.querySelectorAll("button, input, select").forEach((el) => (el.disabled = true));
   });
 });
