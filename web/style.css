@@ -1,16 +1,227 @@
-html, body { margin: 0; height: 100%; font-family: system-ui, sans-serif; }
+:root {
+  --bg: #1b1410;
+  --card: #ffffff;
+  --ink: #1f2933;
+  --muted: #6b7280;
+  --line: #e5e7eb;
+  --accent: #c8102e;       /* beer-map red, used for markers/buttons */
+  --gold: #d4a017;         /* warm beer accent */
+  --good: #1c6b3c;
+  --good-bg: #d9f2e3;
+  --radius: 14px;
+  --shadow: 0 6px 24px rgba(20, 14, 8, .22);
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  color: var(--ink);
+  -webkit-text-size-adjust: 100%;
+}
+
 #map { position: absolute; inset: 0; }
-#panel { position: absolute; top: 10px; left: 10px; z-index: 1; background: #fff;
-         padding: 12px; border-radius: 8px; box-shadow: 0 1px 6px rgba(0,0,0,.3); max-width: 260px; }
-#panel h1 { font-size: 16px; margin: 0 0 8px; }
-#panel label { display: block; margin-top: 8px; font-size: 13px; }
-select { width: 100%; padding: 6px; }
-.badge { display: inline-block; font-size: 11px; background: #eee; border-radius: 4px;
-         padding: 1px 5px; margin-left: 4px; color: #444; }
-.badge.manual { background: #d9f2e3; color: #1c6b3c; }
-footer { position: absolute; bottom: 4px; right: 6px; z-index: 1; font-size: 11px;
-         background: rgba(255,255,255,.85); padding: 2px 6px; border-radius: 4px; }
-.addbeer { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
-.addbeer input[name="brand"] { flex: 1 1 100%; padding: 4px; }
+
+/* ---------- Filter panel ---------- */
+#panel {
+  position: absolute;
+  top: calc(12px + var(--safe-top));
+  left: 12px;
+  z-index: 2;
+  width: min(300px, calc(100vw - 24px));
+  background: var(--card);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+#panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 12px 14px;
+  background: linear-gradient(135deg, var(--gold), #b8860b);
+  color: #1b1410;
+}
+
+#panel-head h1 {
+  font-size: 16px;
+  font-weight: 700;
+  margin: 0;
+  line-height: 1.2;
+  letter-spacing: .2px;
+}
+#panel-head h1 span {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  opacity: .75;
+}
+
+#panel-toggle {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(27, 20, 16, .12);
+  color: #1b1410;
+  cursor: pointer;
+  transition: transform .2s ease, background .15s ease;
+}
+#panel-toggle:hover { background: rgba(27, 20, 16, .2); }
+#panel:not(.is-open) #panel-toggle svg { transform: rotate(-90deg); }
+
+#panel-body {
+  padding: 12px 14px 14px;
+}
+#panel:not(.is-open) #panel-body { display: none; }
+
+#panel label {
+  display: block;
+  margin-top: 10px;
+  margin-bottom: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: .5px;
+}
+#panel label:first-child { margin-top: 0; }
+
+select {
+  width: 100%;
+  padding: 9px 10px;
+  font-size: 15px;
+  color: var(--ink);
+  background: #f9fafb;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  padding-right: 30px;
+}
+select:focus { outline: none; border-color: var(--gold); box-shadow: 0 0 0 3px rgba(212, 160, 23, .25); }
+
+#count {
+  margin: 12px 0 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+/* ---------- Popups ---------- */
+.maplibregl-popup-content {
+  padding: 14px 16px 16px;
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  font-size: 14px;
+  line-height: 1.45;
+}
+.maplibregl-popup-content strong { font-size: 15px; }
+.maplibregl-popup-close-button {
+  width: 28px;
+  height: 28px;
+  font-size: 20px;
+  color: var(--muted);
+  border-radius: 0 12px 0 8px;
+}
+.maplibregl-popup-close-button:hover { background: #f3f4f6; }
+
+.badge {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 600;
+  background: #eef0f2;
+  border-radius: 999px;
+  padding: 1px 8px;
+  margin-left: 6px;
+  color: #475569;
+  vertical-align: middle;
+}
+.badge.manual { background: var(--good-bg); color: var(--good); }
+
+/* ---------- "Bier melden" form ---------- */
+.addbeer {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+.addbeer input[name="brand"] {
+  flex: 1 1 100%;
+  padding: 8px 10px;
+  font-size: 15px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+}
+.addbeer input[name="brand"]:focus {
+  outline: none; border-color: var(--gold); box-shadow: 0 0 0 3px rgba(212, 160, 23, .25);
+}
+.addbeer label {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 14px;
+  cursor: pointer;
+}
+.addbeer button {
+  padding: 8px 14px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+  background: var(--accent);
+  border: 0;
+  border-radius: 9px;
+  cursor: pointer;
+}
+.addbeer button:hover { background: #a60d26; }
+.addbeer button:disabled { background: var(--good); cursor: default; }
 .addbeer .hp { position: absolute; left: -9999px; }
-.addbeer .msg { font-size: 11px; color: #1c6b3c; }
+.addbeer .msg { flex: 1 1 100%; font-size: 12px; font-weight: 600; color: var(--good); }
+
+/* ---------- Footer ---------- */
+footer {
+  position: absolute;
+  bottom: calc(4px + var(--safe-bottom));
+  right: 6px;
+  z-index: 1;
+  font-size: 11px;
+  background: rgba(255, 255, 255, .9);
+  padding: 3px 8px;
+  border-radius: 6px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, .15);
+}
+footer a { color: var(--accent); text-decoration: none; }
+footer a:hover { text-decoration: underline; }
+
+/* ---------- Mobile ---------- */
+@media (max-width: 600px) {
+  #panel {
+    top: var(--safe-top);
+    left: 0;
+    right: 0;
+    width: 100%;
+    border-radius: 0 0 var(--radius) var(--radius);
+  }
+  #panel-head { padding: 12px 16px; }
+  .maplibregl-popup-content { font-size: 15px; }
+  footer { font-size: 10px; }
+}

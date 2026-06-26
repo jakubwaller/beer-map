@@ -2,29 +2,43 @@
 <html lang="de">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#1b1410" />
   <title>Bier vom Fass – Hamburg</title>
   <link rel="stylesheet" href="vendor/maplibre-gl.css" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <div id="map"></div>
-  <div id="panel">
-    <h1>Bier vom Fass – Hamburg</h1>
-    <label for="brand">Marke</label>
-    <select id="brand"><option value="">Alle Marken</option></select>
-    <label for="serving">Ausschank</label>
-    <select id="serving">
-      <option value="">Fass &amp; Tank</option>
-      <option value="fass">nur Fassbier</option>
-      <option value="tank">nur Tankbier</option>
-    </select>
-    <p id="count"></p>
+
+  <div id="panel" class="is-open">
+    <div id="panel-head">
+      <h1>🍺 Bier vom Fass <span>Hamburg</span></h1>
+      <button id="panel-toggle" type="button" aria-label="Filter ein-/ausklappen" aria-expanded="true">
+        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+          <path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+    </div>
+    <div id="panel-body">
+      <label for="brand">Marke</label>
+      <select id="brand"><option value="">Alle Marken</option></select>
+      <label for="serving">Ausschank</label>
+      <select id="serving">
+        <option value="">Fass &amp; Tank</option>
+        <option value="fass">nur Fassbier</option>
+        <option value="tank">nur Tankbier</option>
+      </select>
+      <p id="count"></p>
+    </div>
   </div>
+
   <footer>
     © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>
     · <a href="impressum.html">Impressum</a> · <a href="datenschutz.html">Datenschutz</a>
   </footer>
+
   <script src="vendor/maplibre-gl.js"></script>
   <script type="module" src="app.js"></script>
 </body>
