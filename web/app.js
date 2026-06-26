@@ -21,6 +21,19 @@ const servingSelect = document.getElementById("serving");
 const countEl = document.getElementById("count");
 let allVenues = [];
 
+// Collapsible filter panel — starts collapsed on small screens so it doesn't cover the map.
+const panel = document.getElementById("panel");
+const panelToggle = document.getElementById("panel-toggle");
+function setPanelOpen(open) {
+  panel.classList.toggle("is-open", open);
+  panelToggle.setAttribute("aria-expanded", String(open));
+}
+panelToggle.addEventListener("click", () => setPanelOpen(!panel.classList.contains("is-open")));
+if (window.matchMedia("(max-width: 600px)").matches) setPanelOpen(false);
+
+// Keep popups inside the viewport on phones.
+const popupMaxWidth = () => Math.min(340, window.innerWidth - 28) + "px";
+
 function toFC(venues) {
   return { type: "FeatureCollection", features: venues.map((v) => ({
     type: "Feature", geometry: { type: "Point", coordinates: [v.lon, v.lat] },
@@ -70,7 +83,13 @@ map.on("load", async () => {
   map.addLayer({ id: "dots", type: "circle", source: "venues",
     paint: { "circle-radius": 6, "circle-color": "#c8102e", "circle-stroke-width": 1, "circle-stroke-color": "#fff" } });
   render(allVenues);
-  map.on("click", "dots", (e) => new maplibregl.Popup().setLngLat(e.lngLat).setHTML(e.features[0].properties.html).addTo(map));
+  map.on("click", "dots", (e) => {
+    const coords = e.features[0].geometry.coordinates.slice();
+    new maplibregl.Popup({ maxWidth: popupMaxWidth(), focusAfterOpen: false })
+      .setLngLat(coords).setHTML(e.features[0].properties.html).addTo(map);
+    // Pan so the popup (which opens above the dot) isn't hidden under the panel/edge.
+    map.easeTo({ center: coords, offset: [0, 90], duration: 400 });
+  });
   map.on("mouseenter", "dots", () => (map.getCanvas().style.cursor = "pointer"));
   map.on("mouseleave", "dots", () => (map.getCanvas().style.cursor = ""));
   brandSelect.addEventListener("change", applyFilters);
