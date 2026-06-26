@@ -11,6 +11,10 @@ from pipeline.submissions import (
 )
 
 
+def _venue_row(conn, osm_id):
+    return conn.execute("SELECT address, hidden FROM venues WHERE osm_id=?", (osm_id,)).fetchone()
+
+
 def _seed():
     conn = get_connection(":memory:")
     init_db(conn)
@@ -31,6 +35,51 @@ def test_validate_submission():
     assert validate_submission({**ok, "serving": "lager"})
     assert validate_submission({**ok, "brand": ""})
     assert validate_submission({**ok, "kind": "delete"})
+
+
+def test_validate_remove_ignores_serving():
+    # Removing a beer should not require a valid serving type.
+    assert validate_submission(dict(kind="remove", venue_osm_id="node/1",
+                                    brand="Astra", serving="unknown")) is None
+
+
+def test_validate_venue_kinds():
+    # edit_venue needs a non-empty, bounded address; close_venue needs neither.
+    assert validate_submission(dict(kind="edit_venue", venue_osm_id="node/1",
+                                    address="Neue Straße 5")) is None
+    assert validate_submission(dict(kind="edit_venue", venue_osm_id="node/1", address=""))
+    assert validate_submission(dict(kind="edit_venue", venue_osm_id="node/1",
+                                    address="x" * 201))
+    assert validate_submission(dict(kind="close_venue", venue_osm_id="node/1")) is None
+    assert validate_submission(dict(kind="close_venue", venue_osm_id=""))
+
+
+def test_approve_edit_venue_updates_address():
+    conn = _seed()
+    sid = insert_submission(conn, _row(kind="edit_venue", brand="",
+                                       address="Neue Allee 7"), "2026-06-24T10:00:00")
+    assert approve_submission(conn, sid, "2026-06-24", "/dev/null") is True
+    assert _venue_row(conn, "node/1")["address"] == "Neue Allee 7"
+
+
+def test_approve_close_venue_hides_it_from_export():
+    conn = _seed()
+    sid = insert_submission(conn, _row(kind="close_venue", brand=""), "2026-06-24T10:00:00")
+    assert approve_submission(conn, sid, "2026-06-24", "/dev/null") is True
+    assert _venue_row(conn, "node/1")["hidden"] == 1
+    assert fetch_venues_with_brands(conn) == []
+
+
+def test_apply_approved_reapplies_venue_edits_after_reimport():
+    # Mirrors run_pipeline: OSM re-import, then approved submissions re-applied on top.
+    conn = _seed()
+    for kind, extra in (("edit_venue", {"address": "Korrigiert 1"}), ("close_venue", {})):
+        sid = insert_submission(conn, _row(kind=kind, brand="", **extra), "2026-06-24T10:00:00")
+        set_submission_status(conn, sid, "approved", "2026-06-24")
+    upsert_venue(conn, Venue("node/1", "Bar X", 53.5, 10.0, address="OSM Addr"), "2026-06-25")
+    apply_approved(conn, "2026-06-25")
+    row = _venue_row(conn, "node/1")
+    assert row["address"] == "Korrigiert 1" and row["hidden"] == 1
 
 
 def test_rate_limit_trips_after_limit():
