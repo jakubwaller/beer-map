@@ -5,6 +5,21 @@ function rank(source) {
   return 3;
 }
 
+// The same brand can have edges from several sources (e.g. an OSM listing plus a
+// community serving correction). Show each brand once, keeping the highest-trust
+// entry — but let it adopt a known serving from a dropped duplicate so the serving
+// filter still matches. Assumes `brands` is already sorted best-trust-first.
+function dedupeBrands(brands) {
+  const byName = new Map();
+  for (const b of brands) {
+    const kept = byName.get(b.brand);
+    if (!kept) byName.set(b.brand, { ...b });
+    else if (kept.serving === "unknown" && b.serving && b.serving !== "unknown")
+      kept.serving = b.serving;
+  }
+  return [...byName.values()];
+}
+
 export function loadVenues(fc) {
   return (fc.features || []).map((f) => ({
     name: f.properties.name,
@@ -13,8 +28,8 @@ export function loadVenues(fc) {
     address: f.properties.address,
     website: f.properties.website,
     osm_id: f.properties.osm_id ?? "",
-    brands: [...(f.properties.brands || [])].sort(
-      (a, b) => rank(a.source) - rank(b.source) || a.brand.localeCompare(b.brand, "de")),
+    brands: dedupeBrands([...(f.properties.brands || [])].sort(
+      (a, b) => rank(a.source) - rank(b.source) || a.brand.localeCompare(b.brand, "de"))),
   }));
 }
 
