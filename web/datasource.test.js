@@ -36,8 +36,22 @@ test("venuesByServing filters tank vs fass", () => {
   assert.deepEqual(venuesByServing(loadVenues(FC), "tank").map((x) => x.name), ["WALD"]);
 });
 
-test("community ranks below manual and above osm/finder", () => {
-  const sources = loadVenues(FC)[0].brands.map((b) => b.source);
-  assert.ok(sources.indexOf("manual") < sources.indexOf("community"));
-  assert.ok(sources.indexOf("community") < sources.indexOf("osm"));
+test("loadVenues dedupes a brand to its highest-trust entry", () => {
+  const v = loadVenues(FC);
+  // Bar A lists Ratsherrn from both manual and community — show it once, as manual.
+  const ratsherrn = v[0].brands.filter((b) => b.brand === "Ratsherrn");
+  assert.equal(ratsherrn.length, 1);
+  assert.equal(ratsherrn[0].source, "manual");
+  assert.deepEqual(v[0].brands.map((b) => b.brand), ["Ratsherrn", "Astra"]);
+});
+
+test("dedupe keeps top provenance but adopts a known serving from a duplicate", () => {
+  const fc = { type: "FeatureCollection", features: [
+    { type: "Feature", geometry: { type: "Point", coordinates: [9.9, 53.5] },
+      properties: { name: "Bar C", brands: [
+        { brand: "Astra", source: "manual", serving: "unknown", last_seen: "2026-06-24" },
+        { brand: "Astra", source: "osm", serving: "fass", last_seen: "2026-06-24" } ] } } ] };
+  const [b] = loadVenues(fc)[0].brands;
+  assert.equal(b.source, "manual");   // higher trust wins
+  assert.equal(b.serving, "fass");    // serving filled in from the OSM duplicate
 });
