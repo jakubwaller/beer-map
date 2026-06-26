@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS venues (
     lon REAL NOT NULL,
     address TEXT,
     website TEXT,
+    hidden INTEGER NOT NULL DEFAULT 0,
     updated_at TEXT NOT NULL
 );
 CREATE TABLE IF NOT EXISTS brands (
@@ -33,8 +34,9 @@ CREATE TABLE IF NOT EXISTS submissions (
     venue_osm_id TEXT,
     venue_name TEXT NOT NULL,
     lat REAL, lon REAL,
-    brand TEXT NOT NULL,
+    brand TEXT NOT NULL DEFAULT '',
     serving TEXT NOT NULL DEFAULT 'unknown',
+    address TEXT,
     note TEXT,
     submitter_ip TEXT,
     status TEXT NOT NULL DEFAULT 'pending',
@@ -42,6 +44,13 @@ CREATE TABLE IF NOT EXISTS submissions (
     decided_at TEXT
 );
 """
+
+# Columns added after the initial schema shipped. Existing databases were created
+# with CREATE TABLE IF NOT EXISTS, so they keep the old layout — add them by hand.
+_MIGRATIONS = (
+    ("venues", "hidden", "INTEGER NOT NULL DEFAULT 0"),
+    ("submissions", "address", "TEXT"),
+)
 
 
 def get_connection(path: str) -> sqlite3.Connection:
@@ -54,6 +63,10 @@ def get_connection(path: str) -> sqlite3.Connection:
 
 def init_db(conn) -> None:
     conn.executescript(SCHEMA)
+    for table, column, decl in _MIGRATIONS:
+        cols = {r["name"] for r in conn.execute(f"PRAGMA table_info({table})")}
+        if column not in cols:
+            conn.execute(f"ALTER TABLE {table} ADD COLUMN {column} {decl}")
     conn.commit()
 
 
@@ -93,9 +106,22 @@ def delete_edges(conn, venue_id, brand_id) -> int:
     return cur.rowcount
 
 
+def update_venue_address(conn, osm_id: str, address: str) -> int:
+    cur = conn.execute("UPDATE venues SET address=? WHERE osm_id=?", (address, osm_id))
+    return cur.rowcount
+
+
+def set_venue_hidden(conn, osm_id: str, hidden: bool) -> int:
+    cur = conn.execute("UPDATE venues SET hidden=? WHERE osm_id=?", (1 if hidden else 0, osm_id))
+    return cur.rowcount
+
+
 def fetch_venues_with_brands(conn) -> list[dict]:
+    # Hidden venues (reported closed and approved) are kept in the DB so the flag
+    # survives OSM re-imports, but they are excluded from the exported map.
     venues = conn.execute(
-        "SELECT id, osm_id, name, lat, lon, address, website FROM venues ORDER BY id"
+        "SELECT id, osm_id, name, lat, lon, address, website FROM venues "
+        "WHERE COALESCE(hidden, 0) = 0 ORDER BY id"
     ).fetchall()
     out = []
     for v in venues:
@@ -122,7 +148,7 @@ def fetch_venues_with_brands(conn) -> list[dict]:
 
 
 _SUB_COLS = ("kind", "venue_osm_id", "venue_name", "lat", "lon",
-             "brand", "serving", "note", "submitter_ip")
+             "brand", "serving", "address", "note", "submitter_ip")
 
 
 def insert_submission(conn, sub: dict, created_at: str) -> int:
