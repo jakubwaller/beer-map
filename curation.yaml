@@ -96,3 +96,27 @@
   action: add
   verified: 2026-06-27
   note: "Zum Elbblick: 'immer auch: Jever vom Fass' (Website)."
+- osm_id: node/1562385901
+  brand: Estrella Damm
+  serving: fass
+  action: add
+  verified: 2026-06-27
+  note: "GSELLMANNS: 'Estrella Damm vom Fass' (Website)."
+- osm_id: node/1607039199
+  brand: Augustiner
+  serving: fass
+  action: add
+  verified: 2026-06-27
+  note: "Augustiner Stub'n: 'Biere vom Fass: Augustiner Edelstoff, Jever, Krombacher' (Website)."
+- osm_id: node/1607039199
+  brand: Jever
+  serving: fass
+  action: add
+  verified: 2026-06-27
+  note: "Augustiner Stub'n: 'Biere vom Fass: Augustiner Edelstoff, Jever, Krombacher' (Website)."
+- osm_id: node/1607039199
+  brand: Krombacher
+  serving: fass
+  action: add
+  verified: 2026-06-27
+  note: "Augustiner Stub'n: 'Biere vom Fass: Augustiner Edelstoff, Jever, Krombacher' (Website)."
