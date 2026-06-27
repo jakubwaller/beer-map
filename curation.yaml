@@ -314,3 +314,16 @@
   action: add
   verified: '2026-06-27'
   note: 'Bamboole: ''ASTRA Urtyp vom Fass'' (Website).'
+- osm_id: node/1883798368
+  brand: Jever
+  serving: fass
+  action: add
+  verified: '2026-06-27'
+  note: 'Edelcurry: ''GETRÄNKE BIER Jever vom Faß 0,3l/0,5l'' (Website).'
+- osm_id: node/1564056620
+  brand: Ratsherrn
+  serving: unknown
+  action: add
+  verified: '2026-06-27'
+  note: 'Thämers: Karte nennt ''Ratsherrn Matrosenschluck Oat White IPA''; Ausschank
+    unklar — prüfen.'
