@@ -358,3 +358,34 @@
   verified: '2026-06-27'
   note: 'Störtebeker Beer & Dine: brauereieigenes Lokal (Elbphilharmonie); Ausschank
     prüfen.'
+- osm_id: way/55510164
+  brand: Holsten
+  serving: fass
+  action: add
+  verified: '2026-06-27'
+  note: 'Zum Billstedt-Horner: ''Im Ausschank: Holsten Pilsener, Moravia Pils, Duckstein''.'
+- osm_id: way/55510164
+  brand: Moravia
+  serving: fass
+  action: add
+  verified: '2026-06-27'
+  note: 'Zum Billstedt-Horner: ''Im Ausschank: Holsten Pilsener, Moravia Pils, Duckstein''.'
+- osm_id: way/55510164
+  brand: Duckstein
+  serving: fass
+  action: add
+  verified: '2026-06-27'
+  note: 'Zum Billstedt-Horner: ''Im Ausschank: Holsten Pilsener, Moravia Pils, Duckstein''.'
+- osm_id: way/36190637
+  brand: Paulaner
+  serving: unknown
+  action: add
+  verified: '2026-06-27'
+  note: 'Quellenhof: ''Paulaner Biergarten''; Ausschank prüfen.'
+- osm_id: node/575175283
+  brand: Bayreuther
+  serving: unknown
+  action: add
+  verified: '2026-06-27'
+  note: 'Café Miller: ''Maisels Weizen und Bayreuther Hellen''; Ausschank unklar —
+    prüfen.'
