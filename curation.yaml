@@ -259,3 +259,16 @@
   action: add
   verified: '2026-06-27'
   note: 'Mangold: ''Fassbier Ratsherrn Pilsener'' (Website).'
+- osm_id: node/575175283
+  brand: Jever
+  serving: fass
+  action: add
+  verified: '2026-06-27'
+  note: 'Café Miller: ''Biere vom Fass ... Stamm-Pilsener sind das Jever und das Lüneburger''.'
+- osm_id: node/575175283
+  brand: Lüneburger
+  serving: fass
+  action: add
+  verified: '2026-06-27'
+  note: 'Café Miller: ''Stamm-Pilsener ... das Lüneburger aus der Holsten-Brauerei''
+    (vom Fass).'
