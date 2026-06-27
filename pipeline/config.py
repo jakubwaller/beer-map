@@ -26,6 +26,22 @@ BRAND_ALIASES = {
     "urquell": "Pilsner Urquell",
     "budweiser budvar": "Budweiser Budvar",
     "budvar": "Budweiser Budvar",
+    # Casing / underscore variants seen in the OSM `brewery` tag, folded to a
+    # canonical display name. (Budweiser is left distinct from Budweiser Budvar
+    # on purpose — they are different breweries.)
+    "jever": "Jever",
+    "guinness": "Guinness",
+    "holsten": "Holsten",
+    "einbecker": "Einbecker",
+    "weihenstephaner": "Weihenstephaner",
+    "weihenstephan": "Weihenstephaner",
+    "königpilsener": "König Pilsner",
+    "könig pilsner": "König Pilsner",
+    "könig_ludwig": "König Ludwig",
+    "erdinger": "Erdinger",
+    "lübzer": "Lübzer",
+    "kronenbourg": "Kronenbourg",
+    "asahi_super_dry": "Asahi Super Dry",
 }
 
 
