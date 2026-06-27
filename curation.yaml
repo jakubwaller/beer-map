@@ -327,3 +327,27 @@
   verified: '2026-06-27'
   note: 'Thämers: Karte nennt ''Ratsherrn Matrosenschluck Oat White IPA''; Ausschank
     unklar — prüfen.'
+- osm_id: node/2430131292
+  brand: König Pilsener
+  serving: fass
+  action: add
+  verified: '2026-06-27'
+  note: 'Port: ''König Pilsener (vom Fass) 0,3l'' (Website).'
+- osm_id: node/2430131292
+  brand: Paulaner
+  serving: fass
+  action: add
+  verified: '2026-06-27'
+  note: 'Port: ''Paulaner Hefeweizen (vom Fass) 0,5l'' (Website).'
+- osm_id: node/256044321
+  brand: Paulaner
+  serving: fass
+  action: add
+  verified: '2026-06-27'
+  note: 'Paulaner''s: ''große Auswahl zapffrischer Paulaner Biere'' (Website).'
+- osm_id: node/280699565
+  brand: Astra
+  serving: unknown
+  action: add
+  verified: '2026-06-27'
+  note: 'La Sepia: ''Astra 0,3l'' auf der Getränkekarte; Ausschank unklar — prüfen.'
