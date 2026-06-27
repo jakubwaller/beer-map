@@ -351,3 +351,10 @@
   action: add
   verified: '2026-06-27'
   note: 'La Sepia: ''Astra 0,3l'' auf der Getränkekarte; Ausschank unklar — prüfen.'
+- osm_id: node/4484992671
+  brand: Störtebeker
+  serving: unknown
+  action: add
+  verified: '2026-06-27'
+  note: 'Störtebeker Beer & Dine: brauereieigenes Lokal (Elbphilharmonie); Ausschank
+    prüfen.'
