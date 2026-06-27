@@ -88,3 +88,11 @@
   action: add
   verified: 2026-06-27
   note: "Mathilde Bar: 'Jever vom Fass' (Website); not in OSM."
+
+# --- Auto-curated from venue websites (grounded; brand + on-tap evidence) ---
+- osm_id: node/11304751252
+  brand: Jever
+  serving: fass
+  action: add
+  verified: 2026-06-27
+  note: "Zum Elbblick: 'immer auch: Jever vom Fass' (Website)."
