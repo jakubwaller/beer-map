@@ -6,7 +6,7 @@ import yaml
 from rapidfuzz import fuzz
 
 from .config import normalize_brand
-from .db import delete_edges, upsert_brand, upsert_edge, upsert_venue
+from .db import delete_edges, list_submissions, upsert_brand, upsert_edge, upsert_venue
 from .models import Venue
 
 
@@ -38,6 +38,30 @@ def _resolve_venue_id(conn, entry, venues, today):
         return None
     row = conn.execute("SELECT id FROM venues WHERE osm_id=?", (best.osm_id,)).fetchone()
     return row["id"] if row else None
+
+
+def approved_community_entries(conn) -> list[dict]:
+    """Approved community submissions rendered as curation.yaml entries.
+
+    This lets verified community contributions be committed to git (IP-free,
+    human-readable) so they survive a database loss — the live DB is the only
+    place they otherwise exist. Each entry resolves by exact `osm_id`. Only
+    brand add/remove map to curation actions; venue address edits and closures
+    have no curation equivalent yet and are skipped.
+    """
+    entries = []
+    for s in list_submissions(conn, "approved"):
+        if s["kind"] not in ("add", "remove"):
+            continue
+        verified = (s["decided_at"] or s["created_at"] or "")[:10]
+        entry = {"osm_id": s["venue_osm_id"], "brand": s["brand"]}
+        if s["kind"] == "add":
+            entry["serving"] = s["serving"]
+        entry["action"] = s["kind"]
+        entry["verified"] = verified
+        entry["note"] = f"community-approved ({s['venue_name']})"
+        entries.append(entry)
+    return entries
 
 
 def apply_curation(conn, entries, venues, today) -> dict:
