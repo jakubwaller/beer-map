@@ -33,3 +33,58 @@
   action: add
   verified: 2026-06-24
   note: "Coords approximate; not in PU locator — verify."
+
+# --- Serving types verified from venue websites (2026-06-27) ---
+# Restaurantkneipe Hardy's: "Wir zapfen frisch vom Fass folgende Sorten:
+# Ratsherrn Pilsener, Jever Pilsener, König Pilsener, Einbecker Maibock oder
+# Winterbock, Weihenstephan Hefeweizen und natürlich Guinness."
+- osm_id: node/300393858
+  brand: Ratsherrn
+  serving: fass
+  action: add
+  verified: 2026-06-27
+  note: "Hardy's: 'frisch vom Fass' (Website)."
+- osm_id: node/300393858
+  brand: Jever
+  serving: fass
+  action: add
+  verified: 2026-06-27
+  note: "Hardy's: 'frisch vom Fass' (Website)."
+- osm_id: node/300393858
+  brand: König Pilsner
+  serving: fass
+  action: add
+  verified: 2026-06-27
+  note: "Hardy's: 'frisch vom Fass' (Website)."
+- osm_id: node/300393858
+  brand: Einbecker
+  serving: fass
+  action: add
+  verified: 2026-06-27
+  note: "Hardy's: 'frisch vom Fass' (Website)."
+- osm_id: node/300393858
+  brand: Weihenstephaner
+  serving: fass
+  action: add
+  verified: 2026-06-27
+  note: "Hardy's: 'frisch vom Fass' (Website)."
+- osm_id: node/300393858
+  brand: Guinness
+  serving: fass
+  action: add
+  verified: 2026-06-27
+  note: "Hardy's: 'frisch vom Fass' (Website)."
+
+# Mathilde Bar: "Guinnes und Jever vom Fass" (Website).
+- osm_id: node/330506887
+  brand: Guinness
+  serving: fass
+  action: add
+  verified: 2026-06-27
+  note: "Mathilde Bar: 'Guinness ... vom Fass' (Website)."
+- osm_id: node/330506887
+  brand: Jever
+  serving: fass
+  action: add
+  verified: 2026-06-27
+  note: "Mathilde Bar: 'Jever vom Fass' (Website); not in OSM."
