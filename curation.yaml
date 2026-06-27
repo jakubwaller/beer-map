@@ -302,3 +302,15 @@
   action: add
   verified: '2026-06-27'
   note: 'Dieter Sanchez: ''TANKBIER ... unpasteurisiert ... von Pilsner Urquell''.'
+- osm_id: node/1076975393
+  brand: Tegernseer
+  serving: fass
+  action: add
+  verified: '2026-06-27'
+  note: 'Zur Traube: ''Tegernseer Bier vom Faß'' (Website).'
+- osm_id: node/11553403973
+  brand: Astra
+  serving: fass
+  action: add
+  verified: '2026-06-27'
+  note: 'Bamboole: ''ASTRA Urtyp vom Fass'' (Website).'
