@@ -6,3 +6,4 @@ PyYAML==6.0.2
 fastapi==0.115.5
 uvicorn==0.32.1
 pytest==8.3.3
+anthropic>=0.69.0  # only needed for the optional `pipeline.llm_curate` tool
