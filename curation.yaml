@@ -272,3 +272,33 @@
   verified: '2026-06-27'
   note: 'Café Miller: ''Stamm-Pilsener ... das Lüneburger aus der Holsten-Brauerei''
     (vom Fass).'
+- osm_id: node/7138919307
+  brand: Astra
+  serving: fass
+  action: add
+  verified: '2026-06-27'
+  note: 'Pamboli Tapas Bar: ''Astra frisch vom Fass'' (Website).'
+- osm_id: way/56003210
+  brand: Veltins
+  serving: fass
+  action: add
+  verified: '2026-06-27'
+  note: 'Wanderer: ''Frischbier vom Hahn: Veltins''.'
+- osm_id: way/56003210
+  brand: Guinness
+  serving: fass
+  action: add
+  verified: '2026-06-27'
+  note: 'Wanderer: ''vom Hahn ... Guinness''.'
+- osm_id: way/56003210
+  brand: Hohenfelden Kellerbier
+  serving: fass
+  action: add
+  verified: '2026-06-27'
+  note: 'Wanderer: ''Frischbier vom Hahn ... Hohenfelden Kellerbier''.'
+- osm_id: way/75112929
+  brand: Pilsner Urquell
+  serving: tank
+  action: add
+  verified: '2026-06-27'
+  note: 'Dieter Sanchez: ''TANKBIER ... unpasteurisiert ... von Pilsner Urquell''.'
