@@ -126,3 +126,10 @@ def test_rate_limit_keys_on_forwarded_ip(client):
     assert c.post("/api/submit", json=body, headers=h1).status_code == 429  # same IP blocked
     assert c.post("/api/submit", json=body,
                   headers={"X-Forwarded-For": "8.8.8.8"}).status_code == 200  # other IP ok
+
+
+def test_submit_with_specific_beer_stored(client):
+    c, _ = client
+    assert _submit(c, brand="Augustiner", beer="Edelstoff", serving="fass").status_code == 200
+    pending = list_submissions(get_connection(config.DB_PATH), "pending")[0]
+    assert pending["beer"] == "Edelstoff"

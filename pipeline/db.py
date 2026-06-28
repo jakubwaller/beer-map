@@ -23,10 +23,14 @@ CREATE TABLE IF NOT EXISTS venue_brand (
     brand_id INTEGER NOT NULL REFERENCES brands(id) ON DELETE CASCADE,
     source TEXT NOT NULL,
     serving TEXT NOT NULL DEFAULT 'unknown',
+    beer TEXT NOT NULL DEFAULT '',
     confidence REAL NOT NULL DEFAULT 1.0,
     first_seen TEXT NOT NULL,
     last_seen TEXT NOT NULL,
-    PRIMARY KEY (venue_id, brand_id, source)
+    -- `beer` (the specific product) is part of the key so a venue can list
+    -- several beers of the same brand (e.g. Augustiner Edelstoff + Hell). '' =
+    -- brand-only (no specific beer).
+    PRIMARY KEY (venue_id, brand_id, source, beer)
 );
 CREATE TABLE IF NOT EXISTS submissions (
     id INTEGER PRIMARY KEY,
@@ -36,6 +40,7 @@ CREATE TABLE IF NOT EXISTS submissions (
     lat REAL, lon REAL,
     brand TEXT NOT NULL DEFAULT '',
     serving TEXT NOT NULL DEFAULT 'unknown',
+    beer TEXT,
     address TEXT,
     note TEXT,
     submitter_ip TEXT,
@@ -49,7 +54,9 @@ CREATE TABLE IF NOT EXISTS submissions (
 # with CREATE TABLE IF NOT EXISTS, so they keep the old layout — add them by hand.
 _MIGRATIONS = (
     ("venues", "hidden", "INTEGER NOT NULL DEFAULT 0"),
+    ("venue_brand", "beer", "TEXT"),
     ("submissions", "address", "TEXT"),
+    ("submissions", "beer", "TEXT"),
 )
 
 
@@ -67,7 +74,27 @@ def init_db(conn) -> None:
         cols = {r["name"] for r in conn.execute(f"PRAGMA table_info({table})")}
         if column not in cols:
             conn.execute(f"ALTER TABLE {table} ADD COLUMN {column} {decl}")
+    _migrate_venue_brand_pk(conn)
     conn.commit()
+
+
+def _migrate_venue_brand_pk(conn) -> None:
+    """Move `beer` into the venue_brand primary key on databases created with the
+    old (venue_id, brand_id, source) key, so multiple beers of one brand per
+    venue can coexist. Rebuilds the table once; idempotent and data-preserving."""
+    info = conn.execute("PRAGMA table_info(venue_brand)").fetchall()
+    beer = next((r for r in info if r["name"] == "beer"), None)
+    if beer is None or beer["pk"] != 0:
+        return  # fresh schema already has beer in the PK
+    conn.execute("ALTER TABLE venue_brand RENAME TO _vb_old")
+    conn.executescript(SCHEMA)  # recreates venue_brand with the new PK
+    conn.execute(
+        "INSERT INTO venue_brand "
+        "(venue_id, brand_id, source, serving, beer, confidence, first_seen, last_seen) "
+        "SELECT venue_id, brand_id, source, serving, COALESCE(beer, ''), "
+        "confidence, first_seen, last_seen FROM _vb_old"
+    )
+    conn.execute("DROP TABLE _vb_old")
 
 
 def upsert_venue(conn, venue, seen: str) -> int:
@@ -89,20 +116,31 @@ def upsert_brand(conn, name: str) -> int:
     return conn.execute("SELECT id FROM brands WHERE name=?", (name,)).fetchone()["id"]
 
 
-def upsert_edge(conn, venue_id, brand_id, source, seen, serving="unknown", confidence=1.0) -> None:
+def upsert_edge(conn, venue_id, brand_id, source, seen, serving="unknown",
+                confidence=1.0, beer=None) -> None:
+    # `beer` is the optional specific product (e.g. "Edelstoff"); '' means
+    # brand-only. It is part of the key, so the same brand can appear several
+    # times at one venue with different beers.
     conn.execute(
         """
-        INSERT INTO venue_brand (venue_id, brand_id, source, serving, confidence, first_seen, last_seen)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-        ON CONFLICT(venue_id, brand_id, source) DO UPDATE SET
+        INSERT INTO venue_brand (venue_id, brand_id, source, serving, beer, confidence, first_seen, last_seen)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(venue_id, brand_id, source, beer) DO UPDATE SET
             serving=excluded.serving, last_seen=excluded.last_seen, confidence=excluded.confidence
         """,
-        (venue_id, brand_id, source, serving, confidence, seen, seen),
+        (venue_id, brand_id, source, serving, beer or "", confidence, seen, seen),
     )
 
 
-def delete_edges(conn, venue_id, brand_id) -> int:
-    cur = conn.execute("DELETE FROM venue_brand WHERE venue_id=? AND brand_id=?", (venue_id, brand_id))
+def delete_edges(conn, venue_id, brand_id, beer=None) -> int:
+    # beer=None removes every beer of the brand; a specific beer removes just it.
+    if beer is None:
+        cur = conn.execute(
+            "DELETE FROM venue_brand WHERE venue_id=? AND brand_id=?", (venue_id, brand_id))
+    else:
+        cur = conn.execute(
+            "DELETE FROM venue_brand WHERE venue_id=? AND brand_id=? AND beer=?",
+            (venue_id, brand_id, beer))
     return cur.rowcount
 
 
@@ -127,7 +165,8 @@ def fetch_venues_with_brands(conn) -> list[dict]:
     for v in venues:
         edges = conn.execute(
             """
-            SELECT b.name AS brand, vb.source AS source, vb.serving AS serving, vb.last_seen AS last_seen
+            SELECT b.name AS brand, vb.source AS source, vb.serving AS serving,
+                   vb.beer AS beer, vb.last_seen AS last_seen
             FROM venue_brand vb JOIN brands b ON b.id = vb.brand_id
             WHERE vb.venue_id = ?
             ORDER BY
@@ -135,20 +174,25 @@ def fetch_venues_with_brands(conn) -> list[dict]:
                      WHEN 'manual' THEN 0
                      WHEN 'community' THEN 1
                      ELSE CASE WHEN vb.source LIKE 'finder:%' THEN 2 ELSE 3 END END,
-                b.name
+                b.name, vb.beer
             """,
             (v["id"],),
         ).fetchall()
+        brands = []
+        for e in edges:
+            d = dict(e)
+            d["beer"] = d["beer"] or None  # '' (brand-only) -> null in the export
+            brands.append(d)
         out.append({
             "osm_id": v["osm_id"], "name": v["name"], "lat": v["lat"], "lon": v["lon"],
             "address": v["address"], "website": v["website"],
-            "brands": [dict(e) for e in edges],
+            "brands": brands,
         })
     return out
 
 
 _SUB_COLS = ("kind", "venue_osm_id", "venue_name", "lat", "lon",
-             "brand", "serving", "address", "note", "submitter_ip")
+             "brand", "serving", "beer", "address", "note", "submitter_ip")
 
 
 def insert_submission(conn, sub: dict, created_at: str) -> int:

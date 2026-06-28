@@ -40,12 +40,14 @@
 # Winterbock, Weihenstephan Hefeweizen und natürlich Guinness."
 - osm_id: node/300393858
   brand: Ratsherrn
+  beer: Pilsener
   serving: fass
   action: add
   verified: 2026-06-27
   note: "Hardy's: 'frisch vom Fass' (Website)."
 - osm_id: node/300393858
   brand: Jever
+  beer: Pilsener
   serving: fass
   action: add
   verified: 2026-06-27
@@ -58,12 +60,14 @@
   note: "Hardy's: 'frisch vom Fass' (Website)."
 - osm_id: node/300393858
   brand: Einbecker
+  beer: Maibock/Winterbock
   serving: fass
   action: add
   verified: 2026-06-27
   note: "Hardy's: 'frisch vom Fass' (Website)."
 - osm_id: node/300393858
   brand: Weihenstephaner
+  beer: Hefeweizen
   serving: fass
   action: add
   verified: 2026-06-27
@@ -104,6 +108,7 @@
   note: "GSELLMANNS: 'Estrella Damm vom Fass' (Website)."
 - osm_id: node/1607039199
   brand: Augustiner
+  beer: Edelstoff
   serving: fass
   action: add
   verified: 2026-06-27
@@ -128,6 +133,7 @@
   note: 'Das Dorf: ''gut gezapfte Lübzer'' (Website).'
 - osm_id: node/2490900022
   brand: Bitburger
+  beer: Pils
   serving: fass
   action: add
   verified: '2026-06-27'
@@ -135,6 +141,7 @@
     vom Fass''.'
 - osm_id: node/2490900022
   brand: Köstritzer
+  beer: Schwarzbier
   serving: fass
   action: add
   verified: '2026-06-27'
@@ -192,6 +199,7 @@
     Duckstein''.'
 - osm_id: node/301997305
   brand: Franziskaner
+  beer: Hefeweizen
   serving: fass
   action: add
   verified: '2026-06-27'
@@ -213,6 +221,7 @@
     Duckstein''.'
 - osm_id: node/303734750
   brand: Veltins
+  beer: Pils
   serving: fass
   action: add
   verified: '2026-06-27'
@@ -255,6 +264,7 @@
   note: 'Old Dubliner: ''frisch gezapftes ... Hop House 13''.'
 - osm_id: node/309795393
   brand: Ratsherrn
+  beer: Pilsener
   serving: fass
   action: add
   verified: '2026-06-27'
