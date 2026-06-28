@@ -34,8 +34,8 @@ def test_curation_removes_stale_adds_manual_and_creates_venue():
     assert counts == {"added": 2, "removed": 1, "skipped": 0}
 
     wald = _brands(conn, "WALD")
-    assert wald == [{"brand": "Budweiser Budvar", "source": "manual",
-                     "serving": "tank", "last_seen": "2026-06-24"}]  # PU gone, Budvar normalized
+    assert wald == [{"brand": "Budweiser Budvar", "source": "manual", "serving": "tank",
+                     "beer": None, "last_seen": "2026-06-24"}]  # PU gone, Budvar normalized
     pampa = _brands(conn, "Pampa")  # created from coords
     assert pampa[0]["brand"] == "Pilsner Urquell" and pampa[0]["source"] == "manual"
 
@@ -77,4 +77,13 @@ def test_exported_entries_round_trip_through_apply_curation():
     counts = apply_curation(fresh, entries, [], "2026-06-26")
     assert counts == {"added": 1, "removed": 0, "skipped": 0}
     assert _brands(fresh, "WALD") == [
-        {"brand": "Ratsherrn", "source": "manual", "serving": "fass", "last_seen": "2026-06-26"}]
+        {"brand": "Ratsherrn", "source": "manual", "serving": "fass",
+         "beer": None, "last_seen": "2026-06-26"}]
+
+
+def test_curation_sets_specific_beer():
+    conn = _seed()  # WALD = node/5
+    apply_curation(conn, [{"osm_id": "node/5", "brand": "Ratsherrn", "serving": "fass",
+                           "beer": "Pilsener", "action": "add"}], [], "2026-06-27")
+    edge = [b for b in _brands(conn, "WALD") if b["brand"] == "Ratsherrn"][0]
+    assert edge["beer"] == "Pilsener"

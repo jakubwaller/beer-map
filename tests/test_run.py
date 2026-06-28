@@ -42,5 +42,5 @@ def test_run_pipeline_applies_curation_over_finders(tmp_path):
     by_name = {f["properties"]["name"]: f["properties"]["brands"] for f in fc["features"]}
     # Finder added PU@WALD, curation removed it and added Budvar -> only Budvar remains.
     assert by_name["WALD"] == [{"brand": "Budweiser Budvar", "source": "manual",
-                                "serving": "tank", "last_seen": "2026-06-24"}]
+                                "serving": "tank", "beer": None, "last_seen": "2026-06-24"}]
     assert {b["brand"] for b in by_name["Altes Mädchen"]} == {"Holsten"}
