@@ -118,3 +118,44 @@ def test_edge_beer_roundtrips():
     upsert_edge(conn, vid, bid2, "osm", "2026-06-27", serving="unknown")
     astra = [b for b in fetch_venues_with_brands(conn)[0]["brands"] if b["brand"] == "Astra"][0]
     assert astra["beer"] is None
+
+
+def test_multiple_beers_same_brand_per_venue():
+    conn = _conn()
+    vid = upsert_venue(conn, Venue("node/1", "Bar X", 53.5, 10.0), "2026-06-27")
+    bid = upsert_brand(conn, "Augustiner")
+    upsert_edge(conn, vid, bid, "manual", "2026-06-27", serving="fass", beer="Edelstoff")
+    upsert_edge(conn, vid, bid, "manual", "2026-06-27", serving="fass", beer="Hell")
+    beers = {b["beer"] for b in fetch_venues_with_brands(conn)[0]["brands"]}
+    assert beers == {"Edelstoff", "Hell"}
+    # re-upserting the same (brand, beer) updates in place, no duplicate
+    upsert_edge(conn, vid, bid, "manual", "2026-06-28", serving="tank", beer="Edelstoff")
+    edel = [b for b in fetch_venues_with_brands(conn)[0]["brands"] if b["beer"] == "Edelstoff"]
+    assert len(edel) == 1 and edel[0]["serving"] == "tank"
+
+
+def test_migration_moves_beer_into_pk_preserving_rows():
+    conn = get_connection(":memory:")
+    conn.executescript(
+        "CREATE TABLE venues (id INTEGER PRIMARY KEY, osm_id TEXT UNIQUE NOT NULL, name TEXT NOT NULL,"
+        " lat REAL NOT NULL, lon REAL NOT NULL, address TEXT, website TEXT,"
+        " hidden INTEGER NOT NULL DEFAULT 0, updated_at TEXT NOT NULL);"
+        "CREATE TABLE brands (id INTEGER PRIMARY KEY, name TEXT UNIQUE NOT NULL);"
+        "CREATE TABLE venue_brand (venue_id INTEGER, brand_id INTEGER, source TEXT NOT NULL,"
+        " serving TEXT NOT NULL DEFAULT 'unknown', beer TEXT, confidence REAL NOT NULL DEFAULT 1.0,"
+        " first_seen TEXT NOT NULL, last_seen TEXT NOT NULL,"
+        " PRIMARY KEY (venue_id, brand_id, source));"
+    )
+    conn.execute("INSERT INTO venues VALUES (1,'node/1','Bar',53.5,10.0,NULL,NULL,0,'d')")
+    conn.execute("INSERT INTO brands VALUES (1,'Augustiner')")
+    conn.execute("INSERT INTO venue_brand (venue_id,brand_id,source,serving,beer,confidence,"
+                 "first_seen,last_seen) VALUES (1,1,'manual','fass','Edelstoff',1.0,'d','d')")
+    conn.commit()
+
+    init_db(conn)  # should rebuild venue_brand with beer in the PK
+
+    assert fetch_venues_with_brands(conn)[0]["brands"][0]["beer"] == "Edelstoff"  # preserved
+    pk_cols = [r["name"] for r in conn.execute("PRAGMA table_info(venue_brand)") if r["pk"]]
+    assert "beer" in pk_cols
+    upsert_edge(conn, 1, 1, "manual", "2026-06-27", serving="fass", beer="Hell")  # now allowed
+    assert {b["beer"] for b in fetch_venues_with_brands(conn)[0]["brands"]} == {"Edelstoff", "Hell"}

@@ -23,11 +23,14 @@ CREATE TABLE IF NOT EXISTS venue_brand (
     brand_id INTEGER NOT NULL REFERENCES brands(id) ON DELETE CASCADE,
     source TEXT NOT NULL,
     serving TEXT NOT NULL DEFAULT 'unknown',
-    beer TEXT,
+    beer TEXT NOT NULL DEFAULT '',
     confidence REAL NOT NULL DEFAULT 1.0,
     first_seen TEXT NOT NULL,
     last_seen TEXT NOT NULL,
-    PRIMARY KEY (venue_id, brand_id, source)
+    -- `beer` (the specific product) is part of the key so a venue can list
+    -- several beers of the same brand (e.g. Augustiner Edelstoff + Hell). '' =
+    -- brand-only (no specific beer).
+    PRIMARY KEY (venue_id, brand_id, source, beer)
 );
 CREATE TABLE IF NOT EXISTS submissions (
     id INTEGER PRIMARY KEY,
@@ -69,7 +72,27 @@ def init_db(conn) -> None:
         cols = {r["name"] for r in conn.execute(f"PRAGMA table_info({table})")}
         if column not in cols:
             conn.execute(f"ALTER TABLE {table} ADD COLUMN {column} {decl}")
+    _migrate_venue_brand_pk(conn)
     conn.commit()
+
+
+def _migrate_venue_brand_pk(conn) -> None:
+    """Move `beer` into the venue_brand primary key on databases created with the
+    old (venue_id, brand_id, source) key, so multiple beers of one brand per
+    venue can coexist. Rebuilds the table once; idempotent and data-preserving."""
+    info = conn.execute("PRAGMA table_info(venue_brand)").fetchall()
+    beer = next((r for r in info if r["name"] == "beer"), None)
+    if beer is None or beer["pk"] != 0:
+        return  # fresh schema already has beer in the PK
+    conn.execute("ALTER TABLE venue_brand RENAME TO _vb_old")
+    conn.executescript(SCHEMA)  # recreates venue_brand with the new PK
+    conn.execute(
+        "INSERT INTO venue_brand "
+        "(venue_id, brand_id, source, serving, beer, confidence, first_seen, last_seen) "
+        "SELECT venue_id, brand_id, source, serving, COALESCE(beer, ''), "
+        "confidence, first_seen, last_seen FROM _vb_old"
+    )
+    conn.execute("DROP TABLE _vb_old")
 
 
 def upsert_venue(conn, venue, seen: str) -> int:
@@ -93,17 +116,17 @@ def upsert_brand(conn, name: str) -> int:
 
 def upsert_edge(conn, venue_id, brand_id, source, seen, serving="unknown",
                 confidence=1.0, beer=None) -> None:
-    # `beer` is the optional specific product (e.g. "Ratsherrn Matrosenschluck"),
-    # NULL when only the brand is known (OSM/finder edges).
+    # `beer` is the optional specific product (e.g. "Edelstoff"); '' means
+    # brand-only. It is part of the key, so the same brand can appear several
+    # times at one venue with different beers.
     conn.execute(
         """
         INSERT INTO venue_brand (venue_id, brand_id, source, serving, beer, confidence, first_seen, last_seen)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        ON CONFLICT(venue_id, brand_id, source) DO UPDATE SET
-            serving=excluded.serving, beer=excluded.beer,
-            last_seen=excluded.last_seen, confidence=excluded.confidence
+        ON CONFLICT(venue_id, brand_id, source, beer) DO UPDATE SET
+            serving=excluded.serving, last_seen=excluded.last_seen, confidence=excluded.confidence
         """,
-        (venue_id, brand_id, source, serving, beer, confidence, seen, seen),
+        (venue_id, brand_id, source, serving, beer or "", confidence, seen, seen),
     )
 
 
@@ -142,14 +165,19 @@ def fetch_venues_with_brands(conn) -> list[dict]:
                      WHEN 'manual' THEN 0
                      WHEN 'community' THEN 1
                      ELSE CASE WHEN vb.source LIKE 'finder:%' THEN 2 ELSE 3 END END,
-                b.name
+                b.name, vb.beer
             """,
             (v["id"],),
         ).fetchall()
+        brands = []
+        for e in edges:
+            d = dict(e)
+            d["beer"] = d["beer"] or None  # '' (brand-only) -> null in the export
+            brands.append(d)
         out.append({
             "osm_id": v["osm_id"], "name": v["name"], "lat": v["lat"], "lon": v["lon"],
             "address": v["address"], "website": v["website"],
-            "brands": [dict(e) for e in edges],
+            "brands": brands,
         })
     return out
 

@@ -5,20 +5,33 @@ function rank(source) {
   return 3;
 }
 
-// The same brand can have edges from several sources (e.g. an OSM listing plus a
-// community serving correction). Show each brand once, keeping the highest-trust
-// entry — but let it adopt a known serving from a dropped duplicate so the serving
-// filter still matches. Assumes `brands` is already sorted best-trust-first.
+// A venue can list several beers of one brand (e.g. Augustiner Edelstoff + Hell),
+// and each beer can have edges from several sources. Show each distinct
+// brand+beer once, keeping the highest-trust edge; merge a known serving from a
+// dropped duplicate. A brand-only entry (no specific beer) is dropped when that
+// brand also has specific beers, since those already imply the brand. Assumes
+// `brands` is sorted best-trust-first.
 function dedupeBrands(brands) {
-  const byName = new Map();
+  const byBrand = new Map();  // brand -> { specific: Map(beer -> entry), generic: entry|null }
   for (const b of brands) {
-    const kept = byName.get(b.brand);
-    if (!kept) { byName.set(b.brand, { ...b }); continue; }
-    if (kept.serving === "unknown" && b.serving && b.serving !== "unknown")
-      kept.serving = b.serving;
-    if (!kept.beer && b.beer) kept.beer = b.beer;  // adopt a specific beer from a dup
+    let g = byBrand.get(b.brand);
+    if (!g) { g = { specific: new Map(), generic: null }; byBrand.set(b.brand, g); }
+    const merge = (kept) => {
+      if (kept.serving === "unknown" && b.serving && b.serving !== "unknown")
+        kept.serving = b.serving;
+    };
+    if (b.beer) {
+      const kept = g.specific.get(b.beer);
+      if (kept) merge(kept); else g.specific.set(b.beer, { ...b });
+    } else if (g.generic) merge(g.generic);
+    else g.generic = { ...b };
   }
-  return [...byName.values()];
+  const out = [];
+  for (const g of byBrand.values()) {
+    if (g.specific.size) out.push(...g.specific.values());  // specific beers win
+    else if (g.generic) out.push(g.generic);
+  }
+  return out;
 }
 
 // "draught" means served on tap — Fass or Tank (vs the specific fass/tank/unknown).
