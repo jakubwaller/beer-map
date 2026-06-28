@@ -79,3 +79,15 @@ test("dedupe keeps top provenance but adopts a known serving from a duplicate", 
   assert.equal(b.source, "manual");   // higher trust wins
   assert.equal(b.serving, "fass");    // serving filled in from the OSM duplicate
 });
+
+test("dedupe keeps multiple beers of one brand and drops the brand-only entry", () => {
+  const fc = { type: "FeatureCollection", features: [
+    { type: "Feature", geometry: { type: "Point", coordinates: [9.9, 53.5] },
+      properties: { name: "Bar", brands: [
+        { brand: "Augustiner", source: "osm", serving: "unknown" },               // generic -> dropped
+        { brand: "Augustiner", source: "manual", serving: "fass", beer: "Edelstoff" },
+        { brand: "Augustiner", source: "manual", serving: "fass", beer: "Hell" } ] } } ] };
+  const bs = loadVenues(fc)[0].brands;
+  assert.equal(bs.length, 2);
+  assert.deepEqual(bs.map((b) => b.beer).sort(), ["Edelstoff", "Hell"]);
+});
