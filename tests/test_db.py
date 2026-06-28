@@ -67,7 +67,7 @@ def test_edge_with_serving_and_provenance_roundtrips():
     out = fetch_venues_with_brands(conn)
     assert out[0]["brands"] == [
         {"brand": "Pilsner Urquell", "source": "manual",
-         "serving": "tank", "last_seen": "2026-06-24"}
+         "serving": "tank", "beer": None, "last_seen": "2026-06-24"}
     ]
 
 
@@ -104,3 +104,17 @@ def test_hidden_venue_excluded_from_export_but_survives_reimport():
     assert [v["name"] for v in fetch_venues_with_brands(conn)] == ["Open Bar"]
     assert set_venue_hidden(conn, "node/1", False) == 1
     assert len(fetch_venues_with_brands(conn)) == 2
+
+
+def test_edge_beer_roundtrips():
+    conn = _conn()
+    vid = upsert_venue(conn, Venue("node/1", "Bar X", 53.5, 10.0), "2026-06-27")
+    bid = upsert_brand(conn, "Ratsherrn")
+    upsert_edge(conn, vid, bid, "manual", "2026-06-27", serving="fass", beer="Matrosenschluck")
+    out = fetch_venues_with_brands(conn)[0]["brands"][0]
+    assert out["beer"] == "Matrosenschluck" and out["serving"] == "fass"
+    # default is NULL when no specific beer is given
+    bid2 = upsert_brand(conn, "Astra")
+    upsert_edge(conn, vid, bid2, "osm", "2026-06-27", serving="unknown")
+    astra = [b for b in fetch_venues_with_brands(conn)[0]["brands"] if b["brand"] == "Astra"][0]
+    assert astra["beer"] is None

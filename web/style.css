@@ -147,6 +147,7 @@ select:focus { outline: none; border-color: var(--gold); box-shadow: 0 0 0 3px r
 }
 .beer:first-child { border-top: 0; }
 .beer-name { flex: 1 1 auto; }
+.beer-product { color: var(--muted); font-style: italic; }
 .beerform {
   display: inline-flex;
   align-items: center;

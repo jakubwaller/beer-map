@@ -21,5 +21,5 @@ def test_export_writes_geojson_with_brand_provenance(tmp_path):
     assert feat["geometry"]["coordinates"] == [9.9636, 53.5556]  # lon, lat
     assert feat["properties"]["brands"] == [
         {"brand": "Pilsner Urquell", "source": "manual", "serving": "tank",
-         "last_seen": "2026-06-24"}
+         "beer": None, "last_seen": "2026-06-24"}
     ]
