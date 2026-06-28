@@ -302,3 +302,90 @@
   action: add
   verified: '2026-06-27'
   note: 'Dieter Sanchez: ''TANKBIER ... unpasteurisiert ... von Pilsner Urquell''.'
+- osm_id: node/1076975393
+  brand: Tegernseer
+  serving: fass
+  action: add
+  verified: '2026-06-27'
+  note: 'Zur Traube: ''Tegernseer Bier vom Faß'' (Website).'
+- osm_id: node/11553403973
+  brand: Astra
+  serving: fass
+  action: add
+  verified: '2026-06-27'
+  note: 'Bamboole: ''ASTRA Urtyp vom Fass'' (Website).'
+- osm_id: node/1883798368
+  brand: Jever
+  serving: fass
+  action: add
+  verified: '2026-06-27'
+  note: 'Edelcurry: ''GETRÄNKE BIER Jever vom Faß 0,3l/0,5l'' (Website).'
+- osm_id: node/1564056620
+  brand: Ratsherrn
+  serving: unknown
+  action: add
+  verified: '2026-06-27'
+  note: 'Thämers: Karte nennt ''Ratsherrn Matrosenschluck Oat White IPA''; Ausschank
+    unklar — prüfen.'
+- osm_id: node/2430131292
+  brand: König Pilsener
+  serving: fass
+  action: add
+  verified: '2026-06-27'
+  note: 'Port: ''König Pilsener (vom Fass) 0,3l'' (Website).'
+- osm_id: node/2430131292
+  brand: Paulaner
+  serving: fass
+  action: add
+  verified: '2026-06-27'
+  note: 'Port: ''Paulaner Hefeweizen (vom Fass) 0,5l'' (Website).'
+- osm_id: node/256044321
+  brand: Paulaner
+  serving: fass
+  action: add
+  verified: '2026-06-27'
+  note: 'Paulaner''s: ''große Auswahl zapffrischer Paulaner Biere'' (Website).'
+- osm_id: node/280699565
+  brand: Astra
+  serving: unknown
+  action: add
+  verified: '2026-06-27'
+  note: 'La Sepia: ''Astra 0,3l'' auf der Getränkekarte; Ausschank unklar — prüfen.'
+- osm_id: node/4484992671
+  brand: Störtebeker
+  serving: unknown
+  action: add
+  verified: '2026-06-27'
+  note: 'Störtebeker Beer & Dine: brauereieigenes Lokal (Elbphilharmonie); Ausschank
+    prüfen.'
+- osm_id: way/55510164
+  brand: Holsten
+  serving: fass
+  action: add
+  verified: '2026-06-27'
+  note: 'Zum Billstedt-Horner: ''Im Ausschank: Holsten Pilsener, Moravia Pils, Duckstein''.'
+- osm_id: way/55510164
+  brand: Moravia
+  serving: fass
+  action: add
+  verified: '2026-06-27'
+  note: 'Zum Billstedt-Horner: ''Im Ausschank: Holsten Pilsener, Moravia Pils, Duckstein''.'
+- osm_id: way/55510164
+  brand: Duckstein
+  serving: fass
+  action: add
+  verified: '2026-06-27'
+  note: 'Zum Billstedt-Horner: ''Im Ausschank: Holsten Pilsener, Moravia Pils, Duckstein''.'
+- osm_id: way/36190637
+  brand: Paulaner
+  serving: unknown
+  action: add
+  verified: '2026-06-27'
+  note: 'Quellenhof: ''Paulaner Biergarten''; Ausschank prüfen.'
+- osm_id: node/575175283
+  brand: Bayreuther
+  serving: unknown
+  action: add
+  verified: '2026-06-27'
+  note: 'Café Miller: ''Maisels Weizen und Bayreuther Hellen''; Ausschank unklar —
+    prüfen.'
