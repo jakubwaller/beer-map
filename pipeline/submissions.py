@@ -28,6 +28,8 @@ def validate_submission(payload: dict) -> str | None:
         brand = (payload.get("brand") or "").strip()
         if not brand or len(brand) > 80:
             return "brand must be 1-80 chars"
+        if payload.get("beer") and len(payload["beer"]) > 80:
+            return "beer must be at most 80 chars"
         if kind == "add" and payload.get("serving") not in _SERVINGS:
             return "serving must be 'fass' or 'tank'"
     elif kind == "edit_venue":
@@ -62,11 +64,13 @@ def apply_one(conn, sub: dict, today: str) -> bool:
         return True
     vid = _venue_id(conn, osm_id)
     bid = upsert_brand(conn, config.normalize_brand(sub["brand"]))
+    beer = sub.get("beer") or None
     if kind == "remove":
-        delete_edges(conn, vid, bid)
+        # A specific beer removes just that beer; no beer removes the whole brand.
+        delete_edges(conn, vid, bid, beer=beer)
     else:
         upsert_edge(conn, vid, bid, "community", today,
-                    serving=sub.get("serving", "unknown"))
+                    serving=sub.get("serving", "unknown"), beer=beer)
     return True
 
 

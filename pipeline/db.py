@@ -40,6 +40,7 @@ CREATE TABLE IF NOT EXISTS submissions (
     lat REAL, lon REAL,
     brand TEXT NOT NULL DEFAULT '',
     serving TEXT NOT NULL DEFAULT 'unknown',
+    beer TEXT,
     address TEXT,
     note TEXT,
     submitter_ip TEXT,
@@ -55,6 +56,7 @@ _MIGRATIONS = (
     ("venues", "hidden", "INTEGER NOT NULL DEFAULT 0"),
     ("venue_brand", "beer", "TEXT"),
     ("submissions", "address", "TEXT"),
+    ("submissions", "beer", "TEXT"),
 )
 
 
@@ -130,8 +132,15 @@ def upsert_edge(conn, venue_id, brand_id, source, seen, serving="unknown",
     )
 
 
-def delete_edges(conn, venue_id, brand_id) -> int:
-    cur = conn.execute("DELETE FROM venue_brand WHERE venue_id=? AND brand_id=?", (venue_id, brand_id))
+def delete_edges(conn, venue_id, brand_id, beer=None) -> int:
+    # beer=None removes every beer of the brand; a specific beer removes just it.
+    if beer is None:
+        cur = conn.execute(
+            "DELETE FROM venue_brand WHERE venue_id=? AND brand_id=?", (venue_id, brand_id))
+    else:
+        cur = conn.execute(
+            "DELETE FROM venue_brand WHERE venue_id=? AND brand_id=? AND beer=?",
+            (venue_id, brand_id, beer))
     return cur.rowcount
 
 
@@ -183,7 +192,7 @@ def fetch_venues_with_brands(conn) -> list[dict]:
 
 
 _SUB_COLS = ("kind", "venue_osm_id", "venue_name", "lat", "lon",
-             "brand", "serving", "address", "note", "submitter_ip")
+             "brand", "serving", "beer", "address", "note", "submitter_ip")
 
 
 def insert_submission(conn, sub: dict, created_at: str) -> int:
