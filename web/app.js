@@ -55,7 +55,7 @@ function beerRow(osm, b) {
     ? ` <span class="beer-product">${esc(b.beer)}</span>` : "";
   return `<li class="beer">
     <span class="beer-name">${esc(b.brand)}${product}<span class="${cls}">${parts.join(" · ")}</span></span>
-    <form class="beerform" data-osm="${esc(osm)}" data-brand="${esc(b.brand)}">
+    <form class="beerform" data-osm="${esc(osm)}" data-brand="${esc(b.brand)}" data-beer="${esc(b.beer || "")}">
       <select name="serving" aria-label="Ausschank">
         <option value="fass"${tank ? "" : " selected"}>Fass</option>
         <option value="tank"${tank ? " selected" : ""}>Tank</option>
@@ -78,6 +78,7 @@ function buildPopupHtml(p) {
     beers +
     `<form class="addbeer" data-osm="${esc(osm)}">
        <input name="brand" list="brandlist" placeholder="Marke hinzufügen" required>
+       <input name="beer" placeholder="Sorte (optional)">
        <label><input type="radio" name="serving" value="fass" checked>Fass</label>
        <label><input type="radio" name="serving" value="tank">Tank</label>
        <input class="hp" name="hp" tabindex="-1" autocomplete="off">
@@ -100,11 +101,14 @@ function submissionBody(form, action) {
   const osm = form.dataset.osm;
   if (form.classList.contains("addbeer"))
     return { venue_osm_id: osm, brand: form.brand.value.trim(),
+             beer: form.beer.value.trim() || null,
              serving: form.serving.value, kind: "add", hp: form.hp.value };
   if (form.classList.contains("beerform"))
     return action === "remove"
-      ? { venue_osm_id: osm, brand: form.dataset.brand, kind: "remove" }
-      : { venue_osm_id: osm, brand: form.dataset.brand, serving: form.serving.value, kind: "add" };
+      ? { venue_osm_id: osm, brand: form.dataset.brand, beer: form.dataset.beer || null,
+          kind: "remove" }
+      : { venue_osm_id: osm, brand: form.dataset.brand, beer: form.dataset.beer || null,
+          serving: form.serving.value, kind: "add" };
   if (form.classList.contains("venueform"))
     return action === "close_venue"
       ? { venue_osm_id: osm, kind: "close_venue" }
