@@ -77,6 +77,6 @@ def apply_curation(conn, entries, venues, today) -> dict:
             counts["removed"] += 1
         else:
             upsert_edge(conn, vid, bid, "manual", entry.get("verified") or today,
-                        serving=entry.get("serving", "unknown"))
+                        serving=entry.get("serving", "unknown"), beer=entry.get("beer"))
             counts["added"] += 1
     return counts

@@ -98,7 +98,7 @@ def test_approve_applies_community_edge_and_reject_does_not():
     assert approve_submission(conn, sid, "2026-06-24", "/dev/null") is True
     assert fetch_venues_with_brands(conn)[0]["brands"] == [
         {"brand": "Pilsner Urquell", "source": "community",
-         "serving": "tank", "last_seen": "2026-06-24"}]
+         "serving": "tank", "beer": None, "last_seen": "2026-06-24"}]
     assert get_submission(conn, sid)["status"] == "approved"
 
     sid2 = insert_submission(conn, _row(brand="Jever"), "2026-06-24T10:05:00")
@@ -114,3 +114,29 @@ def test_apply_approved_is_idempotent():
     assert apply_approved(conn, "2026-06-24") == 1
     assert apply_approved(conn, "2026-06-24") == 1
     assert len(fetch_venues_with_brands(conn)[0]["brands"]) == 1
+
+
+def test_validate_beer_length():
+    ok = dict(kind="add", venue_osm_id="node/1", brand="Astra", serving="fass")
+    assert validate_submission({**ok, "beer": "Urtyp"}) is None
+    assert validate_submission({**ok, "beer": "x" * 81})
+
+
+def test_add_and_remove_specific_beer():
+    conn = _seed()  # node/1 Bar X
+    for beer in ("Edelstoff", "Hell"):
+        sid = insert_submission(conn, _row(kind="add", brand="Augustiner",
+                                           serving="fass", beer=beer), "2026-06-27T10:00:00")
+        approve_submission(conn, sid, "2026-06-27", "/dev/null")
+    assert {b["beer"] for b in fetch_venues_with_brands(conn)[0]["brands"]} == {"Edelstoff", "Hell"}
+
+    # remove only "Hell" — the other beer of the same brand stays
+    sid = insert_submission(conn, _row(kind="remove", brand="Augustiner", beer="Hell"),
+                            "2026-06-27T10:05:00")
+    approve_submission(conn, sid, "2026-06-27", "/dev/null")
+    assert {b["beer"] for b in fetch_venues_with_brands(conn)[0]["brands"]} == {"Edelstoff"}
+
+    # remove with no beer drops the whole brand
+    sid = insert_submission(conn, _row(kind="remove", brand="Augustiner"), "2026-06-27T10:06:00")
+    approve_submission(conn, sid, "2026-06-27", "/dev/null")
+    assert fetch_venues_with_brands(conn)[0]["brands"] == []

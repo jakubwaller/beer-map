@@ -24,6 +24,7 @@ class Submission(BaseModel):
     venue_osm_id: str
     brand: str = ""           # empty for venue-level kinds (edit_venue/close_venue)
     serving: str = "unknown"
+    beer: Optional[str] = None  # optional specific product, e.g. "Edelstoff"
     kind: str = "add"
     address: Optional[str] = None  # new address for kind="edit_venue"
     note: Optional[str] = None
@@ -92,7 +93,8 @@ def create_app() -> FastAPI:
                 return "→ " + html.escape(r["address"] or "")
             if r["kind"] == "close_venue":
                 return "(als geschlossen gemeldet)"
-            return f"{html.escape(r['brand'])} ({html.escape(r['serving'])})"
+            beer = f" – {html.escape(r['beer'])}" if r.get("beer") else ""
+            return f"{html.escape(r['brand'])}{beer} ({html.escape(r['serving'])})"
 
         items = "".join(
             f"<li>#{r['id']} <b>{html.escape(r['kind'])}</b> "
