@@ -51,8 +51,10 @@ function beerRow(osm, b) {
     .filter(Boolean).map(esc);
   const cls = (b.source === "manual" || b.source === "community") ? "badge manual" : "badge";
   const tank = b.serving === "tank";
+  const product = (b.beer && b.beer !== b.brand)
+    ? ` <span class="beer-product">${esc(b.beer)}</span>` : "";
   return `<li class="beer">
-    <span class="beer-name">${esc(b.brand)}<span class="${cls}">${parts.join(" · ")}</span></span>
+    <span class="beer-name">${esc(b.brand)}${product}<span class="${cls}">${parts.join(" · ")}</span></span>
     <form class="beerform" data-osm="${esc(osm)}" data-brand="${esc(b.brand)}">
       <select name="serving" aria-label="Ausschank">
         <option value="fass"${tank ? "" : " selected"}>Fass</option>
@@ -138,7 +140,7 @@ map.on("load", async () => {
   map.addSource("venues", { type: "geojson", data: toFC(allVenues) });
   map.addLayer({ id: "dots", type: "circle", source: "venues",
     paint: { "circle-radius": 6, "circle-color": "#c8102e", "circle-stroke-width": 1, "circle-stroke-color": "#fff" } });
-  render(allVenues);
+  applyFilters();  // honor the default Ausschank filter (draught-only) on first load
   map.on("click", "dots", (e) => {
     const coords = e.features[0].geometry.coordinates.slice();
     new maplibregl.Popup({ maxWidth: popupMaxWidth(), focusAfterOpen: false })

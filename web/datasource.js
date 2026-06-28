@@ -13,12 +13,18 @@ function dedupeBrands(brands) {
   const byName = new Map();
   for (const b of brands) {
     const kept = byName.get(b.brand);
-    if (!kept) byName.set(b.brand, { ...b });
-    else if (kept.serving === "unknown" && b.serving && b.serving !== "unknown")
+    if (!kept) { byName.set(b.brand, { ...b }); continue; }
+    if (kept.serving === "unknown" && b.serving && b.serving !== "unknown")
       kept.serving = b.serving;
+    if (!kept.beer && b.beer) kept.beer = b.beer;  // adopt a specific beer from a dup
   }
   return [...byName.values()];
 }
+
+// "draught" means served on tap — Fass or Tank (vs the specific fass/tank/unknown).
+const DRAUGHT = new Set(["fass", "tank"]);
+const servingMatch = (b, serving) =>
+  serving === "draught" ? DRAUGHT.has(b.serving) : b.serving === serving;
 
 export function loadVenues(fc) {
   return (fc.features || []).map((f) => ({
@@ -41,9 +47,9 @@ export function buildBrandList(venues) {
 
 export function venuesByBrand(venues, brand, serving = null) {
   return venues.filter((v) =>
-    v.brands.some((b) => b.brand === brand && (!serving || b.serving === serving)));
+    v.brands.some((b) => b.brand === brand && (!serving || servingMatch(b, serving))));
 }
 
 export function venuesByServing(venues, serving) {
-  return venues.filter((v) => v.brands.some((b) => b.serving === serving));
+  return venues.filter((v) => v.brands.some((b) => servingMatch(b, serving)));
 }

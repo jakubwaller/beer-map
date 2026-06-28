@@ -98,7 +98,7 @@ def test_approve_applies_community_edge_and_reject_does_not():
     assert approve_submission(conn, sid, "2026-06-24", "/dev/null") is True
     assert fetch_venues_with_brands(conn)[0]["brands"] == [
         {"brand": "Pilsner Urquell", "source": "community",
-         "serving": "tank", "last_seen": "2026-06-24"}]
+         "serving": "tank", "beer": None, "last_seen": "2026-06-24"}]
     assert get_submission(conn, sid)["status"] == "approved"
 
     sid2 = insert_submission(conn, _row(brand="Jever"), "2026-06-24T10:05:00")

@@ -36,6 +36,30 @@ test("venuesByServing filters tank vs fass", () => {
   assert.deepEqual(venuesByServing(loadVenues(FC), "tank").map((x) => x.name), ["WALD"]);
 });
 
+test("venuesByServing 'draught' matches fass or tank, not unknown", () => {
+  const at = (lon, lat) => ({ type: "Point", coordinates: [lon, lat] });
+  const fc = { type: "FeatureCollection", features: [
+    { type: "Feature", geometry: at(9.9, 53.5),
+      properties: { name: "UnknownOnly", brands: [{ brand: "X", source: "osm", serving: "unknown" }] } },
+    { type: "Feature", geometry: at(9.9, 53.5),
+      properties: { name: "FassPub", brands: [{ brand: "Y", source: "osm", serving: "fass" }] } },
+    { type: "Feature", geometry: at(9.9, 53.5),
+      properties: { name: "TankPub", brands: [{ brand: "Z", source: "osm", serving: "tank" }] } } ] };
+  const v = loadVenues(fc);
+  assert.deepEqual(venuesByServing(v, "draught").map((x) => x.name).sort(), ["FassPub", "TankPub"]);
+});
+
+test("loadVenues carries the specific beer through and adopts it on dedupe", () => {
+  const fc = { type: "FeatureCollection", features: [
+    { type: "Feature", geometry: { type: "Point", coordinates: [9.9, 53.5] },
+      properties: { name: "Bar", brands: [
+        { brand: "Ratsherrn", source: "osm", serving: "unknown" },
+        { brand: "Ratsherrn", source: "manual", serving: "fass", beer: "Matrosenschluck" } ] } } ] };
+  const [b] = loadVenues(fc)[0].brands;
+  assert.equal(b.source, "manual");
+  assert.equal(b.beer, "Matrosenschluck");
+});
+
 test("loadVenues dedupes a brand to its highest-trust entry", () => {
   const v = loadVenues(FC);
   // Bar A lists Ratsherrn from both manual and community — show it once, as manual.

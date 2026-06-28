@@ -23,6 +23,7 @@ CREATE TABLE IF NOT EXISTS venue_brand (
     brand_id INTEGER NOT NULL REFERENCES brands(id) ON DELETE CASCADE,
     source TEXT NOT NULL,
     serving TEXT NOT NULL DEFAULT 'unknown',
+    beer TEXT,
     confidence REAL NOT NULL DEFAULT 1.0,
     first_seen TEXT NOT NULL,
     last_seen TEXT NOT NULL,
@@ -49,6 +50,7 @@ CREATE TABLE IF NOT EXISTS submissions (
 # with CREATE TABLE IF NOT EXISTS, so they keep the old layout — add them by hand.
 _MIGRATIONS = (
     ("venues", "hidden", "INTEGER NOT NULL DEFAULT 0"),
+    ("venue_brand", "beer", "TEXT"),
     ("submissions", "address", "TEXT"),
 )
 
@@ -89,15 +91,19 @@ def upsert_brand(conn, name: str) -> int:
     return conn.execute("SELECT id FROM brands WHERE name=?", (name,)).fetchone()["id"]
 
 
-def upsert_edge(conn, venue_id, brand_id, source, seen, serving="unknown", confidence=1.0) -> None:
+def upsert_edge(conn, venue_id, brand_id, source, seen, serving="unknown",
+                confidence=1.0, beer=None) -> None:
+    # `beer` is the optional specific product (e.g. "Ratsherrn Matrosenschluck"),
+    # NULL when only the brand is known (OSM/finder edges).
     conn.execute(
         """
-        INSERT INTO venue_brand (venue_id, brand_id, source, serving, confidence, first_seen, last_seen)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO venue_brand (venue_id, brand_id, source, serving, beer, confidence, first_seen, last_seen)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(venue_id, brand_id, source) DO UPDATE SET
-            serving=excluded.serving, last_seen=excluded.last_seen, confidence=excluded.confidence
+            serving=excluded.serving, beer=excluded.beer,
+            last_seen=excluded.last_seen, confidence=excluded.confidence
         """,
-        (venue_id, brand_id, source, serving, confidence, seen, seen),
+        (venue_id, brand_id, source, serving, beer, confidence, seen, seen),
     )
 
 
@@ -127,7 +133,8 @@ def fetch_venues_with_brands(conn) -> list[dict]:
     for v in venues:
         edges = conn.execute(
             """
-            SELECT b.name AS brand, vb.source AS source, vb.serving AS serving, vb.last_seen AS last_seen
+            SELECT b.name AS brand, vb.source AS source, vb.serving AS serving,
+                   vb.beer AS beer, vb.last_seen AS last_seen
             FROM venue_brand vb JOIN brands b ON b.id = vb.brand_id
             WHERE vb.venue_id = ?
             ORDER BY
