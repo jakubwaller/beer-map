@@ -1,9 +1,17 @@
 from __future__ import annotations
 
+import time
+
 import httpx
 
-from .config import HAMBURG_QL, OVERPASS_URL, USER_AGENT
+from .config import (HAMBURG_QL, OVERPASS_BACKOFF_S, OVERPASS_RETRIES,
+                     OVERPASS_URLS, USER_AGENT)
 from .models import BrandEdge, Venue
+
+# Transient responses worth retrying: rate limiting (429), gateway/overload
+# (5xx), and the 406 the main balancer returns when its backends are saturated.
+# Anything else (e.g. 400 for a bad query) is our fault and no mirror will fix it.
+_RETRY_STATUS = {406, 429, 500, 502, 503, 504}
 
 _SKIP_BREWERY = {"", "yes", "no", "various", "*", "guest"}
 
@@ -46,7 +54,33 @@ def parse_overpass(data):
     return venues, edges
 
 
-def fetch_overpass(ql: str = HAMBURG_QL, url: str = OVERPASS_URL) -> dict:
+def _fetch_once(url: str, ql: str) -> dict:
     resp = httpx.get(url, params={"data": ql}, headers={"User-Agent": USER_AGENT}, timeout=120)
     resp.raise_for_status()
     return resp.json()
+
+
+def fetch_overpass(ql: str = HAMBURG_QL, urls=None, retries=None, backoff=None) -> dict:
+    """Fetch from Overpass, trying each mirror in turn and retrying transient
+    failures (429/5xx/406, timeouts, transport errors) with exponential backoff.
+    A non-transient status (e.g. 400) raises at once — mirrors won't differ. Only
+    when every mirror is exhausted does the last transient error propagate."""
+    urls = urls or OVERPASS_URLS
+    retries = OVERPASS_RETRIES if retries is None else retries
+    backoff = OVERPASS_BACKOFF_S if backoff is None else backoff
+    if not urls:
+        raise ValueError("no Overpass URLs configured")
+    last_exc: Exception | None = None
+    for url in urls:
+        for attempt in range(retries):
+            try:
+                return _fetch_once(url, ql)
+            except httpx.HTTPStatusError as exc:
+                if exc.response.status_code not in _RETRY_STATUS:
+                    raise
+                last_exc = exc
+            except httpx.RequestError as exc:  # timeouts, resets, DNS, etc.
+                last_exc = exc
+            if attempt < retries - 1:
+                time.sleep(backoff * (2 ** attempt))
+    raise last_exc  # every mirror exhausted its retries
