@@ -36,7 +36,7 @@ def test_run_pipeline_applies_curation_over_finders(tmp_path):
     assert summary == {
         "venues": 2, "osm_edges": 1, "finder_edges": 1,
         "unmatched": 0, "manual_added": 1, "manual_removed": 1,
-        "community": 0, "exported": 2,
+        "community": 0, "brands_folded": 0, "exported": 2,
     }
     fc = json.loads(out.read_text(encoding="utf-8"))
     by_name = {f["properties"]["name"]: f["properties"]["brands"] for f in fc["features"]}

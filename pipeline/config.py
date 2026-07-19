@@ -28,39 +28,50 @@ DB_PATH = "beer-map.sqlite"
 OUT_PATH = "web/data/venues.json"
 CURATION_PATH = "curation.yaml"
 
-# Normalize known brand spellings to a canonical display name.
+# Tag values that are not a brand at all (OSM `brewery` junk words). Checked
+# against the lowercased value; matching entries are dropped, not stored.
+SKIP_BRANDS = {"", "yes", "no", "various", "*", "guest", "crafted"}
+
+# Normalize known brand spellings to a canonical display name. Keys are matched
+# after lowercasing and folding underscores to spaces, so one entry covers
+# "Jever"/"jever" and "asahi_super_dry"/"Asahi Super Dry" alike.
 BRAND_ALIASES = {
     "ratsherrn pils": "Ratsherrn",
     "ratsherrn": "Ratsherrn",
+    "ratsherren": "Ratsherrn",
     "astra urtyp": "Astra",
     "astra": "Astra",
     "pilsner urquell": "Pilsner Urquell",
     "plzeňský prazdroj": "Pilsner Urquell",
     "plzensky prazdroj": "Pilsner Urquell",
     "urquell": "Pilsner Urquell",
+    # In Hamburg venues "Budweiser" on tap is the Czech Budvar, so both names
+    # are folded together.
     "budweiser budvar": "Budweiser Budvar",
+    "budweiser": "Budweiser Budvar",
     "budvar": "Budweiser Budvar",
-    # Casing / underscore variants seen in the OSM `brewery` tag, folded to a
-    # canonical display name. (Budweiser is left distinct from Budweiser Budvar
-    # on purpose — they are different breweries.)
-    "jever": "Jever",
-    "guinness": "Guinness",
-    "holsten": "Holsten",
-    "einbecker": "Einbecker",
-    "weihenstephaner": "Weihenstephaner",
     "weihenstephan": "Weihenstephaner",
     "königpilsener": "König Pilsner",
+    "königpilsner": "König Pilsner",
+    "könig pilsener": "König Pilsner",
     "könig pilsner": "König Pilsner",
-    "könig_ludwig": "König Ludwig",
-    "erdinger": "Erdinger",
-    "lübzer": "Lübzer",
-    "kronenbourg": "Kronenbourg",
-    "asahi_super_dry": "Asahi Super Dry",
+    "augustiner bräu": "Augustiner",
+    "augustiner bräu münchen": "Augustiner",
 }
 
 
 def normalize_brand(name: str) -> str:
-    return BRAND_ALIASES.get(name.strip().lower(), name.strip())
+    """Fold a raw brand spelling to its canonical display name: underscores
+    become spaces, whitespace collapses, known aliases map to their canonical
+    form, and an unknown all-lowercase name gets its words capitalized (the OSM
+    `brewery` tag is full of lowercase entries like "jever")."""
+    name = " ".join(name.replace("_", " ").split())
+    canonical = BRAND_ALIASES.get(name.lower())
+    if canonical:
+        return canonical
+    if name.islower():
+        return " ".join(w[:1].upper() + w[1:] for w in name.split())
+    return name
 
 
 # --- Live-curation / API settings (env-overridable for Docker deploy) ---

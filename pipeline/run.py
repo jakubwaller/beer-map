@@ -4,8 +4,9 @@ import sys
 from datetime import date
 
 from . import curation, osm, submissions
-from .config import CURATION_PATH, DB_PATH, OUT_PATH, normalize_brand
-from .db import get_connection, init_db, upsert_brand, upsert_edge, upsert_venue
+from .config import CURATION_PATH, DB_PATH, OUT_PATH, SKIP_BRANDS, normalize_brand
+from .db import (get_connection, init_db, renormalize_brands, upsert_brand,
+                 upsert_edge, upsert_venue)
 from .export import export_geojson
 from .finders import FINDERS
 from .matching import match_entries
@@ -43,12 +44,16 @@ def run_pipeline(db_path=DB_PATH, out_path=OUT_PATH, curation_path=CURATION_PATH
 
     cur = curation.apply_curation(conn, curation.load_curation(curation_path), venues, today)
     community = submissions.apply_approved(conn, today)
+    # Fold brand rows that predate current aliases/split rules (ingest only
+    # normalizes new edges, so old spellings would otherwise live forever).
+    folded = renormalize_brands(conn, normalize_brand, SKIP_BRANDS)
     conn.commit()
     exported = export_geojson(conn, out_path)
     return {
         "venues": len(venues), "osm_edges": len(osm_edges), "finder_edges": finder_edges,
         "unmatched": unmatched_total, "manual_added": cur["added"],
-        "manual_removed": cur["removed"], "community": community, "exported": exported,
+        "manual_removed": cur["removed"], "community": community,
+        "brands_folded": folded, "exported": exported,
     }
 
 

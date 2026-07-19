@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 import sqlite3
 
 SCHEMA = """
@@ -130,6 +131,46 @@ def upsert_edge(conn, venue_id, brand_id, source, seen, serving="unknown",
         """,
         (venue_id, brand_id, source, serving, beer or "", confidence, seen, seen),
     )
+
+
+def renormalize_brands(conn, normalize, skip=frozenset()) -> int:
+    """Re-apply brand normalization to rows already in the DB. Ingest runs
+    `normalize_brand` on new edges only, so rows written before an alias (or
+    split rule) existed keep their old spelling forever — this folds them:
+    multi-brand names ("A,B") are split, each part normalized, edges remapped
+    onto the canonical brand, junk (`skip`) and orphaned brands deleted.
+    Returns the number of brand rows folded away."""
+    folded = 0
+    for row in conn.execute("SELECT id, name FROM brands").fetchall():
+        parts = [p.strip() for p in re.split(r"[;,]", row["name"]) if p.strip()]
+        targets = [normalize(p) for p in parts if p.lower() not in skip]
+        if targets == [row["name"]]:
+            continue
+        target_ids = {upsert_brand(conn, t) for t in targets}
+        for tid in target_ids - {row["id"]}:
+            conn.execute(
+                """
+                INSERT INTO venue_brand
+                    (venue_id, brand_id, source, serving, beer, confidence, first_seen, last_seen)
+                SELECT venue_id, ?, source, serving, COALESCE(beer, ''), confidence, first_seen, last_seen
+                FROM venue_brand WHERE brand_id = ?
+                ON CONFLICT(venue_id, brand_id, source, beer) DO UPDATE SET
+                    -- keep the existing edge, but don't lose a known serving to 'unknown'
+                    serving = CASE WHEN venue_brand.serving = 'unknown'
+                                   THEN excluded.serving ELSE venue_brand.serving END,
+                    last_seen = MAX(venue_brand.last_seen, excluded.last_seen)
+                """,
+                (tid, row["id"]),
+            )
+        if row["id"] not in target_ids:
+            conn.execute("DELETE FROM venue_brand WHERE brand_id=?", (row["id"],))
+            conn.execute("DELETE FROM brands WHERE id=?", (row["id"],))
+            folded += 1
+    # Brands with no venue left (e.g. junk-only or fully remapped) would still
+    # show up in /api/brands — drop them.
+    conn.execute(
+        "DELETE FROM brands WHERE id NOT IN (SELECT DISTINCT brand_id FROM venue_brand)")
+    return folded
 
 
 def delete_edges(conn, venue_id, brand_id, beer=None) -> int:
