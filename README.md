@@ -1,5 +1,7 @@
 # beer-map
 
+**Live at [beermap.jakubwaller.eu](https://beermap.jakubwaller.eu)**
+
 A map of Hamburg drinking venues, filterable by draft beer brand and serving type
 (Fassbier/Tankbier). Built on a human-curated core (`curation.yaml`, highest trust),
 seeded by OpenStreetMap `brewery=` tags and brand "where to drink" finders. Every
