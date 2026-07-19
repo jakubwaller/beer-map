@@ -9,6 +9,7 @@ from .db import (
     upsert_edge,
 )
 from .export import export_geojson
+from .geocode import geocode_address
 
 _SERVINGS = {"fass", "tank"}
 _BRAND_KINDS = ("add", "remove")
@@ -57,7 +58,12 @@ def apply_one(conn, sub: dict, today: str) -> bool:
     # Venue-level edits run after OSM re-imports each build (see run_pipeline), so
     # an approved address change or "closed" flag keeps overriding the OSM data.
     if kind == "edit_venue":
-        update_venue_address(conn, osm_id, sub["address"])
+        # Move the pin too — a text-only address edit would leave the map marker
+        # at the old (OSM-imported) coordinates. Geocoding failure isn't fatal:
+        # fall back to updating just the address text.
+        coords = geocode_address(sub["address"])
+        lat, lon = coords if coords else (None, None)
+        update_venue_address(conn, osm_id, sub["address"], lat, lon)
         return True
     if kind == "close_venue":
         set_venue_hidden(conn, osm_id, True)
