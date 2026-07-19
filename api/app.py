@@ -58,7 +58,17 @@ def create_app() -> FastAPI:
 
     @app.get("/api/brands")
     def brands(conn=Depends(_db)):
-        rows = conn.execute("SELECT name FROM brands ORDER BY name").fetchall()
+        # Only brands that are actually poured somewhere on the map — orphaned
+        # brand rows and brands only on hidden (closed) venues stay out.
+        rows = conn.execute(
+            """
+            SELECT DISTINCT b.name FROM brands b
+            JOIN venue_brand vb ON vb.brand_id = b.id
+            JOIN venues v ON v.id = vb.venue_id
+            WHERE COALESCE(v.hidden, 0) = 0
+            ORDER BY b.name
+            """
+        ).fetchall()
         return [r["name"] for r in rows]
 
     @app.post("/api/submit")

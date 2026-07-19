@@ -104,6 +104,21 @@ def test_brands_endpoint_empty(client):
     assert c.get("/api/brands").json() == []
 
 
+def test_brands_endpoint_only_lists_brands_with_venues(client):
+    from pipeline.db import upsert_brand, upsert_edge, set_venue_hidden
+    c, _ = client
+    conn = get_connection(config.DB_PATH)
+    upsert_venue(conn, Venue("node/2", "Hidden Bar", 53.6, 10.1), "2026-07-19")
+    set_venue_hidden(conn, "node/2", True)
+    vid = conn.execute("SELECT id FROM venues WHERE osm_id='node/1'").fetchone()["id"]
+    hid = conn.execute("SELECT id FROM venues WHERE osm_id='node/2'").fetchone()["id"]
+    upsert_edge(conn, vid, upsert_brand(conn, "Astra"), "osm", "2026-07-19")
+    upsert_edge(conn, hid, upsert_brand(conn, "Ghost Bräu"), "osm", "2026-07-19")
+    upsert_brand(conn, "Orphan Bräu")  # no venue at all
+    conn.commit()
+    assert c.get("/api/brands").json() == ["Astra"]
+
+
 def test_notify_telegram_is_best_effort(monkeypatch):
     from api import notify
     monkeypatch.setattr(config, "TELEGRAM_BOT_TOKEN", "")  # unconfigured -> no-op
