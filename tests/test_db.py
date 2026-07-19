@@ -1,9 +1,10 @@
+from pipeline.config import SKIP_BRANDS, normalize_brand
 from pipeline.db import (
     get_connection, init_db, upsert_venue, upsert_brand,
     upsert_edge, delete_edges, fetch_venues_with_brands,
     insert_submission, list_submissions, get_submission,
     set_submission_status, count_submissions_since,
-    update_venue_address, set_venue_hidden,
+    update_venue_address, set_venue_hidden, renormalize_brands,
 )
 from pipeline.models import Venue
 
@@ -132,6 +133,63 @@ def test_multiple_beers_same_brand_per_venue():
     upsert_edge(conn, vid, bid, "manual", "2026-06-28", serving="tank", beer="Edelstoff")
     edel = [b for b in fetch_venues_with_brands(conn)[0]["brands"] if b["beer"] == "Edelstoff"]
     assert len(edel) == 1 and edel[0]["serving"] == "tank"
+
+
+def _brand_names(conn):
+    return {r["name"] for r in conn.execute("SELECT name FROM brands")}
+
+
+def test_renormalize_merges_spelling_variants():
+    conn = _conn()
+    vid = upsert_venue(conn, Venue("node/1", "Bar X", 53.5, 10.0), "2026-07-19")
+    vid2 = upsert_venue(conn, Venue("node/2", "Bar Y", 53.6, 10.1), "2026-07-19")
+    # rows written before the aliases existed
+    upsert_edge(conn, vid, upsert_brand(conn, "jever"), "osm", "2026-07-19")
+    upsert_edge(conn, vid2, upsert_brand(conn, "Jever"), "manual", "2026-07-19", serving="fass")
+    upsert_edge(conn, vid, upsert_brand(conn, "Budweiser"), "osm", "2026-07-19")
+
+    assert renormalize_brands(conn, normalize_brand, SKIP_BRANDS) == 2
+    assert _brand_names(conn) == {"Jever", "Budweiser Budvar"}
+    by_venue = {v["osm_id"]: v["brands"] for v in fetch_venues_with_brands(conn)}
+    assert {b["brand"] for b in by_venue["node/1"]} == {"Jever", "Budweiser Budvar"}
+    assert by_venue["node/2"][0]["serving"] == "fass"  # edge survived the remap
+
+
+def test_renormalize_merge_keeps_known_serving_on_conflict():
+    conn = _conn()
+    vid = upsert_venue(conn, Venue("node/1", "Bar X", 53.5, 10.0), "2026-07-19")
+    # canonical edge knows the serving, variant doesn't — and vice versa
+    upsert_edge(conn, vid, upsert_brand(conn, "Guinness"), "osm", "2026-07-19", serving="fass")
+    upsert_edge(conn, vid, upsert_brand(conn, "guinness"), "osm", "2026-07-19")
+    upsert_edge(conn, vid, upsert_brand(conn, "Jever"), "manual", "2026-07-19")
+    upsert_edge(conn, vid, upsert_brand(conn, "jever"), "manual", "2026-07-19", serving="tank")
+    renormalize_brands(conn, normalize_brand, SKIP_BRANDS)
+    by_brand = {b["brand"]: b for b in fetch_venues_with_brands(conn)[0]["brands"]}
+    assert set(by_brand) == {"Guinness", "Jever"}
+    assert by_brand["Guinness"]["serving"] == "fass"
+    assert by_brand["Jever"]["serving"] == "tank"
+
+
+def test_renormalize_splits_multi_brand_rows_and_drops_junk():
+    conn = _conn()
+    vid = upsert_venue(conn, Venue("node/1", "Bar X", 53.5, 10.0), "2026-07-19")
+    upsert_edge(conn, vid, upsert_brand(conn, "Dithmarscher,Holsten, Flensburger"),
+                "osm", "2026-07-19")
+    upsert_edge(conn, vid, upsert_brand(conn, "crafted"), "osm", "2026-07-19")
+    upsert_brand(conn, "Orphan Bräu")  # no edges at all
+    renormalize_brands(conn, normalize_brand, SKIP_BRANDS)
+    assert _brand_names(conn) == {"Dithmarscher", "Holsten", "Flensburger"}
+    brands = {b["brand"] for b in fetch_venues_with_brands(conn)[0]["brands"]}
+    assert brands == {"Dithmarscher", "Holsten", "Flensburger"}
+
+
+def test_renormalize_is_idempotent():
+    conn = _conn()
+    vid = upsert_venue(conn, Venue("node/1", "Bar X", 53.5, 10.0), "2026-07-19")
+    upsert_edge(conn, vid, upsert_brand(conn, "einbecker"), "osm", "2026-07-19")
+    assert renormalize_brands(conn, normalize_brand, SKIP_BRANDS) == 1
+    assert renormalize_brands(conn, normalize_brand, SKIP_BRANDS) == 0
+    assert _brand_names(conn) == {"Einbecker"}
 
 
 def test_migration_moves_beer_into_pk_preserving_rows():

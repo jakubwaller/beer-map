@@ -1,11 +1,12 @@
 from __future__ import annotations
 
+import re
 import time
 
 import httpx
 
 from .config import (HAMBURG_QL, OVERPASS_BACKOFF_S, OVERPASS_RETRIES,
-                     OVERPASS_URLS, USER_AGENT)
+                     OVERPASS_URLS, SKIP_BRANDS, USER_AGENT)
 from .models import BrandEdge, Venue
 
 # Transient responses worth retrying: rate limiting (429), gateway/overload
@@ -13,7 +14,6 @@ from .models import BrandEdge, Venue
 # Anything else (e.g. 400 for a bad query) is our fault and no mirror will fix it.
 _RETRY_STATUS = {406, 429, 500, 502, 503, 504}
 
-_SKIP_BREWERY = {"", "yes", "no", "various", "*", "guest"}
 
 
 def _coords(el):
@@ -33,7 +33,10 @@ def _brands_from_tags(tags):
     raw = tags.get("brewery")
     if not raw:
         return []
-    return [p.strip() for p in raw.split(";") if p.strip().lower() not in _SKIP_BREWERY]
+    # ';' is the OSM list separator, but mappers use ',' too
+    # ("Dithmarscher,Holsten, Flensburger" is one real tag).
+    return [p.strip() for p in re.split(r"[;,]", raw)
+            if p.strip().lower() not in SKIP_BRANDS]
 
 
 def parse_overpass(data):
