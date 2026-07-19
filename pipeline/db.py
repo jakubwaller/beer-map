@@ -144,8 +144,14 @@ def delete_edges(conn, venue_id, brand_id, beer=None) -> int:
     return cur.rowcount
 
 
-def update_venue_address(conn, osm_id: str, address: str) -> int:
-    cur = conn.execute("UPDATE venues SET address=? WHERE osm_id=?", (address, osm_id))
+def update_venue_address(conn, osm_id: str, address: str,
+                          lat: float | None = None, lon: float | None = None) -> int:
+    if lat is not None and lon is not None:
+        cur = conn.execute(
+            "UPDATE venues SET address=?, lat=?, lon=? WHERE osm_id=?",
+            (address, lat, lon, osm_id))
+    else:
+        cur = conn.execute("UPDATE venues SET address=? WHERE osm_id=?", (address, osm_id))
     return cur.rowcount
 
 
