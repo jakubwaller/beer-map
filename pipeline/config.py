@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import os
 
-USER_AGENT = "beer-map/0.1 (+https://github.com/; contact: set-me@example.com)"
+USER_AGENT = "beer-map/0.1 (+https://beermap.jakubwaller.eu; contact: jakub.waller@protonmail.com)"
 OVERPASS_URL = os.environ.get("OVERPASS_URL", "https://overpass-api.de/api/interpreter")
 # Mirrors tried in order until one returns data — a single flaky/overloaded
 # instance (the 406/504 we saw the main balancer hand back under load) no longer
