@@ -1,6 +1,6 @@
 # Deploying beermap to the Pi (Docker)
 
-DNS is already set: `beermap.jakubwaller.eu` (A `<pi-ip>` + AAAA, proxied:false),
+DNS is already set: `beermap.jakubwaller.eu` (A + AAAA to the Pi, Cloudflare-proxied),
 kept current by `~/pivalert/ip-address/check-ip-address.sh` on the Pi.
 
 ## One-time

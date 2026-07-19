@@ -18,7 +18,7 @@
 - **Store submitter IP only for rate-limiting** — no other personal data, no review text.
 - **Secrets via env only** (`BEERMAP_ADMIN_PW`, `RESEND_API_KEY`, …) — never committed.
 - **`curation.yaml` stays the maintainer's highest-trust hand-edit path;** community submissions live in the DB.
-- **DNS is already done:** `beermap.jakubwaller.eu` (A <pi-ip> + AAAA, proxied:false) resolves to the Pi; deployment only needs a Caddy block + a uvicorn service.
+- **DNS is already done:** `beermap.jakubwaller.eu` (A <pi-ip> + AAAA, Cloudflare-proxied) resolves to the Pi; deployment only needs a Caddy block + a uvicorn service.
 - **Commits:** conventional-commit messages, no attribution trailers.
 
 ## File Structure
@@ -949,7 +949,7 @@ beermap.jakubwaller.eu {
 ````markdown
 # Deploying beermap to the Pi
 
-DNS is already set: `beermap.jakubwaller.eu` (A <pi-ip> + AAAA, proxied:false),
+DNS is already set: `beermap.jakubwaller.eu` (A <pi-ip> + AAAA, Cloudflare-proxied),
 kept current by `~/pivalert/ip-address/check-ip-address.sh`.
 
 ## One-time
