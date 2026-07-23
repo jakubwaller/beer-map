@@ -235,7 +235,7 @@ function openVenueModal(v) {
      <details class="venue-actions">
        <summary>Ort korrigieren</summary>
        <form class="venueform" data-osm="${esc(osm)}">
-         <input name="address" placeholder="Adresse" value="${esc(p.address || "")}">
+         <input name="address" placeholder="Adresse" value="${esc(v.address || "")}">
          <button name="act" value="edit_venue">Adresse speichern</button>
          <button name="act" value="close_venue" class="danger">Als geschlossen melden</button>
          <span class="msg"></span>
