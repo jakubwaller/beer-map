@@ -99,6 +99,17 @@ def approve_submission(conn, sub_id: int, today: str, out_path: str) -> bool:
     return True
 
 
+def approve_all_pending(conn, today: str, out_path: str) -> int:
+    subs = list_submissions(conn, "pending")
+    for sub in subs:
+        apply_one(conn, sub, today)
+        set_submission_status(conn, sub["id"], "approved", today)
+    conn.commit()
+    if subs:  # one export for the whole batch, not one per submission
+        export_geojson(conn, out_path)
+    return len(subs)
+
+
 def reject_submission(conn, sub_id: int, today: str) -> bool:
     sub = get_submission(conn, sub_id)
     if not sub or sub["status"] != "pending":
