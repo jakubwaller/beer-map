@@ -3,42 +3,74 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
-  <meta name="theme-color" content="#1b1410" />
-  <title>Bier vom Fass – Hamburg</title>
+  <meta name="theme-color" content="#f4ecdf" />
+  <title>Zapfkompass Hamburg – Bier vom Fass &amp; Tank</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Lora:wght@500;600;700&family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="vendor/maplibre-gl.css" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <div id="map"></div>
 
-  <div id="panel" class="is-open">
-    <div id="panel-head">
-      <h1>🍺 Bier vom Fass <span>Hamburg</span></h1>
-      <button id="panel-toggle" type="button" aria-label="Filter ein-/ausklappen" aria-expanded="true">
-        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
-          <path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2"
-                stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Zoom controls -->
+  <div id="zoom-ctrl">
+    <button id="zoom-in" type="button" aria-label="Hineinzoomen">+</button>
+    <button id="zoom-out" type="button" aria-label="Herauszoomen">−</button>
+  </div>
+
+  <!-- Top overlay: header + filter bars -->
+  <div id="topbar">
+    <header>
+      <a class="brandmark" href="./" aria-label="Zapfkompass Hamburg – Startseite">
+        <svg width="30" height="30" viewBox="0 0 24 24" aria-hidden="true">
+          <rect x="6" y="4" width="11" height="16" rx="3" fill="oklch(62% 0.16 45)"></rect>
+          <rect x="8" y="6" width="7" height="3" rx="1.2" fill="oklch(97% 0.015 80)"></rect>
+          <path d="M17 9c3 0 4 1.6 4 3.5S20 16 17 16" fill="none" stroke="oklch(48% 0.16 45)" stroke-width="2.2" stroke-linecap="round"></path>
         </svg>
-      </button>
+        <span class="wordmark">
+          <span class="name">Zapfkompass</span>
+          <span class="city">Hamburg</span>
+        </span>
+      </a>
+
+      <input id="search" type="text" placeholder="Kneipe, Adresse oder Marke suchen…" autocomplete="off" />
+
+      <div class="header-actions">
+        <nav>
+          <button type="button" data-modal="stats">Statistik</button>
+          <button type="button" data-modal="about">Über das Projekt</button>
+          <button type="button" data-modal="contact">Kontakt</button>
+        </nav>
+        <button type="button" id="cta-add" class="cta"><span aria-hidden="true">+</span> Bier melden</button>
+      </div>
+    </header>
+
+    <div id="serving-bar" class="chip-bar">
+      <!-- serving chips injected by app.js -->
+      <span class="spacer"></span>
+      <span id="count" class="count"></span>
     </div>
-    <div id="panel-body">
-      <label for="brand">Marke</label>
-      <select id="brand"><option value="">Alle Marken</option></select>
-      <label for="serving">Ausschank</label>
-      <select id="serving">
-        <option value="draught" selected>Bier vom Fass/Tank</option>
-        <option value="fass">nur Fassbier</option>
-        <option value="tank">nur Tankbier</option>
-        <option value="">Alle Orte</option>
-      </select>
-      <p id="count"></p>
+
+    <div id="brand-bar" class="chip-bar" hidden>
+      <!-- brand chips injected by app.js -->
     </div>
   </div>
 
-  <footer>
-    © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>
-    · <a href="impressum.html">Impressum</a> · <a href="datenschutz.html">Datenschutz</a>
-  </footer>
+  <div id="attribution">© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a></div>
+
+  <!-- Modal -->
+  <div id="modal-root" hidden>
+    <div id="modal-overlay"></div>
+    <div id="modal-card" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+      <div id="modal-head">
+        <h2 id="modal-title"></h2>
+        <button type="button" id="modal-close" aria-label="Schließen">×</button>
+      </div>
+      <div id="modal-body"></div>
+    </div>
+  </div>
 
   <script src="vendor/maplibre-gl.js"></script>
   <script type="module" src="app.js"></script>
