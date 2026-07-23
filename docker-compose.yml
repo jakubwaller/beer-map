@@ -1,6 +1,10 @@
 services:
   beermap:
-    build: .
+    build:
+      context: .
+      args:
+        # Cache-busting asset version; docker-run.sh sets it to the git short SHA.
+        ASSET_VERSION: ${ASSET_VERSION:-dev}
     container_name: beermap
     restart: unless-stopped
     # No host port: the only ingress is Caddy over web_proxy (reverse_proxy

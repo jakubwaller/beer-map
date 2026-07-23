@@ -1,4 +1,4 @@
-import { loadVenues, buildBrandList, venuesByBrand, venuesByServing } from "./datasource.js";
+import { loadVenues, buildBrandList, venuesByBrand, venuesByServing } from "./datasource.js?v=__ASSET_VERSION__";
 
 const SERVING_LABEL = { tank: "Tankbier", fass: "Fassbier", unknown: "" };
 const SOURCE_LABEL = { manual: "✓ verifiziert", community: "✓ geprüft", osm: "OSM" };

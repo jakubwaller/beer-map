@@ -3,6 +3,10 @@
 set -e
 cd "$(dirname "$0")"
 mkdir -p data
+# Stamp asset URLs with the current commit so a deploy busts any CDN-cached
+# app.js/style.css (index.html is served fresh, so it always points at the new
+# versioned URLs). Falls back to a timestamp outside a git checkout.
+export ASSET_VERSION="$(git rev-parse --short HEAD 2>/dev/null || date +%s)"
 docker compose up -d --build
 echo "Building dataset (OSM + finders + curation + approved submissions)..."
 docker compose exec -T beermap python -m pipeline.run
