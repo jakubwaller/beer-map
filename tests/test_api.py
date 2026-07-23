@@ -71,6 +71,30 @@ def test_admin_requires_auth_and_approve_exports(client):
     assert brands[0]["serving"] == "tank"
 
 
+def test_admin_page_shows_venue_name(client):
+    c, _ = client
+    _submit(c)
+    page = c.get("/admin", auth=("admin", "secret"))
+    assert "Bar X" in page.text          # resolved venue name, not just the id
+    assert "node/1" in page.text         # osm id still there for cross-reference
+    assert "approve-all" in page.text    # bulk button present when pending
+
+
+def test_approve_all_pending(client):
+    c, out = client
+    _submit(c, brand="Astra", serving="fass")
+    _submit(c, brand="Ratsherrn", serving="tank")
+    assert c.post("/api/admin/approve-all").status_code == 401
+    r = c.post("/api/admin/approve-all", auth=("admin", "secret"))
+    assert r.json() == {"ok": True, "approved": 2}
+    conn = get_connection(config.DB_PATH)
+    assert list_submissions(conn, "pending") == []
+    assert len(list_submissions(conn, "approved")) == 2
+    fc = json.loads(open(out, encoding="utf-8").read())
+    brands = {b["brand"] for b in fc["features"][0]["properties"]["brands"]}
+    assert brands == {"Astra", "Ratsherrn"}
+
+
 def test_remove_beer_submission_accepted(client):
     c, _ = client
     assert _submit(c, kind="remove", brand="Astra", serving="unknown").status_code == 200

@@ -19,6 +19,91 @@ from . import notify
 
 _basic = HTTPBasic()
 
+_KIND_LABELS = {
+    "add": "Neues Bier",
+    "remove": "Bier entfernen",
+    "edit_venue": "Adresse ändern",
+    "close_venue": "Geschlossen",
+}
+
+# Mirrors the Zapfkompass palette in web/style.css — keep the two in sync.
+_ADMIN_CSS = """
+:root {
+  --bg: #f4ecdf;
+  --card: #ffffff;
+  --header: oklch(97% 0.015 80 / 0.97);
+  --accent: oklch(62% 0.16 45);
+  --accent-strong: oklch(48% 0.16 45);
+  --ink: oklch(28% 0.02 60);
+  --muted: oklch(55% 0.02 60);
+  --line: oklch(88% 0.01 70);
+  --good: oklch(45% 0.1 150);
+  --danger: oklch(58% 0.17 40);
+  --serif: 'Lora', Georgia, serif;
+  --ui: 'Work Sans', system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+* { box-sizing: border-box; }
+body { margin: 0; font-family: var(--ui); color: var(--ink); background: var(--bg); }
+header {
+  display: flex; align-items: center; gap: 16px;
+  padding: 12px 24px; background: var(--header);
+  border-bottom: 1px solid var(--line);
+  box-shadow: 0 1px 0 rgba(0, 0, 0, .06);
+}
+.brandmark { display: flex; align-items: baseline; gap: 8px; text-decoration: none; color: inherit; }
+.brandmark .name { font-family: var(--serif); font-weight: 600; font-size: 20px; }
+.brandmark .city {
+  font-size: 11px; font-weight: 600; text-transform: uppercase;
+  letter-spacing: 1px; color: var(--muted);
+}
+main { max-width: 760px; margin: 0 auto; padding: 20px 16px 60px; }
+.toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+h1 { font-family: var(--serif); font-size: 24px; font-weight: 600; margin: 8px 0 16px; }
+h1 .count {
+  font-family: var(--ui); font-size: 13px; font-weight: 700; color: #fff;
+  background: var(--accent); border-radius: 999px; padding: 3px 10px;
+  vertical-align: 3px;
+}
+button {
+  font: inherit; font-weight: 600; font-size: 14px;
+  border: 1px solid var(--line); border-radius: 999px;
+  padding: 8px 18px; cursor: pointer; background: var(--card); color: var(--ink);
+}
+button:hover { border-color: var(--accent); color: var(--accent-strong); }
+#approve-all { background: var(--accent); border-color: var(--accent); color: #fff; }
+#approve-all:hover { background: var(--accent-strong); border-color: var(--accent-strong); color: #fff; }
+.subs { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
+.card {
+  background: var(--card); border: 1px solid var(--line); border-radius: 12px;
+  padding: 14px 16px; box-shadow: 0 1px 0 rgba(0, 0, 0, .06);
+}
+.card .head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.kind {
+  font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px;
+  border-radius: 999px; padding: 3px 10px; color: #fff; background: var(--accent);
+}
+.kind.remove, .kind.close_venue { background: var(--danger); }
+.kind.add { background: var(--good); }
+.venue { font-family: var(--serif); font-weight: 600; font-size: 17px; }
+.addr { color: var(--muted); font-size: 13px; }
+.detail { margin-top: 8px; font-size: 15px; }
+.note { margin-top: 6px; font-style: italic; color: var(--muted); font-size: 14px; }
+.foot {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  flex-wrap: wrap; margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--line);
+}
+.meta { color: var(--muted); font-size: 12px; }
+.actions { display: flex; gap: 8px; }
+.approve { border-color: var(--good); color: var(--good); }
+.approve:hover { background: var(--good); border-color: var(--good); color: #fff; }
+.reject { border-color: var(--line); color: var(--muted); }
+.reject:hover { background: var(--danger); border-color: var(--danger); color: #fff; }
+.empty {
+  background: var(--card); border: 1px dashed var(--line); border-radius: 12px;
+  padding: 32px 16px; text-align: center; color: var(--muted);
+}
+"""
+
 
 class Submission(BaseModel):
     venue_osm_id: str
@@ -98,29 +183,89 @@ def create_app() -> FastAPI:
     def admin(conn=Depends(_db), _=Depends(_require_admin)):
         rows = list_submissions(conn, "pending")
 
+        venues: dict[str, dict] = {}
+        osm_ids = sorted({r["venue_osm_id"] for r in rows if r["venue_osm_id"]})
+        if osm_ids:
+            marks = ",".join("?" for _ in osm_ids)
+            venues = {
+                v["osm_id"]: dict(v) for v in conn.execute(
+                    f"SELECT osm_id, name, address FROM venues WHERE osm_id IN ({marks})",
+                    osm_ids,
+                )
+            }
+
         def _detail(r):
             if r["kind"] == "edit_venue":
-                return "→ " + html.escape(r["address"] or "")
+                return "Neue Adresse: " + html.escape(r["address"] or "")
             if r["kind"] == "close_venue":
-                return "(als geschlossen gemeldet)"
+                return "Als geschlossen gemeldet"
             beer = f" – {html.escape(r['beer'])}" if r.get("beer") else ""
             return f"{html.escape(r['brand'])}{beer} ({html.escape(r['serving'])})"
 
         items = "".join(
-            f"<li>#{r['id']} <b>{html.escape(r['kind'])}</b> "
-            f"{_detail(r)} @ "
-            f"{html.escape(r['venue_osm_id'] or '')} "
-            f"<i>{html.escape(r['note'] or '')}</i> "
-            f"<button onclick=\"d({r['id']},'approve')\">approve</button> "
-            f"<button onclick=\"d({r['id']},'reject')\">reject</button></li>"
+            f"""<li class="card">
+  <div class="head">
+    <span class="kind {html.escape(r['kind'])}">{html.escape(_KIND_LABELS.get(r['kind'], r['kind']))}</span>
+    <span class="venue">{html.escape(venue.get('name') or r['venue_osm_id'] or '?')}</span>
+    <span class="addr">{html.escape(venue.get('address') or '')}</span>
+  </div>
+  <div class="detail">{_detail(r)}</div>
+  {f'<div class="note">„{html.escape(r["note"])}“</div>' if r.get('note') else ''}
+  <div class="foot">
+    <span class="meta">#{r['id']} · {html.escape(r['venue_osm_id'] or '')} · {html.escape((r.get('created_at') or '')[:16].replace('T', ' '))}</span>
+    <span class="actions">
+      <button class="approve" onclick="d({r['id']},'approve')">Freigeben</button>
+      <button class="reject" onclick="d({r['id']},'reject')">Ablehnen</button>
+    </span>
+  </div>
+</li>"""
             for r in rows
-        ) or "<li>nothing pending</li>"
-        return (
-            "<!doctype html><meta charset=utf-8><title>Moderation</title>"
-            "<h1>Pending submissions</h1><ul>" + items + "</ul>"
-            "<script>async function d(id,a){await fetch('/api/admin/'+id+'/'+a,"
-            "{method:'POST'});location.reload()}</script>"
+            for venue in [venues.get(r["venue_osm_id"] or "", {})]
+        ) or '<li class="empty">Nichts offen – alles erledigt. 🍺</li>'
+
+        approve_all_btn = (
+            f'<button id="approve-all" onclick="approveAll({len(rows)})">'
+            f"Alle {len(rows)} freigeben</button>" if rows else ""
         )
+        return f"""<!doctype html>
+<html lang="de"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Zapfkompass – Moderation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lora:wght@500;600;700&family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>{_ADMIN_CSS}</style>
+</head><body>
+<header>
+  <a class="brandmark" href="/"><span class="name">Zapfkompass</span><span class="city">Hamburg · Moderation</span></a>
+</header>
+<main>
+  <div class="toolbar">
+    <h1>Offene Meldungen <span class="count">{len(rows)}</span></h1>
+    {approve_all_btn}
+  </div>
+  <ul class="subs">{items}</ul>
+</main>
+<script>
+async function d(id, a) {{
+  await fetch('/api/admin/' + id + '/' + a, {{method: 'POST'}});
+  location.reload();
+}}
+async function approveAll(n) {{
+  if (!confirm('Alle ' + n + ' Meldungen freigeben?')) return;
+  await fetch('/api/admin/approve-all', {{method: 'POST'}});
+  location.reload();
+}}
+</script>
+</body></html>"""
+
+    @app.post("/api/admin/approve-all")
+    def approve_all(conn=Depends(_db), _=Depends(_require_admin)):
+        n = submissions.approve_all_pending(
+            conn, date.today().isoformat(), config.OUT_PATH)
+        return {"ok": True, "approved": n}
 
     @app.post("/api/admin/{sub_id}/approve")
     def approve(sub_id: int, conn=Depends(_db), _=Depends(_require_admin)):
