@@ -59,19 +59,10 @@ function currentVenues() {
   return r;
 }
 
-function toFC(venues) {
-  return { type: "FeatureCollection", features: venues.map((v) => ({
-    type: "Feature", geometry: { type: "Point", coordinates: [v.lon, v.lat] },
-    properties: {
-      osm_id: v.osm_id || "", name: v.name || "", address: v.address || "",
-      brands: JSON.stringify(v.brands || []),
-    } })) };
-}
-
 function applyFilters() {
   const r = currentVenues();
-  if (map.getSource("venues")) map.getSource("venues").setData(toFC(r));
   countEl.textContent = `${r.length} Orte`;
+  refreshMarkers();
 }
 
 // ---- Chip bars ----
@@ -81,7 +72,7 @@ function renderServingChips() {
   for (const d of SERVING_DEFS) {
     const b = document.createElement("button");
     b.type = "button";
-    b.className = "chip" + (!brand && serving === d.value ? " active" : "");
+    b.className = "chip" + (serving === d.value ? " active" : "");
     b.textContent = d.label;
     b.addEventListener("click", () => { serving = d.value; refreshChips(); applyFilters(); });
     frag.appendChild(b);
@@ -111,17 +102,21 @@ function renderBrandChips() {
 function refreshChips() {
   const servingButtons = servingBar.querySelectorAll(".chip");
   SERVING_DEFS.forEach((d, i) =>
-    servingButtons[i]?.classList.toggle("active", !brand && serving === d.value));
+    servingButtons[i]?.classList.toggle("active", serving === d.value));
   const brandButtons = brandBar.querySelectorAll(".chip");
   brandFreq.slice(0, 9).forEach(([name], i) =>
     brandButtons[i]?.classList.toggle("active", brand === name));
 }
 
-// ---- HTML cluster markers (synced from the clustered source) ----
-// The minimal raster style ships no glyph server, so we render markers as DOM
-// elements via maplibregl.Marker instead of symbol layers.
-const markers = new Map();       // id -> { marker, el, isCluster }
-let markersOnScreen = new Map();
+// ---- Markers with grid-bucket clustering ----
+// Clustering is done here in JS (project each venue to screen pixels, bucket by
+// a 46px grid) rather than via MapLibre's source clustering: the minimal raster
+// style ships no glyph server for cluster-count symbol layers, and this keeps
+// the whole marker pipeline independent of the source/tile machinery. Markers
+// are plain maplibregl.Marker elements, rebuilt whenever the filtered set or
+// the view changes (there are only ~39 plotted venues, so this is cheap).
+const CELL_PX = 46;
+let liveMarkers = [];
 
 function clusterSize(count) {
   return count < 10 ? 32 : count < 30 ? 40 : count < 100 ? 48 : 56;
@@ -131,13 +126,10 @@ function makeClusterEl(count) {
   const el = document.createElement("div");
   el.className = "map-cluster";
   el.style.cursor = "pointer";
-  updateClusterEl(el, count);
-  return el;
-}
-function updateClusterEl(el, count) {
   const size = clusterSize(count);
   el.style.width = el.style.height = size + "px";
   el.textContent = String(count);
+  return el;
 }
 
 function makeVenueEl() {
@@ -147,49 +139,34 @@ function makeVenueEl() {
   return el;
 }
 
-function updateMarkers() {
-  const newMarkers = new Map();
-  const features = map.querySourceFeatures("venues");
-  for (const f of features) {
-    const coords = f.geometry.coordinates;
-    const p = f.properties;
-    let id, entry;
-    if (p.cluster) {
-      id = "c" + p.cluster_id;
-      entry = markers.get(id);
-      if (!entry) {
-        const el = makeClusterEl(p.point_count);
-        const marker = new maplibregl.Marker({ element: el }).setLngLat(coords);
-        entry = { marker, el, isCluster: true, clusterId: p.cluster_id, coords };
-        el.onclick = () => {
-          map.getSource("venues").getClusterExpansionZoom(entry.clusterId)
-            .then((z) => map.easeTo({ center: entry.coords, zoom: Math.min(z, 18) }));
-        };
-        markers.set(id, entry);
-      }
-      // A cluster's centroid/count can shift across zoom — keep both fresh.
-      entry.clusterId = p.cluster_id;
-      entry.coords = coords;
-      entry.marker.setLngLat(coords);
-      updateClusterEl(entry.el, p.point_count);
-    } else {
-      id = "v" + (p.osm_id || coords.join(","));
-      entry = markers.get(id);
-      if (!entry) {
-        const el = makeVenueEl();
-        const marker = new maplibregl.Marker({ element: el }).setLngLat(coords);
-        entry = { marker, el, isCluster: false };
-        markers.set(id, entry);
-      }
-      entry.props = p;   // keep latest properties for the click handler
-      entry.el.onclick = () => openVenueModal(entry.props);
-    }
-    newMarkers.set(id, entry);
-    if (!markersOnScreen.has(id)) entry.marker.addTo(map);
+function refreshMarkers() {
+  if (!dataReady || !styleReady) return;
+  for (const m of liveMarkers) m.remove();
+  liveMarkers = [];
+
+  const buckets = new Map();
+  for (const v of currentVenues()) {
+    const pt = map.project([v.lon, v.lat]);
+    const key = Math.round(pt.x / CELL_PX) + "," + Math.round(pt.y / CELL_PX);
+    let b = buckets.get(key);
+    if (!b) { b = []; buckets.set(key, b); }
+    b.push(v);
   }
-  for (const [id, entry] of markersOnScreen)
-    if (!newMarkers.has(id)) entry.marker.remove();
-  markersOnScreen = newMarkers;
+
+  for (const bucket of buckets.values()) {
+    const lon = bucket.reduce((s, v) => s + v.lon, 0) / bucket.length;
+    const lat = bucket.reduce((s, v) => s + v.lat, 0) / bucket.length;
+    let el;
+    if (bucket.length > 1) {
+      el = makeClusterEl(bucket.length);
+      el.onclick = () => map.easeTo({ center: [lon, lat], zoom: Math.min(map.getZoom() + 2.2, 18) });
+    } else {
+      const v = bucket[0];
+      el = makeVenueEl();
+      el.onclick = () => openVenueModal(v);
+    }
+    liveMarkers.push(new maplibregl.Marker({ element: el }).setLngLat([lon, lat]).addTo(map));
+  }
 }
 
 // ---- Zoom controls ----
@@ -238,14 +215,14 @@ function beerRow(osm, b) {
   </li>`;
 }
 
-function openVenueModal(p) {
-  const osm = p.osm_id || "";
-  const brands = JSON.parse(p.brands || "[]");
+function openVenueModal(v) {
+  const osm = v.osm_id || "";
+  const brands = v.brands || [];
   const beers = brands.length
     ? `<ul class="beers">${brands.map((b) => beerRow(osm, b)).join("")}</ul>`
     : `<p class="nobeers">Noch keine Biere erfasst.</p>`;
   const html =
-    (p.address ? `<div class="venue-addr">${esc(p.address)}</div>` : "") +
+    (v.address ? `<div class="venue-addr">${esc(v.address)}</div>` : "") +
     beers +
     `<form class="addbeer" data-osm="${esc(osm)}">
        <input name="brand" list="brandlist" placeholder="Marke hinzufügen" required>
@@ -264,7 +241,7 @@ function openVenueModal(p) {
          <span class="msg"></span>
        </form>
      </details>`;
-  openModal(p.name || "Kneipe", html);
+  openModal(v.name || "Kneipe", html);
 }
 
 // --- Statistik / Über / Kontakt / Bier melden ---
@@ -340,29 +317,13 @@ modalBody.addEventListener("submit", async (ev) => {
 // ---- Boot ----
 // The filter chrome (chips, search, count) is deliberately decoupled from the
 // map's WebGL "load" event: the UI stays usable even while the map is still
-// warming up. The map source/markers are attached once BOTH the venue data and
-// the map style are ready (whichever finishes last), via addMapData().
+// warming up. Markers are (re)built once BOTH the venue data and the map style
+// are ready — refreshMarkers() no-ops until then.
 let dataReady = false, styleReady = false;
 
-function syncMarkers() {
-  if (map.getSource("venues") && map.isSourceLoaded("venues")) updateMarkers();
-}
-
-function addMapData() {
-  if (!dataReady || !styleReady || map.getSource("venues")) return;
-  map.addSource("venues", {
-    type: "geojson", data: toFC(currentVenues()),
-    cluster: true, clusterRadius: 46, clusterMaxZoom: 16,
-  });
-  // maplibregl.Marker repositions itself on pan/zoom, so we only re-sync the
-  // marker SET when clustering can change: after a move, and whenever the
-  // (async) clustered source finishes (re)loading its features.
-  map.on("moveend", syncMarkers);
-  map.on("sourcedata", (e) => { if (e.sourceId === "venues" && e.isSourceLoaded) syncMarkers(); });
-  syncMarkers();
-}
-
-map.on("load", () => { styleReady = true; addMapData(); });
+// Re-cluster after every pan/zoom (grid buckets are in screen space).
+map.on("moveend", refreshMarkers);
+map.on("load", () => { styleReady = true; refreshMarkers(); });
 
 async function boot() {
   const fc = await (await fetch("data/venues.json")).json();
@@ -390,9 +351,8 @@ async function boot() {
   renderServingChips();
   renderBrandChips();
   positionZoomCtrl();
-  applyFilters();          // updates the count now; setData is a no-op until the source exists
   dataReady = true;
-  addMapData();
+  applyFilters();          // updates the count and plots markers (if the map is ready)
 }
 
 boot();
