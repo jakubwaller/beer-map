@@ -153,12 +153,18 @@ function refreshMarkers() {
     b.push(v);
   }
 
+  const dotBoxes = []; // screen-space [x1,y1,x2,y2] of every dot/cluster
+  const singles = [];  // label candidates: un-clustered venues
+
   for (const bucket of buckets.values()) {
     const lon = bucket.reduce((s, v) => s + v.lon, 0) / bucket.length;
     const lat = bucket.reduce((s, v) => s + v.lat, 0) / bucket.length;
+    const pt = map.project([lon, lat]);
     let el;
     if (bucket.length > 1) {
       el = makeClusterEl(bucket.length);
+      const half = clusterSize(bucket.length) / 2;
+      dotBoxes.push([pt.x - half, pt.y - half, pt.x + half, pt.y + half]);
       el.onclick = (e) => {
         e.stopPropagation();
         map.easeTo({ center: [lon, lat], zoom: Math.min(map.getZoom() + 2.2, 18) });
@@ -166,10 +172,50 @@ function refreshMarkers() {
     } else {
       const v = bucket[0];
       el = makeVenueEl();
+      dotBoxes.push([pt.x - 10, pt.y - 10, pt.x + 10, pt.y + 10]);
       // stopPropagation: don't let the click fall through to the gray-dot layer.
       el.onclick = (e) => { e.stopPropagation(); openVenueModal(v); };
+      singles.push({ v, pt, el });
     }
     liveMarkers.push(new maplibregl.Marker({ element: el }).setLngLat([lon, lat]).addTo(map));
+  }
+
+  placeLabels(singles, dotBoxes);
+}
+
+// ---- Venue name labels ----
+// Names render as DOM children of un-clustered markers, placed greedily:
+// a label appears only if its measured box overlaps no dot/cluster and no
+// already-placed label. Runs with every marker rebuild (moveend), so the
+// visible set adapts to zoom and pan; sorted by name so the winners are
+// stable while panning instead of flickering between candidates.
+const LABEL_MIN_ZOOM = 12;
+const LABEL_FONT = "600 11px 'Work Sans', system-ui, sans-serif";
+const LABEL_MAX_CHARS = 28;
+const labelCtx = document.createElement("canvas").getContext("2d");
+
+function placeLabels(singles, dotBoxes) {
+  if (map.getZoom() < LABEL_MIN_ZOOM) return;
+  const w = map.getContainer().clientWidth;
+  const h = map.getContainer().clientHeight;
+  labelCtx.font = LABEL_FONT;
+  const boxes = dotBoxes;
+  singles.sort((a, b) => (a.v.name || "").localeCompare(b.v.name || ""));
+  for (const { v, pt, el } of singles) {
+    if (!v.name) continue;
+    if (pt.x < -60 || pt.x > w + 60 || pt.y < -30 || pt.y > h + 30) continue;
+    const text = v.name.length > LABEL_MAX_CHARS
+      ? v.name.slice(0, LABEL_MAX_CHARS - 1).trimEnd() + "…" : v.name;
+    const halfW = labelCtx.measureText(text).width / 2 + 3;
+    // Below the 16px dot: top edge ~11px under the marker center, ~15px tall.
+    const box = [pt.x - halfW, pt.y + 11, pt.x + halfW, pt.y + 26];
+    if (boxes.some((b) => box[0] < b[2] && box[2] > b[0] && box[1] < b[3] && box[3] > b[1]))
+      continue;
+    boxes.push(box);
+    const label = document.createElement("div");
+    label.className = "marker-label";
+    label.textContent = text;
+    el.appendChild(label);
   }
 }
 
