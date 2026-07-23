@@ -1,4 +1,4 @@
-import { loadVenues, buildBrandList, venuesByBrand, venuesByServing } from "./datasource.js?v=__ASSET_VERSION__";
+import { loadVenues, buildBrandList, venuesByBrand, venuesByServing, searchVenues } from "./datasource.js?v=__ASSET_VERSION__";
 
 const SERVING_LABEL = { tank: "Tankbier", fass: "Fassbier", unknown: "" };
 const SOURCE_LABEL = { manual: "✓ verifiziert", community: "✓ geprüft", osm: "OSM" };
@@ -21,9 +21,10 @@ const map = new maplibregl.Map({
 });
 
 // ---- State ----
-let allVenues = [];       // venues that actually carry beer data (brands.length > 0)
+let allVenues = [];       // venues that carry beer data (brands.length > 0)
+let grayVenues = [];      // the rest of the dataset (no beer data yet) — gray dots
 let brand = null;         // selected brand filter, or null
-let serving = "all";      // all | draught | fass | tank
+let serving = "draught";  // all | draught | fass | tank
 let search = "";
 let brandFreq = [];       // [ [brand, venueCount], ... ] desc
 
@@ -36,33 +37,31 @@ const zoomCtrl = document.getElementById("zoom-ctrl");
 
 const SERVING_DEFS = [
   { value: "all", label: "Alle Orte" },
-  { value: "draught", label: "Nur Ausschank" },
+  { value: "draught", label: "Nur Zapfbier" },
   { value: "fass", label: "Nur Fassbier" },
   { value: "tank", label: "Nur Tankbier" },
 ];
 
 // ---- Filtering ----
-// Only venues that carry beer data are ever plotted (the raw dataset has ~4000
-// restaurants, ~39 with known beer data). "draught" = fass OR tank.
+// Venues with beer data get the amber DOM markers; the rest of the dataset
+// (~4000 OSM pubs/bars without beer data) shows as small gray dots, but only
+// on "Alle Orte" with no brand selected. "draught" = fass OR tank.
 function currentVenues() {
   let r = allVenues;
   const servingArg = serving === "all" ? null : serving;
   if (brand) r = venuesByBrand(r, brand, servingArg);
   else if (servingArg) r = venuesByServing(r, servingArg);
-  if (search) {
-    const q = search.toLowerCase();
-    r = r.filter((v) =>
-      (v.name || "").toLowerCase().includes(q) ||
-      (v.address || "").toLowerCase().includes(q) ||
-      v.brands.some((b) => b.brand.toLowerCase().includes(q)));
-  }
-  return r;
+  return searchVenues(r, search);
 }
 
+const grayVisible = () => serving === "all" && !brand;
+const currentGrayVenues = () => (grayVisible() ? searchVenues(grayVenues, search) : []);
+
 function applyFilters() {
-  const r = currentVenues();
-  countEl.textContent = `${r.length} Orte`;
+  const n = currentVenues().length + currentGrayVenues().length;
+  countEl.textContent = `${n} Orte`;
   refreshMarkers();
+  refreshGrayLayer();
 }
 
 // ---- Chip bars ----
@@ -114,7 +113,8 @@ function refreshChips() {
 // style ships no glyph server for cluster-count symbol layers, and this keeps
 // the whole marker pipeline independent of the source/tile machinery. Markers
 // are plain maplibregl.Marker elements, rebuilt whenever the filtered set or
-// the view changes (there are only ~39 plotted venues, so this is cheap).
+// the view changes (only venues with beer data get DOM markers, so this is
+// cheap — the ~4000 no-data venues render as a circle layer, see below).
 const CELL_PX = 46;
 let liveMarkers = [];
 
@@ -159,14 +159,62 @@ function refreshMarkers() {
     let el;
     if (bucket.length > 1) {
       el = makeClusterEl(bucket.length);
-      el.onclick = () => map.easeTo({ center: [lon, lat], zoom: Math.min(map.getZoom() + 2.2, 18) });
+      el.onclick = (e) => {
+        e.stopPropagation();
+        map.easeTo({ center: [lon, lat], zoom: Math.min(map.getZoom() + 2.2, 18) });
+      };
     } else {
       const v = bucket[0];
       el = makeVenueEl();
-      el.onclick = () => openVenueModal(v);
+      // stopPropagation: don't let the click fall through to the gray-dot layer.
+      el.onclick = (e) => { e.stopPropagation(); openVenueModal(v); };
     }
     liveMarkers.push(new maplibregl.Marker({ element: el }).setLngLat([lon, lat]).addTo(map));
   }
+}
+
+// ---- Gray dots: venues without beer data ----
+// Unlike the (few) beer venues above, these are ~4000 points, so they render as
+// a WebGL circle layer instead of DOM markers. Clicking one opens the normal
+// venue modal, whose "Marke hinzufügen" form turns the gray dot into data.
+const GRAY_SOURCE = "gray-venues";
+const GRAY_LAYER = "gray-venues";
+
+function grayFC(venues) {
+  return { type: "FeatureCollection", features: venues.map((v) => ({
+    type: "Feature",
+    geometry: { type: "Point", coordinates: [v.lon, v.lat] },
+    properties: { idx: v.grayIdx },
+  })) };
+}
+
+function addGrayLayer() {
+  map.addSource(GRAY_SOURCE, { type: "geojson", data: grayFC([]) });
+  map.addLayer({
+    id: GRAY_LAYER, type: "circle", source: GRAY_SOURCE,
+    layout: { visibility: "none" },
+    paint: {
+      "circle-radius": ["interpolate", ["linear"], ["zoom"], 10, 2, 13, 3.5, 16, 6],
+      "circle-color": "#a89f93",
+      "circle-opacity": 0.6,
+      "circle-stroke-width": 1,
+      "circle-stroke-color": "#fff",
+      "circle-stroke-opacity": 0.5,
+    },
+  });
+  map.on("click", GRAY_LAYER, (e) => {
+    const v = grayVenues[e.features[0].properties.idx];
+    if (v) openVenueModal(v);
+  });
+  map.on("mouseenter", GRAY_LAYER, () => { map.getCanvas().style.cursor = "pointer"; });
+  map.on("mouseleave", GRAY_LAYER, () => { map.getCanvas().style.cursor = ""; });
+}
+
+function refreshGrayLayer() {
+  if (!dataReady || !styleReady) return;
+  const visible = grayVisible();
+  map.setLayoutProperty(GRAY_LAYER, "visibility", visible ? "visible" : "none");
+  if (visible) map.getSource(GRAY_SOURCE).setData(grayFC(currentGrayVenues()));
 }
 
 // ---- Zoom controls ----
@@ -323,11 +371,19 @@ let dataReady = false, styleReady = false;
 
 // Re-cluster after every pan/zoom (grid buckets are in screen space).
 map.on("moveend", refreshMarkers);
-map.on("load", () => { styleReady = true; refreshMarkers(); });
+map.on("load", () => {
+  styleReady = true;
+  addGrayLayer();
+  refreshMarkers();
+  refreshGrayLayer();
+});
 
 async function boot() {
   const fc = await (await fetch("data/venues.json")).json();
-  allVenues = loadVenues(fc).filter((v) => v.brands.length > 0);
+  const venues = loadVenues(fc);
+  allVenues = venues.filter((v) => v.brands.length > 0);
+  grayVenues = venues.filter((v) => v.brands.length === 0);
+  grayVenues.forEach((v, i) => { v.grayIdx = i; });
 
   // Brand frequency = number of venues serving each brand, desc.
   const freq = new Map();
