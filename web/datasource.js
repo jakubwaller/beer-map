@@ -66,3 +66,12 @@ export function venuesByBrand(venues, brand, serving = null) {
 export function venuesByServing(venues, serving) {
   return venues.filter((v) => v.brands.some((b) => servingMatch(b, serving)));
 }
+
+export function searchVenues(venues, query) {
+  if (!query) return venues;
+  const q = query.toLowerCase();
+  return venues.filter((v) =>
+    (v.name || "").toLowerCase().includes(q) ||
+    (v.address || "").toLowerCase().includes(q) ||
+    v.brands.some((b) => b.brand.toLowerCase().includes(q)));
+}

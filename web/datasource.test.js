@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { loadVenues, buildBrandList, venuesByBrand, venuesByServing } from "./datasource.js";
+import { loadVenues, buildBrandList, venuesByBrand, venuesByServing, searchVenues } from "./datasource.js";
 
 const FC = {
   type: "FeatureCollection",
@@ -78,6 +78,20 @@ test("dedupe keeps top provenance but adopts a known serving from a duplicate", 
   const [b] = loadVenues(fc)[0].brands;
   assert.equal(b.source, "manual");   // higher trust wins
   assert.equal(b.serving, "fass");    // serving filled in from the OSM duplicate
+});
+
+test("searchVenues matches name, address, or brand, case-insensitively", () => {
+  const v = loadVenues(FC);
+  assert.deepEqual(searchVenues(v, "bar a").map((x) => x.name), ["Bar A"]);
+  assert.deepEqual(searchVenues(v, "budvar").map((x) => x.name), ["WALD"]);
+  assert.deepEqual(searchVenues(v, "hh").map((x) => x.name), ["Bar A", "WALD"]);
+  assert.deepEqual(searchVenues(v, "xyz"), []);
+});
+
+test("searchVenues with an empty query returns everything, brandless venues included", () => {
+  const v = loadVenues(FC).concat([{ name: "NoData", address: "", brands: [] }]);
+  assert.equal(searchVenues(v, "").length, 3);
+  assert.deepEqual(searchVenues(v, "nodata").map((x) => x.name), ["NoData"]);
 });
 
 test("dedupe keeps multiple beers of one brand and drops the brand-only entry", () => {
