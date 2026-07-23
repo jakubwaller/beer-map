@@ -54,6 +54,20 @@ a:hover { color: oklch(42% 0.16 45); }
   border: 2px solid #fff;
   box-shadow: 0 1px 4px rgba(40, 26, 10, .35);
 }
+.map-marker .marker-label {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-top: 2px;
+  font: 600 11px var(--ui);
+  color: var(--muted-2);
+  white-space: nowrap;
+  pointer-events: none;
+  text-shadow:
+    0 0 3px var(--bg), 0 0 3px var(--bg), 0 0 3px var(--bg),
+    0 1px 2px var(--bg), 0 -1px 2px var(--bg);
+}
 .map-cluster {
   border-radius: 50%;
   background: var(--marker);
