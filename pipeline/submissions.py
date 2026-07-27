@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 from datetime import datetime, timedelta
 
 from . import config
@@ -38,6 +39,17 @@ def validate_submission(payload: dict) -> str | None:
         if not address or len(address) > 200:
             return "address must be 1-200 chars"
     return None
+
+
+def hash_ip(ip: str) -> str:
+    """Turn a client IP into the opaque key stored as `submitter_ip`.
+
+    Rate limiting only needs "same client as before?", never the address
+    itself, so the raw IP never reaches the database. The `h:` prefix marks
+    hashed values so `db.scrub_plaintext_ips` can spot pre-hashing rows.
+    """
+    digest = hashlib.sha256(f"{config.IP_SALT}\x00{ip}".encode()).hexdigest()
+    return "h:" + digest[:32]
 
 
 def within_rate_limit(conn, ip: str, now: datetime) -> bool:

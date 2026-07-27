@@ -9,6 +9,18 @@ venue↔brand link records its source and last-verified date.
 
 See `docs/specs/` (design) and `docs/plans/` (build plan).
 
+## Licence
+
+The **code** is MIT (see `LICENSE`).
+
+The **data** is a different matter: venues, coordinates and addresses are derived
+from [OpenStreetMap](https://www.openstreetmap.org/copyright), so `curation.yaml`
+and the generated `web/data/venues.json` are © OpenStreetMap contributors and
+licensed under the [ODbL 1.0](https://opendatacommons.org/licenses/odbl/1-0/).
+Reuse them under those terms — keep the attribution, and share derived databases
+alike. Brand↔venue links added by hand or by community submission are published
+under the same licence.
+
 ## Setup
 ```bash
 python3 -m venv .venv && source .venv/bin/activate

@@ -12,10 +12,14 @@ services:
     env_file:
       - deploy/beermap.env
     environment:
-      - BEERMAP_DB_PATH=/app/web/data/beer-map.sqlite
+      # The sqlite DB holds submitter IPs and must NEVER sit under /app/web —
+      # that directory is mounted at "/" by StaticFiles, so anything in it is
+      # world-downloadable. Only the exported GeoJSON belongs there.
+      - BEERMAP_DB_PATH=/app/data/beer-map.sqlite
       - BEERMAP_OUT_PATH=/app/web/data/venues.json
     volumes:
-      - ./data:/app/web/data        # sqlite + venues.json persist on the host
+      - ./data:/app/data            # private: sqlite (never served)
+      - ./web-data:/app/web/data    # public: venues.json only
       - ./curation.yaml:/app/curation.yaml   # edit curation without rebuilding
     networks:
       - web_proxy                   # shared net the Caddy container reverse-proxies over

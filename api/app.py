@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import html
+import os
 import secrets
 from datetime import date, datetime
 from typing import Optional
@@ -125,6 +126,24 @@ def _db():
         conn.close()
 
 
+def _assert_db_not_served(db_path: str, web_dir: str) -> None:
+    """Refuse to start if the sqlite DB lives under the directory served as "/".
+
+    `web_dir` is mounted with StaticFiles, so every file beneath it is
+    world-downloadable — and the DB holds submission notes and rate-limit keys.
+    A deploy once pointed BEERMAP_DB_PATH at web/data/; this makes that
+    configuration fail loudly at boot instead of silently publishing the DB.
+    """
+    web_root = os.path.realpath(web_dir)
+    db_dir = os.path.realpath(os.path.dirname(os.path.abspath(db_path)))
+    if db_dir == web_root or db_dir.startswith(web_root + os.sep):
+        raise RuntimeError(
+            f"refusing to start: BEERMAP_DB_PATH ({db_path}) is inside the "
+            f"publicly served BEERMAP_WEB_DIR ({web_dir}); the database would "
+            "be downloadable. Point it at a directory outside web/."
+        )
+
+
 def _require_admin(creds: HTTPBasicCredentials = Depends(_basic)):
     ok = bool(config.ADMIN_PW) and \
         secrets.compare_digest(creds.username, config.ADMIN_USER) and \
@@ -135,6 +154,7 @@ def _require_admin(creds: HTTPBasicCredentials = Depends(_basic)):
 
 
 def create_app() -> FastAPI:
+    _assert_db_not_served(config.DB_PATH, config.WEB_DIR)
     app = FastAPI()
     # Derive the real client IP from X-Forwarded-For set by Caddy. trusted_hosts="*"
     # is safe because the container is only reachable via Caddy on the web_proxy
@@ -171,10 +191,13 @@ def create_app() -> FastAPI:
         # which only trusts the immediate peer (Caddy — the sole ingress). A client
         # cannot spoof it because it never connects to this app directly.
         ip = request.client.host if request.client else "unknown"
-        if not submissions.within_rate_limit(conn, ip, datetime.now()):
+        # Hashed immediately: the rate limiter only needs a stable per-client
+        # key, so the raw address is never persisted.
+        ip_key = submissions.hash_ip(ip)
+        if not submissions.within_rate_limit(conn, ip_key, datetime.now()):
             raise HTTPException(429, "rate limit exceeded")
         payload["venue_name"] = sub.venue_osm_id
-        payload["submitter_ip"] = ip
+        payload["submitter_ip"] = ip_key
         insert_submission(conn, payload, datetime.now().isoformat())
         notify.notify_new_submission(sub.brand or sub.kind, sub.venue_osm_id)
         return {"ok": True}

@@ -5,6 +5,7 @@ from pipeline.db import (
     insert_submission, list_submissions, get_submission,
     set_submission_status, count_submissions_since,
     update_venue_address, set_venue_hidden, renormalize_brands,
+    scrub_plaintext_ips,
 )
 from pipeline.models import Venue
 
@@ -217,3 +218,14 @@ def test_migration_moves_beer_into_pk_preserving_rows():
     assert "beer" in pk_cols
     upsert_edge(conn, 1, 1, "manual", "2026-06-27", serving="fass", beer="Hell")  # now allowed
     assert {b["beer"] for b in fetch_venues_with_brands(conn)[0]["brands"]} == {"Edelstoff", "Hell"}
+
+
+def test_scrub_plaintext_ips_clears_legacy_rows():
+    """Rows written before hashing existed must not keep a raw address on disk."""
+    conn = _conn()
+    insert_submission(conn, _sub(submitter_ip="1.2.3.4"), "2026-06-24T10:00:00")
+    insert_submission(conn, _sub(submitter_ip="h:deadbeef"), "2026-06-24T10:00:00")
+    assert scrub_plaintext_ips(conn) == 1
+    stored = {r["submitter_ip"] for r in list_submissions(conn, "pending")}
+    assert stored == {"", "h:deadbeef"}   # hashed row untouched, raw one blanked
+    assert scrub_plaintext_ips(conn) == 0  # idempotent
