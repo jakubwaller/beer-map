@@ -7,4 +7,5 @@ __pycache__/
 web/data/venues.json
 /data/
 /web-data/
-deploy/beermap.env
+deploy/beermap.env*
+!deploy/beermap.env.example
