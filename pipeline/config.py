@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import secrets
 
 USER_AGENT = "beer-map/0.1 (+https://beermap.jakubwaller.eu; contact: beermap@jakubwaller.eu)"
 OVERPASS_URL = os.environ.get("OVERPASS_URL", "https://overpass-api.de/api/interpreter")
@@ -81,6 +82,11 @@ ADMIN_USER = os.environ.get("BEERMAP_ADMIN_USER", "admin")
 ADMIN_PW = os.environ.get("BEERMAP_ADMIN_PW", "")
 RATE_LIMIT = int(os.environ.get("BEERMAP_RATE_LIMIT", "10"))
 RATE_WINDOW_S = int(os.environ.get("BEERMAP_RATE_WINDOW_S", "3600"))
+# Salt for the stored rate-limit key (a hash of the submitter's IP — the raw
+# address is never written to disk). The IPv4 space is small enough to brute
+# force an unsalted hash, so an unset salt falls back to a per-process random
+# one: rate limiting then resets on restart, which is the safe way to fail.
+IP_SALT = os.environ.get("BEERMAP_IP_SALT") or secrets.token_hex(16)
 WEB_DIR = os.environ.get("BEERMAP_WEB_DIR", "web")
 TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
 TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID", "")

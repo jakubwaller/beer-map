@@ -3,7 +3,7 @@ import json
 import pytest
 from fastapi.testclient import TestClient
 
-from pipeline import config
+from pipeline import config, submissions
 from pipeline.db import get_connection, init_db, upsert_venue, list_submissions
 from pipeline.models import Venue
 
@@ -148,7 +148,7 @@ def test_notify_telegram_is_best_effort(monkeypatch):
     monkeypatch.setattr(config, "TELEGRAM_BOT_TOKEN", "")  # unconfigured -> no-op
     assert notify.notify_new_submission("Astra", "node/1") is None
     monkeypatch.setattr(config, "TELEGRAM_BOT_TOKEN", "123:abc")
-    monkeypatch.setattr(config, "TELEGRAM_CHAT_ID", "-551897019")
+    monkeypatch.setattr(config, "TELEGRAM_CHAT_ID", "-100123456789")
 
     def boom(*a, **k):
         raise RuntimeError("network down")
@@ -172,3 +172,32 @@ def test_submit_with_specific_beer_stored(client):
     assert _submit(c, brand="Augustiner", beer="Edelstoff", serving="fass").status_code == 200
     pending = list_submissions(get_connection(config.DB_PATH), "pending")[0]
     assert pending["beer"] == "Edelstoff"
+
+
+def test_refuses_to_start_with_db_inside_served_dir(tmp_path, monkeypatch):
+    """The DB under web/ was downloadable at /data/beer-map.sqlite — never again."""
+    from api.app import _assert_db_not_served, create_app
+
+    web = tmp_path / "web"
+    (web / "data").mkdir(parents=True)
+    with pytest.raises(RuntimeError, match="publicly served"):
+        _assert_db_not_served(str(web / "data" / "beer-map.sqlite"), str(web))
+    # ...and the app itself refuses the bad config, not just the helper.
+    monkeypatch.setattr(config, "DB_PATH", str(web / "data" / "beer-map.sqlite"))
+    monkeypatch.setattr(config, "WEB_DIR", str(web))
+    with pytest.raises(RuntimeError):
+        create_app()
+    # A sibling directory is fine.
+    _assert_db_not_served(str(tmp_path / "data" / "beer-map.sqlite"), str(web))
+
+
+def test_submitter_ip_is_stored_hashed(client):
+    c, _ = client
+    ip = "9.9.9.9"
+    assert c.post("/api/submit",
+                  json={"venue_osm_id": "node/1", "brand": "Astra",
+                        "serving": "fass", "kind": "add"},
+                  headers={"X-Forwarded-For": ip}).status_code == 200
+    stored = list_submissions(get_connection(config.DB_PATH), "pending")[0]["submitter_ip"]
+    assert ip not in stored
+    assert stored == submissions.hash_ip(ip)  # stable, so rate limiting still works

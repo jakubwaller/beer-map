@@ -1,32 +1,46 @@
 # Deploying beermap to the Pi (Docker)
 
-DNS is already set: `beermap.jakubwaller.eu` (A + AAAA to the Pi, Cloudflare-proxied),
-kept current by `~/pivalert/ip-address/check-ip-address.sh` on the Pi.
+DNS is already set: `beermap.jakubwaller.eu` (A + AAAA to the host, Cloudflare-proxied),
+kept current by the host's dynamic-DNS updater.
 
 ## One-time
 
 ```bash
-ssh <deploy-host>
+ssh <host>
 cd ~ && git clone <repo-url> beer-map && cd beer-map
 cp deploy/beermap.env.example deploy/beermap.env
-# edit deploy/beermap.env: set a strong BEERMAP_ADMIN_PW and RESEND_API_KEY
+# edit deploy/beermap.env: strong BEERMAP_ADMIN_PW, a random BEERMAP_IP_SALT,
+# and the Telegram bot token + chat id
 ./docker-run.sh          # build image, start container, build the first dataset
 ```
 
-Wire Caddy (auto-TLS). Caddy runs as the `elternschule-caddy-1` container over the
-shared `web_proxy` network and reverse-proxies to containers by name. Append the
-beermap block to its Caddyfile and reload:
+Wire Caddy (auto-TLS). Caddy runs in its own container on the shared `web_proxy`
+network and reverse-proxies to containers by name. Append the beermap block to
+its Caddyfile and reload:
 
 ```bash
-cat deploy/beermap.caddy >> /home/ubuntu/elternschule/Caddyfile
-docker exec elternschule-caddy-1 caddy reload --config /etc/caddy/Caddyfile
+cat deploy/beermap.caddy >> <path-to-Caddyfile>
+docker exec <caddy-container> caddy reload --config /etc/caddy/Caddyfile
 ```
+
+## Data layout (important)
+
+Two separate host directories, and they must stay separate:
+
+| Host path    | In container    | Contents          | Public?          |
+|--------------|-----------------|-------------------|------------------|
+| `./data`     | `/app/data`     | `beer-map.sqlite` | **No — private** |
+| `./web-data` | `/app/web/data` | `venues.json`     | Yes (served)     |
+
+Everything under `/app/web` is served at `/` by StaticFiles, so **nothing but the
+exported GeoJSON belongs in `web-data/`**. The app refuses to start if
+`BEERMAP_DB_PATH` points inside the served directory.
 
 ## Daily data refresh
 
 `crontab -e`:
 ```cron
-0 4 * * * cd /home/ubuntu/beer-map && docker compose exec -T beermap python -m pipeline.run >> /home/ubuntu/beer-map/pipeline.log 2>&1
+0 4 * * * cd ~/beer-map && docker compose exec -T beermap python -m pipeline.run >> ~/beer-map/pipeline.log 2>&1
 ```
 
 ## Moderation
@@ -40,9 +54,29 @@ Approvals apply the edit and re-export `venues.json` instantly.
 cd ~/beer-map && git pull && ./docker-run.sh   # rebuilds image + dataset
 ```
 
+## Cloudflare cache
+
+The site is behind Cloudflare, which caches static assets (~4h). `docker-run.sh`
+stamps asset URLs with the git SHA so `app.js`/`style.css` bust themselves, but
+`venues.json` and anything else under `web-data/` can serve stale for a while.
+To force it, purge from the Cloudflare dashboard (*Caching → Configuration →
+Purge Everything*, or purge individual URLs), or:
+
+```bash
+curl -X POST "https://api.cloudflare.com/client/v4/zones/<zone-id>/purge_cache" \
+  -H "Authorization: Bearer <api-token>" -H "Content-Type: application/json" \
+  --data '{"files":["https://beermap.jakubwaller.eu/data/venues.json"]}'
+```
+
+If a file was ever served that should not have been, purging it is part of the
+fix — Cloudflare keeps handing out its cached copy otherwise, long after the
+origin stops serving it.
+
 ## Verify
 
 ```bash
 curl -s https://beermap.jakubwaller.eu/api/brands | head
 curl -s -o /dev/null -w "%{http_code}\n" https://beermap.jakubwaller.eu/
+# the DB must never be reachable:
+curl -s -o /dev/null -w "%{http_code}\n" https://beermap.jakubwaller.eu/data/beer-map.sqlite
 ```
