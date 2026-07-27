@@ -76,7 +76,23 @@ def init_db(conn) -> None:
         if column not in cols:
             conn.execute(f"ALTER TABLE {table} ADD COLUMN {column} {decl}")
     _migrate_venue_brand_pk(conn)
+    scrub_plaintext_ips(conn)
     conn.commit()
+
+
+def scrub_plaintext_ips(conn) -> int:
+    """Blank any `submitter_ip` still holding a raw address.
+
+    Rows written before `submissions.hash_ip` existed stored the IP verbatim.
+    Clearing them costs nothing — the value is only read by the rate limiter,
+    whose window is an hour — and leaves no plaintext address on disk. Guarded
+    by a SELECT so the common (already-clean) case is a cheap no-op.
+    """
+    stale = "submitter_ip IS NOT NULL AND submitter_ip <> '' AND submitter_ip NOT LIKE 'h:%'"
+    if conn.execute(f"SELECT 1 FROM submissions WHERE {stale} LIMIT 1").fetchone() is None:
+        return 0
+    cur = conn.execute(f"UPDATE submissions SET submitter_ip='' WHERE {stale}")
+    return cur.rowcount
 
 
 def _migrate_venue_brand_pk(conn) -> None:

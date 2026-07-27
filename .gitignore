@@ -6,4 +6,5 @@ __pycache__/
 *.sqlite-shm
 web/data/venues.json
 /data/
+/web-data/
 deploy/beermap.env
