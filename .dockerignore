@@ -7,5 +7,6 @@ data/
 web-data/
 docs/
 tests/
-deploy/beermap.env
+deploy/beermap.env*
+!deploy/beermap.env.example
 web/data/venues.json
