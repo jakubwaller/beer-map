@@ -1,7 +1,8 @@
 # Deploying beermap to the Pi (Docker)
 
-DNS is already set: `beermap.jakubwaller.eu` (A + AAAA to the host, Cloudflare-proxied),
-kept current by the host's dynamic-DNS updater.
+DNS is already set: `zapfkompass.de` (apex A to the host, Cloudflare-proxied, plus a
+`www` CNAME), kept current by the host's dynamic-DNS updater. The old
+`beermap.jakubwaller.eu` name still resolves and permanently redirects here.
 
 ## One-time
 
@@ -45,7 +46,7 @@ exported GeoJSON belongs in `web-data/`**. The app refuses to start if
 
 ## Moderation
 
-`https://beermap.jakubwaller.eu/admin` — HTTP Basic (`admin` / `BEERMAP_ADMIN_PW`).
+`https://zapfkompass.de/admin` — HTTP Basic (`admin` / `BEERMAP_ADMIN_PW`).
 Approvals apply the edit and re-export `venues.json` instantly.
 
 ## Update the app
@@ -65,7 +66,7 @@ Purge Everything*, or purge individual URLs), or:
 ```bash
 curl -X POST "https://api.cloudflare.com/client/v4/zones/<zone-id>/purge_cache" \
   -H "Authorization: Bearer <api-token>" -H "Content-Type: application/json" \
-  --data '{"files":["https://beermap.jakubwaller.eu/data/venues.json"]}'
+  --data '{"files":["https://zapfkompass.de/data/venues.json"]}'
 ```
 
 If a file was ever served that should not have been, purging it is part of the
@@ -75,8 +76,8 @@ origin stops serving it.
 ## Verify
 
 ```bash
-curl -s https://beermap.jakubwaller.eu/api/brands | head
-curl -s -o /dev/null -w "%{http_code}\n" https://beermap.jakubwaller.eu/
+curl -s https://zapfkompass.de/api/brands | head
+curl -s -o /dev/null -w "%{http_code}\n" https://zapfkompass.de/
 # the DB must never be reachable:
-curl -s -o /dev/null -w "%{http_code}\n" https://beermap.jakubwaller.eu/data/beer-map.sqlite
+curl -s -o /dev/null -w "%{http_code}\n" https://zapfkompass.de/data/beer-map.sqlite
 ```

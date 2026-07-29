@@ -1,4 +1,17 @@
-beermap.jakubwaller.eu {
+# Site block for the host Caddy (elternschule-caddy-1, which owns :80/:443).
+#
+# zapfkompass.de is the canonical host. www and the old jakubwaller.eu name
+# both redirect to it, so the site answers on exactly one hostname.
+
+zapfkompass.de {
 	encode gzip
 	reverse_proxy beermap:8011
+}
+
+www.zapfkompass.de {
+	redir https://zapfkompass.de{uri} permanent
+}
+
+beermap.jakubwaller.eu {
+	redir https://zapfkompass.de{uri} permanent
 }
