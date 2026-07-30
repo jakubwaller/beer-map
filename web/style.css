@@ -282,6 +282,45 @@ header {
   color: var(--muted-2);
 }
 #zoom-ctrl button:hover { border-color: var(--accent); color: var(--accent); }
+#locate {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+#locate.locating svg {
+  animation: locate-spin 1s linear infinite;
+}
+@keyframes locate-spin { to { transform: rotate(360deg); } }
+
+/* "You are here" dot (conventional blue, distinct from the amber venues) */
+.user-location {
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background: #3b82d9;
+  border: 3px solid #fff;
+  box-shadow: 0 0 0 2px rgba(59, 130, 217, .35), 0 1px 4px rgba(20, 14, 8, .3);
+}
+
+/* ---------- Toast ---------- */
+#toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(28px + var(--safe-bottom));
+  transform: translateX(-50%);
+  z-index: 30;
+  max-width: min(90vw, 420px);
+  background: var(--ink);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.4;
+  padding: 10px 18px;
+  border-radius: 12px;
+  box-shadow: 0 6px 20px rgba(20, 14, 8, .3);
+  text-align: center;
+}
+#toast[hidden] { display: none; }
 
 /* ---------- Attribution ---------- */
 #attribution {
