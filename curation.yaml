@@ -399,3 +399,15 @@
   verified: '2026-06-27'
   note: 'Café Miller: ''Maisels Weizen und Bayreuther Hellen''; Ausschank unklar —
     prüfen.'
+
+# Venue-only entries: places the OSM amenity sweep (pub/bar/biergarten/
+# restaurant/cafe) can never import because they are tagged as something else.
+# No brand — the pin appears as a gray dot and beers come from community reports.
+
+# Craft-beer taproom + bottle shop, tagged shop=alcohol in OSM (node/3498778004).
+- venue: Beyond Beer
+  lat: 53.5678308
+  lon: 9.9642642
+  address: Weidenallee 53-55, 20357 Hamburg
+  website: https://www.beyondbeer.de/store-hamburg/
+  verified: '2026-07-30'

@@ -443,7 +443,19 @@ function openContact() {
 }
 
 function openAddInfo() {
-  openModal("Bier melden", `<div class="modal-text"><p>Klick auf eine Kneipe direkt auf der Karte — dort kannst du eine Marke und Ausschankart (Fass/Tank) melden.</p></div>`);
+  openModal("Bier melden", `<div class="modal-text">
+      <p>Klick auf eine Kneipe direkt auf der Karte — dort kannst du eine Marke und Ausschankart (Fass/Tank) melden.</p>
+      <p><strong>Fehlt ein Ort komplett?</strong> Trag ihn hier ein — nach Prüfung erscheint er auf der Karte.</p>
+    </div>
+    <form class="venueadd">
+      <input name="venue" placeholder="Name des Lokals" maxlength="120" required>
+      <input name="address" placeholder="Straße Nr., PLZ Stadt" maxlength="200" required>
+      <input name="brand" list="brandlist" placeholder="Marke (optional)" maxlength="80">
+      <label><input type="radio" name="serving" value="fass" checked>Fass</label>
+      <label><input type="radio" name="serving" value="tank">Tank</label>
+      <input class="hp" name="hp" tabindex="-1" autocomplete="off">
+      <button>+ Ort melden</button><span class="msg"></span>
+    </form>`);
 }
 
 document.querySelectorAll("[data-modal]").forEach((el) => {
@@ -476,12 +488,16 @@ function submissionBody(form, action) {
     return action === "close_venue"
       ? { venue_osm_id: osm, kind: "close_venue" }
       : { venue_osm_id: osm, kind: "edit_venue", address: form.address.value.trim() };
+  if (form.classList.contains("venueadd"))
+    return { kind: "add_venue", venue_osm_id: "", name: form.venue.value.trim(),
+             address: form.address.value.trim(), brand: form.brand.value.trim(),
+             serving: form.serving.value, hp: form.hp.value };
   return null;
 }
 
 modalBody.addEventListener("submit", async (ev) => {
   const f = ev.target;
-  if (!f.matches(".addbeer, .beerform, .venueform")) return;
+  if (!f.matches(".addbeer, .beerform, .venueform, .venueadd")) return;
   ev.preventDefault();
   const action = ev.submitter && ev.submitter.value;
   if (action === "close_venue" &&

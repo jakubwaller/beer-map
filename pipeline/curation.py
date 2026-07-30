@@ -18,17 +18,26 @@ def load_curation(path: str) -> list[dict]:
         return []
 
 
-def _slug(name: str) -> str:
+def slugify(name: str) -> str:
     return re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-")
 
 
 def _resolve_venue_id(conn, entry, venues, today):
     if entry.get("osm_id"):
         row = conn.execute("SELECT id FROM venues WHERE osm_id=?", (entry["osm_id"],)).fetchone()
-        return row["id"] if row else None
+        if row:
+            return row["id"]
+        # An osm_id plus coordinates recreates the venue (e.g. re-importing
+        # exported community add_venue entries into a fresh database).
+        if entry.get("lat") is not None and entry.get("lon") is not None:
+            return upsert_venue(conn, Venue(entry["osm_id"], entry["venue"],
+                                            entry["lat"], entry["lon"],
+                                            entry.get("address"), entry.get("website")), today)
+        return None
     if entry.get("lat") is not None and entry.get("lon") is not None:
-        osm_id = "manual/" + _slug(entry["venue"])
-        return upsert_venue(conn, Venue(osm_id, entry["venue"], entry["lat"], entry["lon"]), today)
+        osm_id = "manual/" + slugify(entry["venue"])
+        return upsert_venue(conn, Venue(osm_id, entry["venue"], entry["lat"], entry["lon"],
+                                        entry.get("address"), entry.get("website")), today)
     best, best_score = None, -1.0
     for v in venues:
         score = fuzz.token_sort_ratio(entry["venue"].lower(), v.name.lower())
@@ -45,19 +54,31 @@ def approved_community_entries(conn) -> list[dict]:
 
     This lets verified community contributions be committed to git (IP-free,
     human-readable) so they survive a database loss — the live DB is the only
-    place they otherwise exist. Each entry resolves by exact `osm_id`. Only
-    brand add/remove map to curation actions; venue address edits and closures
-    have no curation equivalent yet and are skipped.
+    place they otherwise exist. Brand add/remove entries resolve by exact
+    `osm_id`; add_venue entries carry the geocoded coordinates so re-applying
+    them recreates the venue. Venue address edits and closures have no curation
+    equivalent yet and are skipped.
     """
     entries = []
     for s in list_submissions(conn, "approved"):
-        if s["kind"] not in ("add", "remove"):
-            continue
         verified = (s["decided_at"] or s["created_at"] or "")[:10]
-        entry = {"osm_id": s["venue_osm_id"], "brand": s["brand"]}
-        if s["kind"] == "add":
-            entry["serving"] = s["serving"]
-        entry["action"] = s["kind"]
+        if s["kind"] == "add_venue":
+            if s["lat"] is None or s["lon"] is None:
+                continue  # approved but never applied — nothing to pin
+            entry = {"osm_id": "community/" + slugify(s["venue_name"]),
+                     "venue": s["venue_name"], "lat": s["lat"], "lon": s["lon"]}
+            if s["address"]:
+                entry["address"] = s["address"]
+            if s["brand"]:
+                entry["brand"] = s["brand"]
+                entry["serving"] = s["serving"]
+        elif s["kind"] in ("add", "remove"):
+            entry = {"osm_id": s["venue_osm_id"], "brand": s["brand"]}
+            if s["kind"] == "add":
+                entry["serving"] = s["serving"]
+            entry["action"] = s["kind"]
+        else:
+            continue
         entry["verified"] = verified
         entry["note"] = f"community-approved ({s['venue_name']})"
         entries.append(entry)
@@ -70,6 +91,11 @@ def apply_curation(conn, entries, venues, today) -> dict:
         vid = _resolve_venue_id(conn, entry, venues, today)
         if vid is None:
             counts["skipped"] += 1
+            continue
+        if not entry.get("brand"):
+            # Venue-only entry: pins a place the OSM sweep misses (e.g. tagged
+            # shop=alcohol); its beers come from community reports later.
+            counts["added"] += 1
             continue
         bid = upsert_brand(conn, normalize_brand(entry["brand"]))
         if entry.get("action", "add") == "remove":

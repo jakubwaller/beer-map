@@ -134,6 +134,72 @@ def test_apply_approved_is_idempotent():
     assert len(fetch_venues_with_brands(conn)[0]["brands"]) == 1
 
 
+def test_validate_add_venue():
+    ok = dict(kind="add_venue", venue_osm_id="", name="Craft Eck",
+              address="Musterstraße 5, 20357 Hamburg")
+    assert validate_submission(ok) is None          # no venue_osm_id needed
+    assert validate_submission({**ok, "name": ""})
+    assert validate_submission({**ok, "name": "x" * 121})
+    assert validate_submission({**ok, "address": ""})
+    assert validate_submission({**ok, "brand": "Astra"})  # brand needs a serving
+    assert validate_submission({**ok, "brand": "Astra", "serving": "fass"}) is None
+
+
+def test_approve_add_venue_creates_venue_and_edge(monkeypatch):
+    conn = _seed()
+    monkeypatch.setattr("pipeline.submissions.geocode_address",
+                        lambda address, near=None: (53.5678, 9.9643))
+    sid = insert_submission(conn, _row(kind="add_venue", venue_osm_id="",
+                                       venue_name="Craft Eck", brand="Astra", serving="fass",
+                                       address="Musterstraße 5, 20357 Hamburg"),
+                            "2026-07-30T10:00:00")
+    assert approve_submission(conn, sid, "2026-07-30", "/dev/null") is True
+    row = conn.execute(
+        "SELECT lat, lon, address FROM venues WHERE osm_id='community/craft-eck'").fetchone()
+    assert (row["lat"], row["lon"]) == (53.5678, 9.9643)
+    assert row["address"] == "Musterstraße 5, 20357 Hamburg"
+    venue = [v for v in fetch_venues_with_brands(conn) if v["name"] == "Craft Eck"][0]
+    assert venue["brands"] == [{"brand": "Astra", "source": "community",
+                                "serving": "fass", "beer": None, "last_seen": "2026-07-30"}]
+    sub = get_submission(conn, sid)  # geocode hit stored for later re-applies
+    assert (sub["lat"], sub["lon"]) == (53.5678, 9.9643)
+
+
+def test_approve_add_venue_stays_pending_when_geocode_fails(monkeypatch):
+    conn = _seed()
+    monkeypatch.setattr("pipeline.submissions.geocode_address",
+                        lambda address, near=None: None)
+    sid = insert_submission(conn, _row(kind="add_venue", venue_osm_id="",
+                                       venue_name="Nirgendwo", brand="", address="???"),
+                            "2026-07-30T10:00:00")
+    assert approve_submission(conn, sid, "2026-07-30", "/dev/null") is False
+    assert get_submission(conn, sid)["status"] == "pending"
+    assert conn.execute(
+        "SELECT 1 FROM venues WHERE osm_id LIKE 'community/%'").fetchone() is None
+
+
+def test_apply_approved_add_venue_reuses_stored_coords(monkeypatch):
+    conn = _seed()
+    calls = []
+
+    def fake_geocode(address, near=None):
+        calls.append(address)
+        return (53.6, 10.1)
+
+    monkeypatch.setattr("pipeline.submissions.geocode_address", fake_geocode)
+    sid = insert_submission(conn, _row(kind="add_venue", venue_osm_id="",
+                                       venue_name="Craft Eck", brand="",
+                                       address="Musterstraße 5"), "2026-07-30T10:00:00")
+    assert approve_submission(conn, sid, "2026-07-30", "/dev/null") is True
+    # Nightly re-apply recreates the venue from the stored coordinates without
+    # asking Nominatim again — even after the venue row disappeared.
+    conn.execute("DELETE FROM venues WHERE osm_id='community/craft-eck'")
+    assert apply_approved(conn, "2026-07-31") == 1
+    assert calls == ["Musterstraße 5"]
+    assert conn.execute(
+        "SELECT 1 FROM venues WHERE osm_id='community/craft-eck'").fetchone()
+
+
 def test_validate_beer_length():
     ok = dict(kind="add", venue_osm_id="node/1", brand="Astra", serving="fass")
     assert validate_submission({**ok, "beer": "Urtyp"}) is None

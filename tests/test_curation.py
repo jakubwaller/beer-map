@@ -81,6 +81,41 @@ def test_exported_entries_round_trip_through_apply_curation():
          "beer": None, "last_seen": "2026-06-26"}]
 
 
+def test_venue_only_entry_creates_gray_venue():
+    conn = _seed()
+    entry = {"venue": "Beyond Beer", "lat": 53.5678, "lon": 9.9643,
+             "address": "Weidenallee 53-55, 20357 Hamburg",
+             "website": "https://example.com/", "verified": "2026-07-30"}
+    counts = apply_curation(conn, [entry], [], "2026-07-30")
+    assert counts == {"added": 1, "removed": 0, "skipped": 0}
+    row = conn.execute(
+        "SELECT address, website FROM venues WHERE osm_id='manual/beyond-beer'").fetchone()
+    assert row["address"] == "Weidenallee 53-55, 20357 Hamburg"
+    assert row["website"] == "https://example.com/"
+    assert _brands(conn, "Beyond Beer") == []  # gray dot, no brand edge
+
+
+def test_approved_add_venue_round_trips_through_curation():
+    src = _seed()
+    _approved(src, kind="add_venue", venue_osm_id="", venue_name="Craft Eck",
+              lat=53.6, lon=10.1, brand="astra", serving="fass",
+              address="Musterstraße 5")
+    entries = approved_community_entries(src)
+    assert entries == [
+        {"osm_id": "community/craft-eck", "venue": "Craft Eck", "lat": 53.6, "lon": 10.1,
+         "address": "Musterstraße 5", "brand": "astra", "serving": "fass",
+         "verified": "2026-06-26", "note": "community-approved (Craft Eck)"}]
+    # As if the database had been lost: re-applying the exported entry recreates
+    # the venue under its original osm_id, brand edge included.
+    fresh = get_connection(":memory:")
+    init_db(fresh)
+    counts = apply_curation(fresh, entries, [], "2026-06-27")
+    assert counts == {"added": 1, "removed": 0, "skipped": 0}
+    assert _brands(fresh, "Craft Eck") == [
+        {"brand": "Astra", "source": "manual", "serving": "fass",
+         "beer": None, "last_seen": "2026-06-26"}]  # the entry's verified date
+
+
 def test_curation_sets_specific_beer():
     conn = _seed()  # WALD = node/5
     apply_curation(conn, [{"osm_id": "node/5", "brand": "Ratsherrn", "serving": "fass",

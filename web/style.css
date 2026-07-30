@@ -456,8 +456,9 @@ header {
 .beerform button.danger { background: var(--danger); }
 .beerform .msg { flex: 1 1 100%; font-size: 12px; font-weight: 600; color: var(--good); }
 
-/* ---------- "Bier melden" mini-form ---------- */
-.addbeer {
+/* ---------- "Bier melden" / "Ort melden" mini-forms ---------- */
+.addbeer,
+.venueadd {
   margin-top: 14px;
   padding-top: 12px;
   border-top: 1px solid var(--line-soft);
@@ -467,7 +468,10 @@ header {
   align-items: center;
 }
 .addbeer input[name="brand"],
-.addbeer input[name="beer"] {
+.addbeer input[name="beer"],
+.venueadd input[name="venue"],
+.venueadd input[name="address"],
+.venueadd input[name="brand"] {
   flex: 1 1 100%;
   padding: 8px 10px;
   font-size: 14px;
@@ -476,23 +480,26 @@ header {
   font-family: inherit;
 }
 .addbeer input:focus,
+.venueadd input:focus,
 .venueform input:focus {
   outline: none; border-color: var(--accent);
   box-shadow: 0 0 0 3px oklch(62% 0.16 45 / .2);
 }
-.addbeer label {
+.addbeer label,
+.venueadd label {
   display: inline-flex; align-items: center; gap: 4px;
   font-size: 13px; cursor: pointer;
 }
-.addbeer button {
+.addbeer button,
+.venueadd button {
   padding: 8px 14px;
   font-size: 13px; font-weight: 600;
   color: #fff; background: var(--accent);
   border: 0; border-radius: 9px; cursor: pointer;
 }
-.addbeer button:hover { background: var(--accent-strong); }
-.addbeer .hp { position: absolute; left: -9999px; }
-.addbeer .msg { flex: 1 1 100%; font-size: 12px; font-weight: 600; color: var(--good); }
+.addbeer button:hover, .venueadd button:hover { background: var(--accent-strong); }
+.addbeer .hp, .venueadd .hp { position: absolute; left: -9999px; }
+.addbeer .msg, .venueadd .msg { flex: 1 1 100%; font-size: 12px; font-weight: 600; color: var(--good); }
 button:disabled { opacity: .55; cursor: default; }
 
 /* ---------- "Ort korrigieren" ---------- */

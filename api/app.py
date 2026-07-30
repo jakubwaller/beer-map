@@ -25,6 +25,7 @@ _KIND_LABELS = {
     "remove": "Bier entfernen",
     "edit_venue": "Adresse ändern",
     "close_venue": "Geschlossen",
+    "add_venue": "Neuer Ort",
 }
 
 # Mirrors the Zapfkompass palette in web/style.css — keep the two in sync.
@@ -84,7 +85,7 @@ button:hover { border-color: var(--accent); color: var(--accent-strong); }
   border-radius: 999px; padding: 3px 10px; color: #fff; background: var(--accent);
 }
 .kind.remove, .kind.close_venue { background: var(--danger); }
-.kind.add { background: var(--good); }
+.kind.add, .kind.add_venue { background: var(--good); }
 .venue { font-family: var(--serif); font-weight: 600; font-size: 17px; }
 .addr { color: var(--muted); font-size: 13px; }
 .detail { margin-top: 8px; font-size: 15px; }
@@ -107,12 +108,13 @@ button:hover { border-color: var(--accent); color: var(--accent-strong); }
 
 
 class Submission(BaseModel):
-    venue_osm_id: str
+    venue_osm_id: str = ""    # empty only for kind="add_venue" (no venue yet)
+    name: Optional[str] = None  # new venue's name for kind="add_venue"
     brand: str = ""           # empty for venue-level kinds (edit_venue/close_venue)
     serving: str = "unknown"
     beer: Optional[str] = None  # optional specific product, e.g. "Edelstoff"
     kind: str = "add"
-    address: Optional[str] = None  # new address for kind="edit_venue"
+    address: Optional[str] = None  # new address for kind="edit_venue"/"add_venue"
     note: Optional[str] = None
     hp: Optional[str] = None  # honeypot
 
@@ -184,8 +186,9 @@ def create_app() -> FastAPI:
         err = submissions.validate_submission(payload)
         if err:
             raise HTTPException(400, err)
-        if conn.execute("SELECT 1 FROM venues WHERE osm_id=?",
-                        (sub.venue_osm_id,)).fetchone() is None:
+        if sub.kind != "add_venue" and conn.execute(
+                "SELECT 1 FROM venues WHERE osm_id=?",
+                (sub.venue_osm_id,)).fetchone() is None:
             raise HTTPException(400, "unknown venue")
         # request.client.host is set from X-Forwarded-For by ProxyHeadersMiddleware,
         # which only trusts the immediate peer (Caddy — the sole ingress). A client
@@ -196,10 +199,12 @@ def create_app() -> FastAPI:
         ip_key = submissions.hash_ip(ip)
         if not submissions.within_rate_limit(conn, ip_key, datetime.now()):
             raise HTTPException(429, "rate limit exceeded")
-        payload["venue_name"] = sub.venue_osm_id
+        payload["venue_name"] = ((sub.name or "").strip()
+                                 if sub.kind == "add_venue" else sub.venue_osm_id)
         payload["submitter_ip"] = ip_key
         insert_submission(conn, payload, datetime.now().isoformat())
-        notify.notify_new_submission(sub.brand or sub.kind, sub.venue_osm_id)
+        notify.notify_new_submission(sub.brand or sub.kind,
+                                     sub.venue_osm_id or payload["venue_name"])
         return {"ok": True}
 
     @app.get("/admin", response_class=HTMLResponse)
@@ -218,6 +223,10 @@ def create_app() -> FastAPI:
             }
 
         def _detail(r):
+            if r["kind"] == "add_venue":
+                brand = (f" · {html.escape(r['brand'])} ({html.escape(r['serving'])})"
+                         if r["brand"] else "")
+                return html.escape(r["address"] or "") + brand
             if r["kind"] == "edit_venue":
                 return "Neue Adresse: " + html.escape(r["address"] or "")
             if r["kind"] == "close_venue":
@@ -229,7 +238,7 @@ def create_app() -> FastAPI:
             f"""<li class="card">
   <div class="head">
     <span class="kind {html.escape(r['kind'])}">{html.escape(_KIND_LABELS.get(r['kind'], r['kind']))}</span>
-    <span class="venue">{html.escape(venue.get('name') or r['venue_osm_id'] or '?')}</span>
+    <span class="venue">{html.escape(venue.get('name') or r['venue_name'] or r['venue_osm_id'] or '?')}</span>
     <span class="addr">{html.escape(venue.get('address') or '')}</span>
   </div>
   <div class="detail">{_detail(r)}</div>
@@ -293,7 +302,8 @@ async function approveAll(n) {{
     @app.post("/api/admin/{sub_id}/approve")
     def approve(sub_id: int, conn=Depends(_db), _=Depends(_require_admin)):
         if not submissions.approve_submission(conn, sub_id, date.today().isoformat(), config.OUT_PATH):
-            raise HTTPException(404, "not pending")
+            raise HTTPException(404, "not pending, or could not be applied "
+                                     "(venue gone / address not geocodable)")
         return {"ok": True}
 
     @app.post("/api/admin/{sub_id}/reject")

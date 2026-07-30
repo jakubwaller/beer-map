@@ -38,7 +38,7 @@ One idempotent build, run nightly via cron and by `docker-run.sh`:
 
 1. **OSM**: fetch Hamburg pubs/bars via Overpass (`osm.py` — tries mirror list `OVERPASS_URLS` with retry/backoff on transient statuses), upsert venues, extract edges from `brewery=` tags.
 2. **Finders**: per-brand "where to drink" scrapers (`pipeline/finders/`), fuzzy-matched to OSM venues by name + distance (`matching.py`, rapidfuzz, 85 threshold / 120 m). A failing finder logs a WARN and never kills the build.
-3. **Curation**: `curation.yaml` entries applied as `source="manual"` (`curation.py`). Entries resolve a venue by `osm_id`, by `lat`+`lon` (creates a `manual/<slug>` venue), or by fuzzy name.
+3. **Curation**: `curation.yaml` entries applied as `source="manual"` (`curation.py`). Entries resolve a venue by `osm_id`, by `lat`+`lon` (creates a `manual/<slug>` venue), or by fuzzy name. An entry without `brand` just pins the venue (gray dot) — for places the amenity sweep can't see, e.g. tagged `shop=alcohol`.
 4. **Community**: all approved submissions re-applied (`submissions.apply_approved`) — this is why approved venue edits/closures survive the OSM re-import each build.
 5. **Export**: GeoJSON to `web/data/venues.json` (`export.py`). Hidden (closed) venues stay in the DB but are excluded.
 
@@ -46,7 +46,7 @@ Everything is upserts keyed on `(venue_id, brand_id, source, beer)` — `beer` (
 
 ### API (`api/app.py`)
 
-`create_app()` builds a FastAPI app that also mounts `web/` as static files (single origin). `POST /api/submit` takes anonymous add/remove/edit_venue/close_venue submissions (honeypot field + per-IP rate limit); `/admin` is an HTTP-Basic (`BEERMAP_ADMIN_PW`) moderation page. Approving applies the change immediately and re-exports the GeoJSON — no pipeline run needed. `edit_venue` geocodes the new address via Nominatim (`geocode.py`) to move the pin; geocode failure falls back to text-only update. Client IP comes from `X-Forwarded-For` via ProxyHeadersMiddleware — safe only because the container has no public port and Caddy is the sole ingress.
+`create_app()` builds a FastAPI app that also mounts `web/` as static files (single origin). `POST /api/submit` takes anonymous add/remove/edit_venue/close_venue/add_venue submissions (honeypot field + per-IP rate limit); `/admin` is an HTTP-Basic (`BEERMAP_ADMIN_PW`) moderation page. Approving applies the change immediately and re-exports the GeoJSON — no pipeline run needed. `edit_venue` geocodes the new address via Nominatim (`geocode.py`) to move the pin; geocode failure falls back to text-only update. `add_venue` (the "Ort fehlt?" form) geocodes at approval time and creates a `community/<slug>` venue; the hit is stored on the submission row so nightly re-applies don't re-geocode, and a submission that can't be applied (venue gone, address not geocodable) stays pending instead of being approved into a no-op. Client IP comes from `X-Forwarded-For` via ProxyHeadersMiddleware — safe only because the container has no public port and Caddy is the sole ingress.
 
 `pipeline/export_curation.py` renders approved submissions as curation.yaml entries so they can be committed to git and survive DB loss.
 

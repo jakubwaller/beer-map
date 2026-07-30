@@ -4,25 +4,28 @@ import hashlib
 from datetime import datetime, timedelta
 
 from . import config
+from .curation import slugify
 from .db import (
     count_submissions_since, delete_edges, get_submission, list_submissions,
     set_submission_status, set_venue_hidden, update_venue_address, upsert_brand,
-    upsert_edge,
+    upsert_edge, upsert_venue,
 )
 from .export import export_geojson
 from .geocode import geocode_address
+from .models import Venue
 
 _SERVINGS = {"fass", "tank"}
 _BRAND_KINDS = ("add", "remove")
 _VENUE_KINDS = ("edit_venue", "close_venue")
-KINDS = _BRAND_KINDS + _VENUE_KINDS
+_NEW_VENUE_KIND = "add_venue"
+KINDS = _BRAND_KINDS + _VENUE_KINDS + (_NEW_VENUE_KIND,)
 
 
 def validate_submission(payload: dict) -> str | None:
     kind = payload.get("kind")
     if kind not in KINDS:
         return "kind must be one of " + ", ".join(KINDS)
-    if not payload.get("venue_osm_id"):
+    if kind != _NEW_VENUE_KIND and not payload.get("venue_osm_id"):
         return "venue_osm_id required"
     if payload.get("note") and len(payload["note"]) > 300:
         return "note too long"
@@ -38,6 +41,18 @@ def validate_submission(payload: dict) -> str | None:
         address = (payload.get("address") or "").strip()
         if not address or len(address) > 200:
             return "address must be 1-200 chars"
+    elif kind == _NEW_VENUE_KIND:
+        name = (payload.get("name") or "").strip()
+        if not name or len(name) > 120:
+            return "name must be 1-120 chars"
+        address = (payload.get("address") or "").strip()
+        if not address or len(address) > 200:
+            return "address must be 1-200 chars"
+        brand = (payload.get("brand") or "").strip()
+        if brand and len(brand) > 80:
+            return "brand must be at most 80 chars"
+        if brand and payload.get("serving") not in _SERVINGS:
+            return "serving must be 'fass' or 'tank'"
     return None
 
 
@@ -62,11 +77,41 @@ def _venue_id(conn, osm_id):
     return row["id"] if row else None
 
 
+def _apply_add_venue(conn, sub: dict, today: str) -> bool:
+    """Create the submitted venue, geocoding its address on first apply.
+
+    The hit is written back to the submission row so nightly re-applies (and
+    re-applies after the venue was pruned) reuse the stored coordinates instead
+    of asking Nominatim again. No coordinates and no geocode hit means the
+    venue cannot be placed — the submission stays pending for the moderator.
+    """
+    lat, lon = sub.get("lat"), sub.get("lon")
+    if lat is None or lon is None:
+        coords = geocode_address(sub["address"])
+        if coords is None:
+            return False
+        lat, lon = coords
+        if sub.get("id") is not None:
+            conn.execute("UPDATE submissions SET lat=?, lon=? WHERE id=?",
+                         (lat, lon, sub["id"]))
+    osm_id = "community/" + slugify(sub["venue_name"])
+    vid = upsert_venue(conn, Venue(osm_id, sub["venue_name"], lat, lon,
+                                   sub.get("address")), today)
+    brand = (sub.get("brand") or "").strip()
+    if brand:
+        bid = upsert_brand(conn, config.normalize_brand(brand))
+        upsert_edge(conn, vid, bid, "community", today,
+                    serving=sub.get("serving", "unknown"), beer=sub.get("beer") or None)
+    return True
+
+
 def apply_one(conn, sub: dict, today: str) -> bool:
+    kind = sub.get("kind")
+    if kind == _NEW_VENUE_KIND:
+        return _apply_add_venue(conn, sub, today)
     osm_id = sub.get("venue_osm_id")
     if _venue_id(conn, osm_id) is None:
         return False
-    kind = sub.get("kind")
     # Venue-level edits run after OSM re-imports each build (see run_pipeline), so
     # an approved address change or "closed" flag keeps overriding the OSM data.
     if kind == "edit_venue":
@@ -107,7 +152,10 @@ def approve_submission(conn, sub_id: int, today: str, out_path: str) -> bool:
     sub = get_submission(conn, sub_id)
     if not sub or sub["status"] != "pending":
         return False
-    apply_one(conn, sub, today)
+    # A submission that cannot be applied (venue gone, add_venue address that
+    # won't geocode) stays pending instead of being approved into a no-op.
+    if not apply_one(conn, sub, today):
+        return False
     set_submission_status(conn, sub_id, "approved", today)
     conn.commit()
     export_geojson(conn, out_path)
@@ -115,14 +163,16 @@ def approve_submission(conn, sub_id: int, today: str, out_path: str) -> bool:
 
 
 def approve_all_pending(conn, today: str, out_path: str) -> int:
-    subs = list_submissions(conn, "pending")
-    for sub in subs:
-        apply_one(conn, sub, today)
+    approved = 0
+    for sub in list_submissions(conn, "pending"):
+        if not apply_one(conn, sub, today):
+            continue  # stays pending, same as single approve
         set_submission_status(conn, sub["id"], "approved", today)
+        approved += 1
     conn.commit()
-    if subs:  # one export for the whole batch, not one per submission
+    if approved:  # one export for the whole batch, not one per submission
         export_geojson(conn, out_path)
-    return len(subs)
+    return approved
 
 
 def reject_submission(conn, sub_id: int, today: str) -> bool:
