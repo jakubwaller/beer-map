@@ -19,12 +19,34 @@ OVERPASS_URLS = [u.strip() for u in os.environ.get(
 ).split(",") if u.strip()]
 OVERPASS_RETRIES = int(os.environ.get("BEERMAP_OVERPASS_RETRIES", "3"))
 OVERPASS_BACKOFF_S = float(os.environ.get("BEERMAP_OVERPASS_BACKOFF_S", "2"))
-HAMBURG_QL = (
-    '[out:json][timeout:90];'
-    'area["name"="Hamburg"]["admin_level"="4"]->.a;'
-    'nwr["amenity"~"^(pub|bar|biergarten|restaurant|cafe)$"](area.a);'
-    'out center tags;'
+_AMENITY = '"amenity"~"^(pub|bar|biergarten|restaurant|cafe)$"'
+# Cities swept in full: every pub/bar/restaurant/cafe there becomes at least a
+# gray dot (the substrate community submissions turn into data). Overpass area
+# filters; admin_level 4 = Stadtstaat, 6 = kreisfreie Stadt.
+SWEEP_AREAS = (
+    '["name"="Hamburg"]["admin_level"="4"]',
+    '["name"="Leipzig"]["admin_level"="6"]',
 )
+
+
+def build_overpass_ql(sweep_areas=SWEEP_AREAS) -> str:
+    """One query for the whole map: the sweep cities in full, plus every
+    brewery-tagged venue in Germany (~3.9k as of 2026-07) so venues with a
+    known brand show up nationwide. A country-wide sweep of *all* venue types
+    is off the table — even counting them times out at 300s — until venues are
+    served per-viewport by an API. The union dedupes elements both sets catch."""
+    cities = "".join(f"area{a};" for a in sweep_areas)
+    return (
+        '[out:json][timeout:300];'
+        f'({cities})->.cities;'
+        'area["ISO3166-1"="DE"]["admin_level"="2"]->.de;'
+        f'(nwr[{_AMENITY}](area.cities);'
+        f'nwr[{_AMENITY}]["brewery"](area.de););'
+        'out center tags;'
+    )
+
+
+OVERPASS_QL = build_overpass_ql()
 DB_PATH = "beer-map.sqlite"
 OUT_PATH = "web/data/venues.json"
 CURATION_PATH = "curation.yaml"

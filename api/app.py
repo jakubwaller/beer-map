@@ -262,7 +262,7 @@ def create_app() -> FastAPI:
 <style>{_ADMIN_CSS}</style>
 </head><body>
 <header>
-  <a class="brandmark" href="/"><span class="name">Zapfkompass</span><span class="city">Hamburg · Moderation</span></a>
+  <a class="brandmark" href="/"><span class="name">Zapfkompass</span><span class="city">Moderation</span></a>
 </header>
 <main>
   <div class="toolbar">

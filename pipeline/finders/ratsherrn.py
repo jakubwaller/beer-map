@@ -13,9 +13,10 @@ class RatsherrnFinder(BaseFinder):
     """Scrapes Ratsherrn's own gastro page (static HTML list of their venues).
 
     Addresses are not co-located with the name headings in the markup, so we
-    emit the heading names and let OSM matching geo-filter them to Hamburg:
-    non-Hamburg names (e.g. "Dolden Mädel Berlin") find no Hamburg venue and
-    are dropped. Ratsherrn-operated venues serve Ratsherrn on Fassbier.
+    emit the heading names and let OSM matching sort them out: names without a
+    counterpart in the venue set are dropped, and a name matching equally well
+    in two cities is dropped as ambiguous (see match_entry). Ratsherrn-operated
+    venues serve Ratsherrn on Fassbier.
     """
 
     brand = "Ratsherrn"

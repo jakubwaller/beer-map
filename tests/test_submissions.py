@@ -62,6 +62,24 @@ def test_approve_edit_venue_updates_address():
     assert _venue_row(conn, "node/1")["address"] == "Neue Allee 7"
 
 
+def test_approve_edit_venue_geocodes_near_existing_pin(monkeypatch):
+    conn = _seed()
+    calls = {}
+
+    def fake_geocode(address, near=None):
+        calls["args"] = (address, near)
+        return (53.51, 10.01)
+
+    monkeypatch.setattr("pipeline.submissions.geocode_address", fake_geocode)
+    sid = insert_submission(conn, _row(kind="edit_venue", brand="",
+                                       address="Neue Allee 7"), "2026-06-24T10:00:00")
+    assert approve_submission(conn, sid, "2026-06-24", "/dev/null") is True
+    # bounded to the venue's current coordinates, and the pin moved to the hit
+    assert calls["args"] == ("Neue Allee 7", (53.5, 10.0))
+    row = conn.execute("SELECT lat, lon FROM venues WHERE osm_id='node/1'").fetchone()
+    assert (row["lat"], row["lon"]) == (53.51, 10.01)
+
+
 def test_approve_close_venue_hides_it_from_export():
     conn = _seed()
     sid = insert_submission(conn, _row(kind="close_venue", brand=""), "2026-06-24T10:00:00")

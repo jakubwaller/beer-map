@@ -15,16 +15,33 @@ const OSM_STYLE = {
   layers: [{ id: "osm", type: "raster", source: "osm" }],
 };
 
+// Germany-wide view; `bounds` at init adapts the zoom to the viewport (a phone
+// gets a wider zoom than a desktop for the same box). The topbar overlays the
+// map, so the fit needs extra top padding or Hamburg hides under the chips.
+const DE_BOUNDS = [[5.5, 47.2], [15.4, 55.1]];
+const CITY_VIEWS = {
+  hamburg: { center: [9.9937, 53.5511], zoom: 11.5 },
+  leipzig: { center: [12.3731, 51.3397], zoom: 11.5 },
+};
+const dePadding = () => ({
+  top: document.getElementById("topbar").offsetHeight + 16,
+  left: 24, right: 24, bottom: 24,
+});
+
 const map = new maplibregl.Map({
-  container: "map", style: OSM_STYLE, center: [9.9937, 53.5511], zoom: 11.5,
-  minZoom: 9, maxZoom: 18, attributionControl: false,
+  container: "map", style: OSM_STYLE, bounds: DE_BOUNDS,
+  fitBoundsOptions: { padding: dePadding() },
+  minZoom: 4.5, maxZoom: 18, attributionControl: false,
 });
 
 // ---- State ----
 let allVenues = [];       // venues that carry beer data (brands.length > 0)
 let grayVenues = [];      // the rest of the dataset (no beer data yet) — gray dots
 let brand = null;         // selected brand filter, or null
-let serving = "draught";  // all | draught | fass | tank
+// Default "all", not "draught": the nationwide OSM-sourced edges carry
+// serving=unknown (only curated/community edges have a verified fass/tank),
+// so a draught default would blank out the whole Germany view.
+let serving = "all";      // all | draught | fass | tank
 let search = "";
 let brandFreq = [];       // [ [brand, venueCount], ... ] desc
 
@@ -44,8 +61,9 @@ const SERVING_DEFS = [
 
 // ---- Filtering ----
 // Venues with beer data get the amber DOM markers; the rest of the dataset
-// (~4000 OSM pubs/bars without beer data) shows as small gray dots, but only
-// on "Alle Orte" with no brand selected. "draught" = fass OR tank.
+// (~5000 OSM pubs/bars without beer data, from the fully swept cities) shows
+// as small gray dots, but only on "Alle Orte" with no brand selected.
+// "draught" = fass OR tank.
 function currentVenues() {
   let r = allVenues;
   const servingArg = serving === "all" ? null : serving;
@@ -114,7 +132,7 @@ function refreshChips() {
 // the whole marker pipeline independent of the source/tile machinery. Markers
 // are plain maplibregl.Marker elements, rebuilt whenever the filtered set or
 // the view changes (only venues with beer data get DOM markers, so this is
-// cheap — the ~4000 no-data venues render as a circle layer, see below).
+// cheap — the ~5000 no-data venues render as a circle layer, see below).
 const CELL_PX = 46;
 let liveMarkers = [];
 
@@ -220,7 +238,7 @@ function placeLabels(singles, dotBoxes) {
 }
 
 // ---- Gray dots: venues without beer data ----
-// Unlike the (few) beer venues above, these are ~4000 points, so they render as
+// Unlike the (few) beer venues above, these are ~5000 points, so they render as
 // a WebGL circle layer instead of DOM markers. Clicking one opens the normal
 // venue modal, whose "Marke hinzufügen" form turns the gray dot into data.
 const GRAY_SOURCE = "gray-venues";
@@ -352,7 +370,7 @@ function openStats() {
 }
 
 function openAbout() {
-  openModal("Über das Projekt", `<div class="modal-text"><p>Zapfkompass zeigt, wo es in Hamburg Bier vom Fass oder Tank gibt — Marke für Marke. Die Basis bilden von Hand geprüfte Einträge, ergänzt um OpenStreetMap-Daten und die „Wo gibt&#39;s das?“-Seiten der Brauereien. Jede Verknüpfung trägt eine Quelle und ein Prüfdatum.</p></div>`);
+  openModal("Über das Projekt", `<div class="modal-text"><p>Zapfkompass zeigt, wo es in Deutschland Bier vom Fass oder Tank gibt — Marke für Marke. Hamburg und Leipzig sind vollständig erfasst (dort ist jede Kneipe anklickbar), im Rest des Landes alle Orte mit bekannter Biermarke. Die Basis bilden von Hand geprüfte Einträge, ergänzt um OpenStreetMap-Daten und die „Wo gibt&#39;s das?“-Seiten der Brauereien. Jede Verknüpfung trägt eine Quelle und ein Prüfdatum.</p></div>`);
 }
 
 function openContact() {
@@ -372,6 +390,13 @@ document.querySelectorAll("[data-modal]").forEach((el) => {
 });
 document.getElementById("cta-add").addEventListener("click", openAddInfo);
 searchEl.addEventListener("input", () => { search = searchEl.value; applyFilters(); });
+
+const citySelect = document.getElementById("city-select");
+citySelect.addEventListener("change", () => {
+  const view = CITY_VIEWS[citySelect.value];
+  if (view) map.flyTo(view);
+  else map.fitBounds(DE_BOUNDS, { padding: dePadding() });
+});
 
 // ---- Submission forms (delegated on the modal) ----
 function submissionBody(form, action) {
