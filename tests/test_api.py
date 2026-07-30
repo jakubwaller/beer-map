@@ -174,6 +174,43 @@ def test_submit_with_specific_beer_stored(client):
     assert pending["beer"] == "Edelstoff"
 
 
+def test_add_venue_submission_and_approval(client, monkeypatch):
+    c, out = client
+    r = c.post("/api/submit", json={"kind": "add_venue", "name": "Craft Eck",
+                                    "address": "Musterstraße 5, 20357 Hamburg"})
+    assert r.status_code == 200
+    pending = list_submissions(get_connection(config.DB_PATH), "pending")
+    assert pending[0]["kind"] == "add_venue" and pending[0]["venue_name"] == "Craft Eck"
+    page = c.get("/admin", auth=("admin", "secret"))
+    assert "Craft Eck" in page.text and "Neuer Ort" in page.text
+    monkeypatch.setattr(submissions, "geocode_address",
+                        lambda address, near=None: (53.57, 9.96))
+    sid = pending[0]["id"]
+    assert c.post(f"/api/admin/{sid}/approve", auth=("admin", "secret")).json() == {"ok": True}
+    fc = json.loads(open(out, encoding="utf-8").read())
+    craft = [f for f in fc["features"] if f["properties"]["name"] == "Craft Eck"][0]
+    assert craft["properties"]["brands"] == []  # gray dot until beers get reported
+    assert craft["geometry"]["coordinates"] == [9.96, 53.57]
+
+
+def test_add_venue_requires_name_and_address(client):
+    c, _ = client
+    assert c.post("/api/submit", json={"kind": "add_venue",
+                  "address": "Musterstraße 5"}).status_code == 400
+    assert c.post("/api/submit", json={"kind": "add_venue",
+                  "name": "Craft Eck"}).status_code == 400
+
+
+def test_add_venue_ungecodable_approval_stays_pending(client, monkeypatch):
+    c, _ = client
+    c.post("/api/submit", json={"kind": "add_venue", "name": "Nirgendwo",
+                                "address": "keine echte Adresse"})
+    monkeypatch.setattr(submissions, "geocode_address", lambda address, near=None: None)
+    sid = list_submissions(get_connection(config.DB_PATH), "pending")[0]["id"]
+    assert c.post(f"/api/admin/{sid}/approve", auth=("admin", "secret")).status_code == 404
+    assert list_submissions(get_connection(config.DB_PATH), "pending")[0]["id"] == sid
+
+
 def test_refuses_to_start_with_db_inside_served_dir(tmp_path, monkeypatch):
     """The DB under web/ was downloadable at /data/beer-map.sqlite — never again."""
     from api.app import _assert_db_not_served, create_app
