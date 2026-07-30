@@ -174,6 +174,10 @@ header {
   align-items: center;
   gap: 20px;
   flex: 0 0 auto;
+  /* Never wider than the header row: without this the max-content basis wins,
+     the internal flex-wrap never triggers, and the CTA pushes the whole page
+     into horizontal scroll on phones. */
+  max-width: 100%;
 }
 .header-actions nav {
   display: flex;
