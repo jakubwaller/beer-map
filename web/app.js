@@ -42,9 +42,8 @@ map.touchZoomRotate.disableRotation();
 let allVenues = [];       // venues that carry beer data (brands.length > 0)
 let grayVenues = [];      // the rest of the dataset (no beer data yet) — gray dots
 let brand = null;         // selected brand filter, or null
-// Default "all", not "draught": the nationwide OSM-sourced edges carry
-// serving=unknown (only curated/community edges have a verified fass/tank),
-// so a draught default would blank out the whole Germany view.
+// Default "all" so the gray no-data venues show too; "draught" narrows to
+// venues with at least one known brand (fass/tank verified or not).
 let serving = "all";      // all | draught | fass | tank
 let search = "";
 let brandFreq = [];       // [ [brand, venueCount], ... ] desc
@@ -67,7 +66,7 @@ const SERVING_DEFS = [
 // Venues with beer data get the amber DOM markers; the rest of the dataset
 // (~5000 OSM pubs/bars without beer data, from the fully swept cities) shows
 // as small gray dots, but only on "Alle Orte" with no brand selected.
-// "draught" = fass OR tank.
+// "draught" = any known brand; fass/tank require a verified serving.
 function currentVenues() {
   let r = allVenues;
   const servingArg = serving === "all" ? null : serving;

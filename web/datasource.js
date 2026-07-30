@@ -34,10 +34,11 @@ function dedupeBrands(brands) {
   return out;
 }
 
-// "draught" means served on tap — Fass or Tank (vs the specific fass/tank/unknown).
-const DRAUGHT = new Set(["fass", "tank"]);
+// "draught" means served on tap. Any brand edge counts: an OSM `brewery=` tag
+// or a curated link means the venue pours that brand even when fass-vs-tank is
+// unverified (serving=unknown) — only the explicit fass/tank filters are strict.
 const servingMatch = (b, serving) =>
-  serving === "draught" ? DRAUGHT.has(b.serving) : b.serving === serving;
+  serving === "draught" ? true : b.serving === serving;
 
 export function loadVenues(fc) {
   return (fc.features || []).map((f) => ({
