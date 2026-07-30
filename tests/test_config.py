@@ -1,4 +1,19 @@
-from pipeline.config import normalize_brand
+from pipeline.config import build_overpass_ql, normalize_brand
+
+
+def test_overpass_ql_sweeps_cities_and_national_brewery_layer():
+    ql = build_overpass_ql()
+    assert '["name"="Hamburg"]["admin_level"="4"]' in ql
+    assert '["name"="Leipzig"]["admin_level"="6"]' in ql
+    # Nationwide only brewery-tagged venues — a full-Germany amenity sweep
+    # would be ~250k elements and times out on Overpass.
+    assert '"brewery"](area.de)' in ql
+    assert ql.count('nwr["amenity"') == 2
+
+
+def test_overpass_ql_takes_custom_sweep_areas():
+    ql = build_overpass_ql(sweep_areas=('["name"="Dresden"]["admin_level"="6"]',))
+    assert '"Dresden"' in ql and '"Hamburg"' not in ql
 
 
 def test_alias_lookup_is_case_insensitive():

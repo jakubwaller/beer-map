@@ -5,7 +5,7 @@ import time
 
 import httpx
 
-from .config import (HAMBURG_QL, OVERPASS_BACKOFF_S, OVERPASS_RETRIES,
+from .config import (OVERPASS_BACKOFF_S, OVERPASS_QL, OVERPASS_RETRIES,
                      OVERPASS_URLS, SKIP_BRANDS, USER_AGENT)
 from .models import BrandEdge, Venue
 
@@ -63,7 +63,7 @@ def _fetch_once(url: str, ql: str) -> dict:
     return resp.json()
 
 
-def fetch_overpass(ql: str = HAMBURG_QL, urls=None, retries=None, backoff=None) -> dict:
+def fetch_overpass(ql: str = OVERPASS_QL, urls=None, retries=None, backoff=None) -> dict:
     """Fetch from Overpass, trying each mirror in turn and retrying transient
     failures (429/5xx/406, timeouts, transport errors) with exponential backoff.
     A non-transient status (e.g. 400) raises at once — mirrors won't differ. Only

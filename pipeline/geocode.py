@@ -7,15 +7,23 @@ from .config import USER_AGENT
 NOMINATIM_URL = "https://nominatim.openstreetmap.org/search"
 
 
-def geocode_address(address: str, url: str = NOMINATIM_URL) -> tuple[float, float] | None:
+def geocode_address(address: str, url: str = NOMINATIM_URL,
+                    near: tuple[float, float] | None = None) -> tuple[float, float] | None:
     """Resolve a free-text address to (lat, lon) via Nominatim. Returns None on
     no match or a transient failure — callers should keep the venue's existing
-    coordinates rather than fail the whole operation."""
-    query = address if "hamburg" in address.lower() else f"{address}, Hamburg, Germany"
+    coordinates rather than fail the whole operation. `near` bounds the search
+    to roughly ±25 km of that point: an address edit keeps the venue in its
+    city, and a bare "Straße 5" must not jump to a same-named street elsewhere
+    in Germany."""
+    params = {"q": address, "format": "json", "limit": 1}
+    if near is not None:
+        lat, lon = near
+        params["viewbox"] = f"{lon - 0.35:.4f},{lat - 0.25:.4f},{lon + 0.35:.4f},{lat + 0.25:.4f}"
+        params["bounded"] = 1
     try:
         resp = httpx.get(
             url,
-            params={"q": query, "format": "json", "limit": 1},
+            params=params,
             headers={"User-Agent": USER_AGENT},
             timeout=15,
         )

@@ -118,13 +118,38 @@ header {
   font-size: 20px;
   color: var(--ink);
 }
-.wordmark .city {
+/* Region jumper, styled like the old static city label. -8px pulls it back to
+   the wordmark's 8px internal gap (the header's flex gap is 16px). */
+.city-wrap {
+  position: relative;
+  margin-left: -8px;
+  flex: 0 0 auto;
+}
+.city-wrap::after {
+  content: "▾";
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 9px;
+  color: var(--muted);
+  pointer-events: none;
+}
+#city-select {
+  appearance: none;
+  -webkit-appearance: none;
+  background: transparent;
+  border: none;
+  padding: 0 12px 0 0;
+  font-family: inherit;
   font-size: 11px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 1px;
   color: var(--muted);
+  cursor: pointer;
 }
+#city-select:hover { color: var(--ink); }
 
 #search {
   flex: 1 1 140px;

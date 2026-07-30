@@ -71,9 +71,12 @@ def apply_one(conn, sub: dict, today: str) -> bool:
     # an approved address change or "closed" flag keeps overriding the OSM data.
     if kind == "edit_venue":
         # Move the pin too — a text-only address edit would leave the map marker
-        # at the old (OSM-imported) coordinates. Geocoding failure isn't fatal:
-        # fall back to updating just the address text.
-        coords = geocode_address(sub["address"])
+        # at the old (OSM-imported) coordinates. The search is bounded near the
+        # current pin so the venue stays in its city. Geocoding failure isn't
+        # fatal: fall back to updating just the address text.
+        row = conn.execute(
+            "SELECT lat, lon FROM venues WHERE osm_id=?", (osm_id,)).fetchone()
+        coords = geocode_address(sub["address"], near=(row["lat"], row["lon"]))
         lat, lon = coords if coords else (None, None)
         update_venue_address(conn, osm_id, sub["address"], lat, lon)
         return True

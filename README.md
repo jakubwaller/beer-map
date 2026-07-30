@@ -2,9 +2,11 @@
 
 **Live at [beermap.jakubwaller.eu](https://beermap.jakubwaller.eu)**
 
-A map of Hamburg drinking venues, filterable by draft beer brand and serving type
-(Fassbier/Tankbier). Built on a human-curated core (`curation.yaml`, highest trust),
-seeded by OpenStreetMap `brewery=` tags and brand "where to drink" finders. Every
+A map of German drinking venues, filterable by draft beer brand and serving type
+(Fassbier/Tankbier). Hamburg and Leipzig are swept in full (every pub/bar/restaurant
+becomes at least a clickable gray dot); the rest of Germany shows every venue with
+a known brand (OSM `brewery=` tag). Built on a human-curated core (`curation.yaml`,
+highest trust), seeded by OpenStreetMap and brand "where to drink" finders. Every
 venue↔brand link records its source and last-verified date.
 
 See `docs/specs/` (design).
@@ -62,8 +64,10 @@ node --test web/*.test.js  # frontend pure functions (needs Node.js)
   `curation.yaml` meanwhile. A headless fetch is part of the next phase.
 - **Post-launch:** venue-menu LLM scraping as a coverage booster (a new low-trust
   source under curation).
-- **Scaling to Germany:** widen `HAMBURG_QL` to a Germany area; swap
-  `web/datasource.js` to a bbox/brand API — the map code is unchanged.
+- **Scaling to Germany:** partially done — brewery-tagged venues show nationwide,
+  and adding a fully swept city is one line in `SWEEP_AREAS` (`pipeline/config.py`).
+  Sweeping *all* of Germany (~250k venues) still needs the bbox/brand API from
+  `web/datasource.js`'s roadmap; a country-wide Overpass sweep times out.
 
 ## API & live curation (on the Pi)
 - `uvicorn api.app:app` serves the static site **and** the API on one origin.

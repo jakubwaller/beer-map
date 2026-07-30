@@ -16,15 +16,23 @@ def haversine_m(lat1, lon1, lat2, lon2) -> float:
 
 def match_entry(entry: FinderEntry, venues: list[Venue],
                 name_threshold: int = 85, max_dist_m: float = 120) -> Venue | None:
-    best, best_score = None, -1.0
+    # Venues span all of Germany, so a name-only entry can collide with a
+    # same-named venue in another city — a tie at the best score means we can't
+    # tell them apart and the entry stays unmatched. Entries with coordinates
+    # are disambiguated by the distance filter before names are compared.
+    best, best_score, tied = None, -1.0, False
     for v in venues:
         if entry.lat is not None and entry.lon is not None:
             if haversine_m(entry.lat, entry.lon, v.lat, v.lon) > max_dist_m:
                 continue
         score = fuzz.token_sort_ratio(entry.name.lower(), v.name.lower())
-        if score >= name_threshold and score > best_score:
-            best, best_score = v, score
-    return best
+        if score < name_threshold:
+            continue
+        if score > best_score:
+            best, best_score, tied = v, score, False
+        elif score == best_score:
+            tied = True
+    return None if tied else best
 
 
 def match_entries(entries, venues):
