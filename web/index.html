@@ -18,6 +18,17 @@
   <div id="zoom-ctrl">
     <button id="zoom-in" type="button" aria-label="Hineinzoomen">+</button>
     <button id="zoom-out" type="button" aria-label="Herauszoomen">−</button>
+    <button id="locate" type="button" aria-label="Meinen Standort anzeigen" title="Mein Standort">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           stroke-width="2" stroke-linecap="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="6"></circle>
+        <circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none"></circle>
+        <line x1="12" y1="1.5" x2="12" y2="5"></line>
+        <line x1="12" y1="19" x2="12" y2="22.5"></line>
+        <line x1="1.5" y1="12" x2="5" y2="12"></line>
+        <line x1="19" y1="12" x2="22.5" y2="12"></line>
+      </svg>
+    </button>
   </div>
 
   <!-- Top overlay: header + filter bars -->
@@ -65,6 +76,8 @@
   </div>
 
   <div id="attribution">© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a></div>
+
+  <div id="toast" hidden></div>
 
   <!-- Modal -->
   <div id="modal-root" hidden>

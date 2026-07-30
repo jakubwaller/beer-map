@@ -32,7 +32,11 @@ const map = new maplibregl.Map({
   container: "map", style: OSM_STYLE, bounds: DE_BOUNDS,
   fitBoundsOptions: { padding: dePadding() },
   minZoom: 4.5, maxZoom: 18, attributionControl: false,
+  // Flat 2D map: without this an off-axis pinch on a phone starts rotating or
+  // tilting the view, which reads as the map "not responding" to the zoom.
+  dragRotate: false, pitchWithRotate: false, touchPitch: false,
 });
+map.touchZoomRotate.disableRotation();
 
 // ---- State ----
 let allVenues = [];       // venues that carry beer data (brands.length > 0)
@@ -131,9 +135,13 @@ function refreshChips() {
 // style ships no glyph server for cluster-count symbol layers, and this keeps
 // the whole marker pipeline independent of the source/tile machinery. Markers
 // are plain maplibregl.Marker elements, rebuilt whenever the filtered set or
-// the view changes (only venues with beer data get DOM markers, so this is
-// cheap — the ~5000 no-data venues render as a circle layer, see below).
+// the view changes (only venues with beer data get DOM markers, and only the
+// ones inside the viewport — the ~5000 no-data venues render as a circle
+// layer, see below).
 const CELL_PX = 46;
+// Off-screen margin (px) that still gets markers: keeps clusters at the edge
+// honest and covers small pans until the next moveend rebuild.
+const VIEW_PAD = 80;
 let liveMarkers = [];
 
 function clusterSize(count) {
@@ -162,9 +170,18 @@ function refreshMarkers() {
   for (const m of liveMarkers) m.remove();
   liveMarkers = [];
 
+  // Cull to the viewport before creating any DOM. The dataset is Germany-wide
+  // (~3k branded venues), so at city zoom nearly all of it projects far
+  // off-screen — without this cull each of those venues still became a live
+  // DOM marker whose transform MapLibre updates every frame, which is what
+  // made panning/zooming janky on phones.
+  const vw = map.getContainer().clientWidth;
+  const vh = map.getContainer().clientHeight;
   const buckets = new Map();
   for (const v of currentVenues()) {
     const pt = map.project([v.lon, v.lat]);
+    if (pt.x < -VIEW_PAD || pt.x > vw + VIEW_PAD ||
+        pt.y < -VIEW_PAD || pt.y > vh + VIEW_PAD) continue;
     const key = Math.round(pt.x / CELL_PX) + "," + Math.round(pt.y / CELL_PX);
     let b = buckets.get(key);
     if (!b) { b = []; buckets.set(key, b); }
@@ -288,6 +305,52 @@ document.getElementById("zoom-out").addEventListener("click", () => map.zoomOut(
 function positionZoomCtrl() {
   zoomCtrl.style.top = topbar.offsetHeight + 10 + "px";
 }
+
+// ---- Toast (transient status messages) ----
+const toastEl = document.getElementById("toast");
+let toastTimer = null;
+function showToast(text) {
+  toastEl.textContent = text;
+  toastEl.hidden = false;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { toastEl.hidden = true; }, 4000);
+}
+
+// ---- "Mein Standort" ----
+const locateBtn = document.getElementById("locate");
+let userMarker = null;
+
+function showUserLocation(lngLat) {
+  if (!userMarker) {
+    const el = document.createElement("div");
+    el.className = "user-location";
+    userMarker = new maplibregl.Marker({ element: el }).setLngLat(lngLat).addTo(map);
+  } else {
+    userMarker.setLngLat(lngLat);
+  }
+  map.flyTo({ center: lngLat, zoom: Math.max(map.getZoom(), 14) });
+}
+
+locateBtn.addEventListener("click", () => {
+  if (!navigator.geolocation) {
+    showToast("Standortbestimmung wird von diesem Browser nicht unterstützt.");
+    return;
+  }
+  locateBtn.classList.add("locating");
+  navigator.geolocation.getCurrentPosition(
+    (pos) => {
+      locateBtn.classList.remove("locating");
+      showUserLocation([pos.coords.longitude, pos.coords.latitude]);
+    },
+    (err) => {
+      locateBtn.classList.remove("locating");
+      showToast(err.code === 1
+        ? "Standortfreigabe abgelehnt — bitte in den Browser-Einstellungen erlauben."
+        : "Standort konnte nicht ermittelt werden.");
+    },
+    { enableHighAccuracy: true, timeout: 10000, maximumAge: 30000 }
+  );
+});
 
 // ---- Modal ----
 const modalRoot = document.getElementById("modal-root");
