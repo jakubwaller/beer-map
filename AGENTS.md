@@ -36,7 +36,7 @@ Every venue↔brand link (`venue_brand` edge) records its `source`, and sources 
 
 One idempotent build, run nightly via cron and by `docker-run.sh`:
 
-1. **OSM**: fetch Hamburg pubs/bars via Overpass (`osm.py` — tries mirror list `OVERPASS_URLS` with retry/backoff on transient statuses), upsert venues, extract edges from `brewery=` tags.
+1. **OSM**: fetch Hamburg pubs/bars via Overpass (`osm.py` — tries mirror list `OVERPASS_URLS` with retry/backoff on transient statuses), upsert venues, extract edges from `brewery=` tags. The `opening_hours` tag rides along on the venue row and into the export (OSM is its only source — nothing else writes it).
 2. **Finders**: per-brand "where to drink" scrapers (`pipeline/finders/`), fuzzy-matched to OSM venues by name + distance (`matching.py`, rapidfuzz, 85 threshold / 120 m). A failing finder logs a WARN and never kills the build.
 3. **Curation**: `curation.yaml` entries applied as `source="manual"` (`curation.py`). Entries resolve a venue by `osm_id`, by `lat`+`lon` (creates a `manual/<slug>` venue), or by fuzzy name. An entry without `brand` just pins the venue (gray dot) — for places the amenity sweep can't see, e.g. tagged `shop=alcohol`.
 4. **Community**: all approved submissions re-applied (`submissions.apply_approved`) — this is why approved venue edits/closures survive the OSM re-import each build.
@@ -52,7 +52,11 @@ Everything is upserts keyed on `(venue_id, brand_id, source, beer)` — `beer` (
 
 ### Frontend (`web/`)
 
-No build step, no npm deps: vanilla ES modules + vendored MapLibre (`web/vendor/`). `datasource.js` holds the pure data functions (load/dedupe/filter — the only unit-tested part, via `node --test`); `app.js` does the map, filter UI, and submission forms. Venue names/addresses/brands come from OSM (publicly editable), so **every interpolated value must go through `esc()`** before entering popup HTML.
+No build step, no npm deps: vanilla ES modules + vendored MapLibre (`web/vendor/`). The pure functions live in `datasource.js` (load/dedupe/filter plus the folded, token-scored search) and `hours.js` (the OSM `opening_hours` subset parser, "open now" and the German week view) — those two are the unit-tested part, via `node --test web/*.test.js`. `app.js` does the map, filter UI, search dropdown, brand autocomplete, and submission forms.
+
+Two mobile-Safari rules the UI depends on: form inputs are ≥16px on small screens (anything smaller makes iOS zoom the page on focus), and suggestion lists are hand-rolled rather than `<datalist>`, which mobile Safari renders erratically.
+
+`web/og-image.jpg` is the social preview card referenced by the `og:`/`twitter:` meta in `index.html`; regenerate it with `docs/og-image.md`. Venue names/addresses/brands come from OSM (publicly editable), so **every interpolated value must go through `esc()`** before entering popup HTML.
 
 ### Configuration
 

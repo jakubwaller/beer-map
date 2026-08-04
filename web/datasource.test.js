@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { loadVenues, buildBrandList, venuesByBrand, venuesByServing, searchVenues } from "./datasource.js";
+import { loadVenues, buildBrandList, venuesByBrand, venuesByServing, searchVenues, scoreVenue, fold } from "./datasource.js";
 
 const FC = {
   type: "FeatureCollection",
@@ -93,6 +93,67 @@ test("searchVenues with an empty query returns everything, brandless venues incl
   const v = loadVenues(FC).concat([{ name: "NoData", address: "", brands: [] }]);
   assert.equal(searchVenues(v, "").length, 3);
   assert.deepEqual(searchVenues(v, "nodata").map((x) => x.name), ["NoData"]);
+});
+
+test("fold strips diacritics, ß and punctuation", () => {
+  assert.equal(fold("Café Größe – St.Pauli!"), "cafe grosse st pauli");
+  assert.equal(fold("  "), "");
+});
+
+test("searchVenues ignores umlauts, case and punctuation", () => {
+  const v = loadVenues({ type: "FeatureCollection", features: [
+    { type: "Feature", geometry: { type: "Point", coordinates: [9.9, 53.5] },
+      properties: { name: "Zur Schönen Aussicht", address: "St. Pauli", brands: [] } } ] });
+  assert.equal(searchVenues(v, "schonen").length, 1);
+  assert.equal(searchVenues(v, "SCHÖNEN").length, 1);
+  assert.equal(searchVenues(v, "st.pauli").length, 1);
+});
+
+test("searchVenues matches all tokens, in any order and across fields", () => {
+  const v = loadVenues({ type: "FeatureCollection", features: [
+    { type: "Feature", geometry: { type: "Point", coordinates: [9.9, 53.5] },
+      properties: { name: "Zum Goldenen Handwerk", address: "Altona", brands: [
+        { brand: "Astra", source: "osm", serving: "fass" } ] } } ] });
+  assert.equal(searchVenues(v, "goldenen handwerk").length, 1);  // word tokens, gap skipped
+  assert.equal(searchVenues(v, "handwerk zum").length, 1);        // order irrelevant
+  assert.equal(searchVenues(v, "astra altona").length, 1);        // brand + address
+  assert.equal(searchVenues(v, "astra billstedt").length, 0);     // one token missing
+});
+
+test("searchVenues ranks name hits over brand hits over address hits", () => {
+  const at = (lon, lat) => ({ type: "Point", coordinates: [lon, lat] });
+  const v = loadVenues({ type: "FeatureCollection", features: [
+    { type: "Feature", geometry: at(9.9, 53.5),
+      properties: { name: "Weinstube", address: "Astraweg 4", brands: [] } },
+    { type: "Feature", geometry: at(9.9, 53.5),
+      properties: { name: "Eckkneipe", address: "Altona", brands: [
+        { brand: "Astra", source: "osm", serving: "fass" } ] } },
+    { type: "Feature", geometry: at(9.9, 53.5),
+      properties: { name: "Astra Stube", address: "Altona", brands: [] } } ] });
+  assert.deepEqual(searchVenues(v, "astra").map((x) => x.name),
+                   ["Astra Stube", "Eckkneipe", "Weinstube"]);
+});
+
+test("a query does not match mid-word inside an address", () => {
+  const v = loadVenues({ type: "FeatureCollection", features: [
+    // "astra" hides inside "Koreastraße" — a substring match on addresses buried
+    // the real Astra pubs under gray dots.
+    { type: "Feature", geometry: { type: "Point", coordinates: [9.9, 53.5] },
+      properties: { name: "Alte Liebe", address: "Koreastraße 1, 20457 Hamburg", brands: [] } },
+    { type: "Feature", geometry: { type: "Point", coordinates: [9.9, 53.5] },
+      properties: { name: "Eckkneipe", address: "Astraweg 4", brands: [] } } ] });
+  assert.deepEqual(searchVenues(v, "astra").map((x) => x.name), ["Eckkneipe"]);
+  // Mid-word still works where it is useful: names, brands and beers.
+  const named = loadVenues({ type: "FeatureCollection", features: [
+    { type: "Feature", geometry: { type: "Point", coordinates: [9.9, 53.5] },
+      properties: { name: "Straßenbräu", address: "", brands: [] } } ] });
+  assert.equal(searchVenues(named, "brau").length, 1);
+});
+
+test("scoreVenue prefers a venue with beer data over a bare dot", () => {
+  const mk = (brands) => ({ name: "Kneipe", address: "", brands });
+  assert.ok(scoreVenue(mk([{ brand: "Astra" }]), "kneipe") >
+            scoreVenue(mk([]), "kneipe"));
 });
 
 test("dedupe keeps multiple beers of one brand and drops the brand-only entry", () => {

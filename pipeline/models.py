@@ -11,6 +11,9 @@ class Venue:
     lon: float
     address: str | None = None
     website: str | None = None
+    # Raw OSM `opening_hours` value; parsed (and displayed verbatim when the
+    # syntax is beyond the frontend parser) in web/hours.js.
+    opening_hours: str | None = None
 
 
 @dataclass

@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8" />
+<title>OG card</title>
+<link href="https://fonts.googleapis.com/css2?family=Lora:wght@600;700&family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { width: 1200px; height: 630px; overflow: hidden; background: #f4ecdf; }
+  .card { position: relative; width: 1200px; height: 630px; overflow: hidden; }
+  /* The plate has the card's aspect ratio, so object-position can't pan it —
+     scale + translate to put Germany in the right half, clear of the type. */
+  .plate {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
+    object-fit: cover;
+    transform: scale(0.97) translateX(200px);
+    transform-origin: 50% 50%;
+  }
+  /* Cream wash over the left half so the type sits on a calm ground. */
+  .veil {
+    position: absolute; inset: 0;
+    background: linear-gradient(100deg,
+      #f6efe3 0%, #f6efe3 38%, rgba(246, 239, 227, .88) 45%,
+      rgba(246, 239, 227, .4) 52%, rgba(246, 239, 227, 0) 60%);
+  }
+  .panel {
+    position: absolute;
+    top: 0; left: 0; bottom: 0;
+    width: 620px;
+    padding: 62px 56px 52px 64px;
+    display: flex; flex-direction: column;
+  }
+  .brand { display: flex; align-items: center; gap: 14px; }
+  .brand .name {
+    font-family: 'Lora', Georgia, serif; font-weight: 600; font-size: 40px;
+    color: #3b322a; letter-spacing: -0.3px;
+  }
+  h1 {
+    margin-top: 40px;
+    font-family: 'Lora', Georgia, serif; font-weight: 700; font-size: 54px;
+    line-height: 1.1; color: #23201d;
+  }
+  h1 em { font-style: normal; color: #c2621f; }
+  p {
+    margin-top: 22px; max-width: 425px;
+    font-family: 'Work Sans', system-ui, sans-serif; font-size: 21px; line-height: 1.45;
+    color: #5b5148; font-weight: 400;
+  }
+  .stats {
+    margin-top: auto;
+    font-family: 'Work Sans', system-ui, sans-serif; font-size: 17px; font-weight: 500;
+    color: #6b6055;
+  }
+  .stats b { color: #23201d; font-weight: 700; }
+  .url {
+    margin-top: 16px;
+    display: inline-block; align-self: flex-start;
+    padding: 9px 20px; border-radius: 999px;
+    background: #d97a3d; color: #fff;
+    font-family: 'Work Sans', system-ui, sans-serif; font-size: 19px; font-weight: 700;
+    letter-spacing: .2px;
+  }
+  .attr {
+    position: absolute; right: 14px; bottom: 12px;
+    padding: 3px 10px; border-radius: 6px;
+    background: rgba(255, 255, 255, .82);
+    font-family: 'Work Sans', system-ui, sans-serif; font-size: 12px; color: #6b6055;
+  }
+</style>
+</head>
+<body>
+  <div class="card">
+    <img class="plate" src="_og-plate.png" alt="" />
+    <div class="veil"></div>
+    <div class="panel">
+      <div class="brand">
+        <svg width="52" height="52" viewBox="0 0 24 24" aria-hidden="true">
+          <rect x="6" y="4" width="11" height="16" rx="3" fill="#d97a3d"></rect>
+          <rect x="8" y="6" width="7" height="3" rx="1.2" fill="#fbf4e9"></rect>
+          <path d="M17 9c3 0 4 1.6 4 3.5S20 16 17 16" fill="none" stroke="#a3521f"
+                stroke-width="2.2" stroke-linecap="round"></path>
+        </svg>
+        <span class="name">Zapfkompass</span>
+      </div>
+      <h1>Bier vom <em>Fass</em><br />&amp; <em>Tank</em>, kartiert</h1>
+      <p>Kneipe für Kneipe: welche Marke gezapft wird — mit Quelle und Prüfdatum.</p>
+      <div class="stats">
+        <b>9.002</b> Orte · <b>3.126</b> mit bekannter Marke<br />
+        Hamburg und Leipzig vollständig erfasst
+      </div>
+      <div class="url">zapfkompass.de</div>
+    </div>
+    <div class="attr">© OpenStreetMap contributors</div>
+  </div>
+</body>
+</html>

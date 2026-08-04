@@ -9,7 +9,8 @@ def test_export_writes_geojson_with_brand_provenance(tmp_path):
     conn = get_connection(":memory:")
     init_db(conn)
     vid = upsert_venue(conn, Venue("manual/pampa", "Pampa", 53.5556, 9.9636,
-                                   address="Hamburg"), "2026-06-24")
+                                   address="Hamburg",
+                                   opening_hours="Mo-Su 12:00-23:00"), "2026-06-24")
     bid = upsert_brand(conn, "Pilsner Urquell")
     upsert_edge(conn, vid, bid, "manual", "2026-06-24", serving="tank")
 
@@ -19,6 +20,7 @@ def test_export_writes_geojson_with_brand_provenance(tmp_path):
     assert fc["type"] == "FeatureCollection"
     feat = fc["features"][0]
     assert feat["geometry"]["coordinates"] == [9.9636, 53.5556]  # lon, lat
+    assert feat["properties"]["opening_hours"] == "Mo-Su 12:00-23:00"
     assert feat["properties"]["brands"] == [
         {"brand": "Pilsner Urquell", "source": "manual", "serving": "tank",
          "beer": None, "last_seen": "2026-06-24"}
