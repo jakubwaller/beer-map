@@ -1,13 +1,16 @@
 # beer-map
 
-**Live at [beermap.jakubwaller.eu](https://beermap.jakubwaller.eu)**
+**Live at [zapfkompass.de](https://zapfkompass.de)** — the site is called *Zapfkompass*;
+the repo, Docker service and env files stay `beermap`.
 
 A map of German drinking venues, filterable by draft beer brand and serving type
 (Fassbier/Tankbier). Hamburg and Leipzig are swept in full (every pub/bar/restaurant
 becomes at least a clickable gray dot); the rest of Germany shows every venue with
 a known brand (OSM `brewery=` tag). Built on a human-curated core (`curation.yaml`,
 highest trust), seeded by OpenStreetMap and brand "where to drink" finders. Every
-venue↔brand link records its source and last-verified date.
+venue↔brand link records its source and last-verified date. Venues also show their
+OSM opening hours ("Jetzt geöffnet · bis 22:00"), and the search ranks matches
+across name, brand, beer and address.
 
 See `docs/specs/` (design).
 
@@ -75,7 +78,8 @@ node --test web/*.test.js  # frontend pure functions (needs Node.js)
 - `/admin` — HTTP Basic (`BEERMAP_ADMIN_PW`) moderation queue; approve = instant re-export.
 - Approved edits are `source="community"`, ranked just below your `manual` curation.yaml.
 - **Docker deploy:** `./docker-run.sh` (build + start + build dataset), `./docker-stop.sh`.
-  Full steps in `deploy/DEPLOY.md`. DNS for `beermap.jakubwaller.eu` is already live.
+  Full steps in `deploy/DEPLOY.md`. `zapfkompass.de` is live; `www.zapfkompass.de` and the
+  old `beermap.jakubwaller.eu` redirect there.
 
 ## Adding a brand finder
 1. Save the brand's live "where to drink" page; inspect its structure.
