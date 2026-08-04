@@ -718,8 +718,15 @@ button:disabled { opacity: .55; cursor: default; }
 @media (max-width: 640px) {
   header { padding: 10px 14px; gap: 10px 14px; }
   .chip-bar { padding-left: 14px; padding-right: 14px; }
-  .header-actions { gap: 10px 14px; flex-wrap: wrap; }
+  /* The map is the scarce thing on a phone: the CTA has to share the nav's row
+     instead of claiming one of its own. Dropping the long half of the "Über"
+     label and shrinking the button buys enough width for both to fit; the
+     flex-wrap stays as a fallback for very narrow screens. */
+  .header-actions { gap: 10px 12px; flex-wrap: wrap; }
   .header-actions nav { gap: 14px; font-size: 13px; }
+  .nav-long { display: none; }
+  .cta { padding: 8px 13px; font-size: 13px; }
+  .cta span { font-size: 15px; }
   .search-wrap { flex-basis: 100%; order: 3; max-width: none; }
   #modal-card { padding: 22px 20px; }
   /* 16px keeps iOS Safari from zooming the page when a field takes focus —
@@ -728,4 +735,11 @@ button:disabled { opacity: .55; cursor: default; }
   .venueform input, .beerform select { font-size: 16px; }
   .combo-opt, .suggest-name { font-size: 15px; }
   .suggest-row { padding: 11px 14px; }
+}
+
+/* Narrowest phones: nav + CTA are ~7px too wide for one row, so the decorative
+   "+" goes as well — losing the glyph beats losing a row of map. */
+@media (max-width: 360px) {
+  .header-actions nav { gap: 12px; }
+  .cta span { display: none; }
 }
