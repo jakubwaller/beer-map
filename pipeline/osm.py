@@ -51,7 +51,8 @@ def parse_overpass(data):
             continue
         osm_id = f"{el['type']}/{el['id']}"
         venues.append(Venue(osm_id, name, lat, lon, _address(tags),
-                            tags.get("website") or tags.get("contact:website")))
+                            tags.get("website") or tags.get("contact:website"),
+                            tags.get("opening_hours")))
         for brand in _brands_from_tags(tags):
             edges.append(BrandEdge(osm_id, brand, "osm"))
     return venues, edges

@@ -12,6 +12,7 @@ CREATE TABLE IF NOT EXISTS venues (
     lon REAL NOT NULL,
     address TEXT,
     website TEXT,
+    opening_hours TEXT,
     hidden INTEGER NOT NULL DEFAULT 0,
     updated_at TEXT NOT NULL
 );
@@ -55,6 +56,7 @@ CREATE TABLE IF NOT EXISTS submissions (
 # with CREATE TABLE IF NOT EXISTS, so they keep the old layout — add them by hand.
 _MIGRATIONS = (
     ("venues", "hidden", "INTEGER NOT NULL DEFAULT 0"),
+    ("venues", "opening_hours", "TEXT"),
     ("venue_brand", "beer", "TEXT"),
     ("submissions", "address", "TEXT"),
     ("submissions", "beer", "TEXT"),
@@ -117,13 +119,15 @@ def _migrate_venue_brand_pk(conn) -> None:
 def upsert_venue(conn, venue, seen: str) -> int:
     conn.execute(
         """
-        INSERT INTO venues (osm_id, name, lat, lon, address, website, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO venues (osm_id, name, lat, lon, address, website, opening_hours, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(osm_id) DO UPDATE SET
             name=excluded.name, lat=excluded.lat, lon=excluded.lon,
-            address=excluded.address, website=excluded.website, updated_at=excluded.updated_at
+            address=excluded.address, website=excluded.website,
+            opening_hours=excluded.opening_hours, updated_at=excluded.updated_at
         """,
-        (venue.osm_id, venue.name, venue.lat, venue.lon, venue.address, venue.website, seen),
+        (venue.osm_id, venue.name, venue.lat, venue.lon, venue.address, venue.website,
+         venue.opening_hours, seen),
     )
     return conn.execute("SELECT id FROM venues WHERE osm_id=?", (venue.osm_id,)).fetchone()["id"]
 
@@ -221,7 +225,7 @@ def fetch_venues_with_brands(conn) -> list[dict]:
     # Hidden venues (reported closed and approved) are kept in the DB so the flag
     # survives OSM re-imports, but they are excluded from the exported map.
     venues = conn.execute(
-        "SELECT id, osm_id, name, lat, lon, address, website FROM venues "
+        "SELECT id, osm_id, name, lat, lon, address, website, opening_hours FROM venues "
         "WHERE COALESCE(hidden, 0) = 0 ORDER BY id"
     ).fetchall()
     out = []
@@ -249,7 +253,7 @@ def fetch_venues_with_brands(conn) -> list[dict]:
         out.append({
             "osm_id": v["osm_id"], "name": v["name"], "lat": v["lat"], "lon": v["lon"],
             "address": v["address"], "website": v["website"],
-            "brands": brands,
+            "opening_hours": v["opening_hours"], "brands": brands,
         })
     return out
 

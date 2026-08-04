@@ -101,6 +101,11 @@ header {
   background: var(--header);
   -webkit-backdrop-filter: blur(6px);
   backdrop-filter: blur(6px);
+  /* backdrop-filter makes the header its own stacking context, so the search
+     dropdown's z-index only counts *inside* it — without this the chip bars
+     below (later in the DOM) paint straight over the suggestions. */
+  position: relative;
+  z-index: 2;
 }
 
 .brandmark {
@@ -151,22 +156,121 @@ header {
 }
 #city-select:hover { color: var(--ink); }
 
-#search {
+/* ---------- Search (input + suggestion dropdown) ---------- */
+.search-wrap {
+  position: relative;
   flex: 1 1 140px;
   min-width: 120px;
   max-width: 400px;
-  padding: 10px 16px;
+}
+#search {
+  width: 100%;
+  padding: 10px 36px 10px 16px;
   border-radius: 999px;
   border: 1px solid var(--line);
-  font-size: 14px;
+  font-size: 16px;   /* < 16px makes iOS Safari zoom the page on focus */
   font-family: inherit;
   background: #fff;
   color: var(--ink);
+  -webkit-appearance: none;
+  appearance: none;
 }
 #search:focus {
   outline: none;
   border-color: var(--accent);
   box-shadow: 0 0 0 3px oklch(62% 0.16 45 / .2);
+}
+/* We ship our own clear button — hide WebKit's so there aren't two. */
+#search::-webkit-search-cancel-button,
+#search::-webkit-search-decoration { -webkit-appearance: none; appearance: none; }
+
+#search-clear {
+  position: absolute;
+  top: 50%;
+  right: 8px;
+  transform: translateY(-50%);
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: oklch(93% 0.01 70);
+  color: var(--muted-2);
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+}
+#search-clear:hover { background: oklch(88% 0.01 70); color: var(--ink); }
+#search-clear[hidden] { display: none; }
+
+.suggest {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  z-index: 12;
+  max-height: min(58vh, 400px);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  box-shadow: 0 12px 32px rgba(20, 14, 8, .18);
+  overscroll-behavior: contain;
+}
+.suggest[hidden] { display: none; }
+.suggest-row {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+  padding: 9px 14px;
+  border: 0;
+  border-top: 1px solid var(--line-soft);
+  background: none;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.suggest-row:first-child { border-top: 0; }
+.suggest-row:hover, .suggest-row.active { background: oklch(96% 0.02 70); }
+.suggest-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.suggest-meta {
+  font-size: 12px;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.suggest-meta .is-open { color: var(--good-solid); font-weight: 600; }
+.suggest-meta .is-closed { color: var(--danger); font-weight: 600; }
+.suggest-all {
+  display: block;
+  width: 100%;
+  padding: 10px 14px;
+  border: 0;
+  border-top: 1px solid var(--line);
+  background: oklch(97% 0.015 80);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--accent-strong);
+  text-align: left;
+  cursor: pointer;
+}
+.suggest-all:hover { background: oklch(94% 0.03 70); }
+.suggest-empty {
+  padding: 14px;
+  font-size: 13px;
+  color: var(--muted);
+  font-style: italic;
 }
 
 .header-actions {
@@ -393,6 +497,41 @@ header {
 .modal-text a { font-weight: 500; }
 .venue-addr { color: var(--muted); font-size: 13px; margin: -6px 0 10px; }
 
+/* ---------- Venue modal: opening hours ---------- */
+.venue-hours { margin: 0 0 12px; font-size: 13px; }
+.hours-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  background: oklch(93% 0.06 150);
+  color: var(--good);
+}
+.hours-badge.closed { background: oklch(94% 0.03 40); color: var(--danger); }
+.hours-raw { color: var(--muted-2); }
+.hours-week { margin-top: 8px; }
+.hours-week summary {
+  cursor: pointer;
+  color: var(--muted);
+  font-weight: 600;
+  font-size: 12px;
+  list-style: none;
+}
+.hours-week summary::-webkit-details-marker { display: none; }
+.hours-week summary::after { content: " ▾"; font-size: 9px; }
+.hours-week[open] summary::after { content: " ▴"; }
+.hours-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 3px 0;
+  font-size: 13px;
+  color: var(--muted-2);
+}
+.hours-row span:first-child { font-weight: 600; min-width: 62px; }
+.hours-note { margin-top: 6px; font-size: 11px; color: var(--muted); font-style: italic; }
+
 /* Stats bars */
 .stat-row { display: flex; align-items: center; gap: 10px; margin-bottom: 9px; }
 .stat-row .stat-name {
@@ -448,6 +587,7 @@ header {
   color: var(--ink);
 }
 .beerform button {
+  flex: 0 0 auto;   /* never squeeze to a sliver next to a wide select */
   width: 30px; height: 30px; padding: 0;
   font-size: 14px; line-height: 1; font-weight: 700;
   color: #fff; background: var(--good-solid); border: 0; border-radius: 8px;
@@ -467,18 +607,55 @@ header {
   gap: 8px;
   align-items: center;
 }
-.addbeer input[name="brand"],
+.addbeer .combo,
+.venueadd .combo,
 .addbeer input[name="beer"],
 .venueadd input[name="venue"],
-.venueadd input[name="address"],
-.venueadd input[name="brand"] {
+.venueadd input[name="address"] {
   flex: 1 1 100%;
+}
+.addbeer input:not([type="radio"]),
+.venueadd input:not([type="radio"]) {
+  width: 100%;
   padding: 8px 10px;
   font-size: 14px;
   border: 1px solid var(--line);
   border-radius: 9px;
   font-family: inherit;
 }
+
+/* ---------- Brand autocomplete ---------- */
+/* The option list sits in the flow rather than floating: inside a scrollable
+   modal an absolutely positioned dropdown gets clipped or lands off-screen on
+   a phone, whereas this just pushes the rest of the form down. */
+.combo { display: block; position: relative; }
+.combo-list {
+  margin-top: 4px;
+  max-height: 168px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: #fff;
+  box-shadow: 0 4px 14px rgba(20, 14, 8, .1);
+  overscroll-behavior: contain;
+}
+.combo-list[hidden] { display: none; }
+.combo-opt {
+  display: block;
+  width: 100%;
+  padding: 9px 12px;
+  border: 0;
+  border-top: 1px solid var(--line-soft);
+  background: none;
+  font-family: inherit;
+  font-size: 14px;
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+}
+.combo-opt:first-child { border-top: 0; }
+.combo-opt:hover, .combo-opt.active { background: oklch(96% 0.02 70); }
 .addbeer input:focus,
 .venueadd input:focus,
 .venueform input:focus {
@@ -490,14 +667,16 @@ header {
   display: inline-flex; align-items: center; gap: 4px;
   font-size: 13px; cursor: pointer;
 }
-.addbeer button,
-.venueadd button {
+/* Direct children only: the autocomplete options are buttons too, and they
+   must not pick up the submit button's amber fill. */
+.addbeer > button,
+.venueadd > button {
   padding: 8px 14px;
   font-size: 13px; font-weight: 600;
   color: #fff; background: var(--accent);
   border: 0; border-radius: 9px; cursor: pointer;
 }
-.addbeer button:hover, .venueadd button:hover { background: var(--accent-strong); }
+.addbeer > button:hover, .venueadd > button:hover { background: var(--accent-strong); }
 .addbeer .hp, .venueadd .hp { position: absolute; left: -9999px; }
 .addbeer .msg, .venueadd .msg { flex: 1 1 100%; font-size: 12px; font-weight: 600; color: var(--good); }
 button:disabled { opacity: .55; cursor: default; }
@@ -541,6 +720,12 @@ button:disabled { opacity: .55; cursor: default; }
   .chip-bar { padding-left: 14px; padding-right: 14px; }
   .header-actions { gap: 10px 14px; flex-wrap: wrap; }
   .header-actions nav { gap: 14px; font-size: 13px; }
-  #search { flex-basis: 100%; order: 3; max-width: none; }
+  .search-wrap { flex-basis: 100%; order: 3; max-width: none; }
   #modal-card { padding: 22px 20px; }
+  /* 16px keeps iOS Safari from zooming the page when a field takes focus —
+     that zoom is what made the "Bier melden" form jump around on a phone. */
+  .addbeer input:not([type="radio"]), .venueadd input:not([type="radio"]),
+  .venueform input, .beerform select { font-size: 16px; }
+  .combo-opt, .suggest-name { font-size: 15px; }
+  .suggest-row { padding: 11px 14px; }
 }

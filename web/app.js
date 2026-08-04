@@ -1,4 +1,7 @@
-import { loadVenues, buildBrandList, venuesByBrand, venuesByServing, searchVenues } from "./datasource.js?v=__ASSET_VERSION__";
+import { loadVenues, buildBrandList, venuesByBrand, venuesByServing, searchVenues, fold }
+  from "./datasource.js?v=__ASSET_VERSION__";
+import { parseOpeningHours, openState, statusText, formatWeek }
+  from "./hours.js?v=__ASSET_VERSION__";
 
 const SERVING_LABEL = { tank: "Tankbier", fass: "Fassbier", unknown: "" };
 const SOURCE_LABEL = { manual: "✓ verifiziert", community: "✓ geprüft", osm: "OSM" };
@@ -52,6 +55,8 @@ const servingBar = document.getElementById("serving-bar");
 const brandBar = document.getElementById("brand-bar");
 const countEl = document.getElementById("count");
 const searchEl = document.getElementById("search");
+const resultsEl = document.getElementById("search-results");
+const clearEl = document.getElementById("search-clear");
 const topbar = document.getElementById("topbar");
 const zoomCtrl = document.getElementById("zoom-ctrl");
 
@@ -80,7 +85,7 @@ const currentGrayVenues = () => (grayVisible() ? searchVenues(grayVenues, search
 
 function applyFilters() {
   const n = currentVenues().length + currentGrayVenues().length;
-  countEl.textContent = `${n} Orte`;
+  countEl.textContent = search.trim() ? `${n} Treffer` : `${n} Orte`;
   refreshMarkers();
   refreshGrayLayer();
 }
@@ -389,6 +394,31 @@ function beerRow(osm, b) {
   </li>`;
 }
 
+// Opening hours come from the OSM `opening_hours` tag. Anything the parser
+// can't read is printed verbatim rather than guessed at — see web/hours.js.
+function venueSchedule(v) {
+  if (v._schedule === undefined) v._schedule = parseOpeningHours(v.opening_hours);
+  return v._schedule;
+}
+
+function hoursBlock(v) {
+  if (!v.opening_hours) return "";
+  const schedule = venueSchedule(v);
+  if (!schedule)
+    return `<div class="venue-hours"><span class="hours-raw">🕒 ${esc(v.opening_hours)}</span></div>`;
+  const state = openState(schedule);
+  const week = formatWeek(schedule).map((g) =>
+    `<div class="hours-row"><span>${esc(g.label)}</span><span>${esc(g.text)}</span></div>`).join("");
+  return `<div class="venue-hours">
+      <span class="hours-badge ${state.open ? "open" : "closed"}">${esc(statusText(state))}</span>
+      <details class="hours-week">
+        <summary>Öffnungszeiten</summary>
+        ${week}
+        <div class="hours-note">Zeiten aus OpenStreetMap — ohne Gewähr.</div>
+      </details>
+    </div>`;
+}
+
 function openVenueModal(v) {
   const osm = v.osm_id || "";
   const brands = v.brands || [];
@@ -397,9 +427,13 @@ function openVenueModal(v) {
     : `<p class="nobeers">Noch keine Biere erfasst.</p>`;
   const html =
     (v.address ? `<div class="venue-addr">${esc(v.address)}</div>` : "") +
+    hoursBlock(v) +
     beers +
     `<form class="addbeer" data-osm="${esc(osm)}">
-       <input name="brand" list="brandlist" placeholder="Marke hinzufügen" required>
+       <span class="combo">
+         <input name="brand" data-combo placeholder="Marke hinzufügen" autocomplete="off" required>
+         <div class="combo-list" hidden></div>
+       </span>
        <input name="beer" placeholder="Sorte (optional)">
        <label><input type="radio" name="serving" value="fass" checked>Fass</label>
        <label><input type="radio" name="serving" value="tank">Tank</label>
@@ -450,7 +484,10 @@ function openAddInfo() {
     <form class="venueadd">
       <input name="venue" placeholder="Name des Lokals" maxlength="120" required>
       <input name="address" placeholder="Straße Nr., PLZ Stadt" maxlength="200" required>
-      <input name="brand" list="brandlist" placeholder="Marke (optional)" maxlength="80">
+      <span class="combo">
+        <input name="brand" data-combo placeholder="Marke (optional)" maxlength="80" autocomplete="off">
+        <div class="combo-list" hidden></div>
+      </span>
       <label><input type="radio" name="serving" value="fass" checked>Fass</label>
       <label><input type="radio" name="serving" value="tank">Tank</label>
       <input class="hp" name="hp" tabindex="-1" autocomplete="off">
@@ -463,7 +500,206 @@ document.querySelectorAll("[data-modal]").forEach((el) => {
   el.addEventListener("click", () => ({ stats: openStats, about: openAbout, contact: openContact }[kind])());
 });
 document.getElementById("cta-add").addEventListener("click", openAddInfo);
-searchEl.addEventListener("input", () => { search = searchEl.value; applyFilters(); });
+
+// ---- Search ----
+// Filtering the markers was never enough on its own: off-screen markers are
+// culled, so a hit in Leipzig while you are looking at Hamburg counted towards
+// "12 Treffer" and then appeared nowhere. The dropdown makes every match
+// reachable — pick one to fly to it, or put the whole result set on the map.
+const MAX_SUGGESTIONS = 8;
+let searchPool = [];   // every venue, gray dots included
+let matches = [];      // current ranked matches
+let suggestIdx = -1;   // keyboard-highlighted row, -1 = none
+
+function suggestRow(v, i) {
+  const state = openState(venueSchedule(v));
+  const bits = [];
+  if (state)
+    bits.push(`<span class="${state.open ? "is-open" : "is-closed"}">`
+      + (state.open ? "geöffnet" : "geschlossen") + `</span>`);
+  const brands = [...new Set((v.brands || []).map((b) => b.brand))];
+  if (brands.length)
+    bits.push(esc(brands.slice(0, 2).join(", ")
+      + (brands.length > 2 ? ` +${brands.length - 2}` : "")));
+  if (v.address) bits.push(esc(v.address));
+  return `<button type="button" class="suggest-row" role="option" data-idx="${i}">
+      <span class="suggest-name">${esc(v.name || "Ohne Namen")}</span>
+      <span class="suggest-meta">${bits.join(" · ")}</span>
+    </button>`;
+}
+
+function openSuggestions() {
+  resultsEl.hidden = false;
+  searchEl.setAttribute("aria-expanded", "true");
+}
+
+function closeSuggestions() {
+  resultsEl.hidden = true;
+  searchEl.setAttribute("aria-expanded", "false");
+  suggestIdx = -1;
+}
+
+function renderSuggestions() {
+  const q = search.trim();
+  clearEl.hidden = !q;
+  if (!q) { matches = []; closeSuggestions(); return; }
+  matches = searchVenues(searchPool, q);
+  suggestIdx = -1;
+  resultsEl.innerHTML = matches.length
+    ? matches.slice(0, MAX_SUGGESTIONS).map(suggestRow).join("")
+      + `<button type="button" class="suggest-all">`
+      + `Alle ${matches.length} Treffer auf der Karte zeigen</button>`
+    : `<div class="suggest-empty">Keine Treffer für „${esc(q)}“</div>`;
+  openSuggestions();
+}
+
+function pickVenue(v) {
+  if (!v) return;
+  closeSuggestions();
+  searchEl.blur();
+  map.flyTo({ center: [v.lon, v.lat], zoom: Math.max(map.getZoom(), 16) });
+  openVenueModal(v);
+}
+
+function showAllMatches() {
+  if (!matches.length) return;
+  if (matches.length === 1) { pickVenue(matches[0]); return; }
+  closeSuggestions();
+  searchEl.blur();
+  const bounds = new maplibregl.LngLatBounds();
+  for (const v of matches) bounds.extend([v.lon, v.lat]);
+  map.fitBounds(bounds, { padding: dePadding(), maxZoom: 15 });
+}
+
+function highlightSuggestion(delta) {
+  const rows = resultsEl.querySelectorAll(".suggest-row");
+  if (!rows.length) return;
+  suggestIdx += delta;
+  if (suggestIdx < 0) suggestIdx = rows.length - 1;
+  if (suggestIdx >= rows.length) suggestIdx = 0;
+  rows.forEach((r, i) => r.classList.toggle("active", i === suggestIdx));
+  rows[suggestIdx].scrollIntoView({ block: "nearest" });
+}
+
+function clearSearch() {
+  searchEl.value = "";
+  search = "";
+  matches = [];
+  clearEl.hidden = true;
+  closeSuggestions();
+  applyFilters();
+}
+
+searchEl.addEventListener("input", () => {
+  search = searchEl.value;
+  renderSuggestions();
+  applyFilters();
+});
+searchEl.addEventListener("focus", () => { if (search.trim()) renderSuggestions(); });
+// Delayed: a tap on a row must land before the list disappears.
+searchEl.addEventListener("blur", () => setTimeout(closeSuggestions, 150));
+searchEl.addEventListener("keydown", (e) => {
+  if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+    e.preventDefault();
+    if (resultsEl.hidden) renderSuggestions();
+    else highlightSuggestion(e.key === "ArrowDown" ? 1 : -1);
+  } else if (e.key === "Enter") {
+    e.preventDefault();
+    if (suggestIdx >= 0) pickVenue(matches[suggestIdx]);
+    else showAllMatches();
+  } else if (e.key === "Escape") {
+    if (resultsEl.hidden) clearSearch(); else closeSuggestions();
+  }
+});
+// preventDefault keeps the focus (and the on-screen keyboard) put, so `blur`
+// never fires before the click that picks a row.
+resultsEl.addEventListener("pointerdown", (e) => e.preventDefault());
+resultsEl.addEventListener("click", (e) => {
+  if (e.target.closest(".suggest-all")) { showAllMatches(); return; }
+  const row = e.target.closest(".suggest-row");
+  if (row) pickVenue(matches[+row.dataset.idx]);
+});
+clearEl.addEventListener("click", () => { clearSearch(); searchEl.focus(); });
+
+// ---- Brand autocomplete (modal forms) ----
+// Hand-rolled instead of <input list> + <datalist>: mobile Safari renders the
+// native datalist dropdown erratically — on a phone the brand field offered no
+// completions at all — and a tappable list beats a keyboard-only one anyway.
+const COMBO_MAX = 6;
+let brandNames = [];
+
+function comboMatches(query) {
+  const q = fold(query);
+  if (!q) return brandNames.slice(0, COMBO_MAX);
+  const starts = [], contains = [];
+  for (const name of brandNames) {
+    const f = fold(name);
+    if (f.startsWith(q)) starts.push(name);
+    else if (f.includes(q)) contains.push(name);
+  }
+  return starts.concat(contains).slice(0, COMBO_MAX);
+}
+
+const comboList = (input) => input.parentElement.querySelector(".combo-list");
+
+function closeCombo(input) {
+  const list = comboList(input);
+  if (list) { list.hidden = true; list.textContent = ""; }
+}
+
+function renderCombo(input) {
+  const list = comboList(input);
+  if (!list) return;
+  const items = comboMatches(input.value);
+  // Nothing to add once the field already holds the one remaining match.
+  if (!items.length || (items.length === 1 && fold(items[0]) === fold(input.value))) {
+    closeCombo(input);
+    return;
+  }
+  list.innerHTML = items.map((n) =>
+    `<button type="button" class="combo-opt" data-value="${esc(n)}">${esc(n)}</button>`).join("");
+  list.hidden = false;
+}
+
+modalBody.addEventListener("input", (e) => {
+  if (e.target.matches("input[data-combo]")) renderCombo(e.target);
+});
+modalBody.addEventListener("focusin", (e) => {
+  if (e.target.matches("input[data-combo]")) renderCombo(e.target);
+});
+modalBody.addEventListener("focusout", (e) => {
+  if (e.target.matches("input[data-combo]")) setTimeout(() => closeCombo(e.target), 150);
+});
+modalBody.addEventListener("pointerdown", (e) => {
+  const opt = e.target.closest(".combo-opt");
+  if (!opt) return;
+  e.preventDefault();   // hold the focus so the field doesn't blur-close first
+  const input = opt.closest(".combo").querySelector("input");
+  input.value = opt.dataset.value;
+  closeCombo(input);
+  input.focus();
+});
+modalBody.addEventListener("keydown", (e) => {
+  const input = e.target;
+  if (!input.matches || !input.matches("input[data-combo]")) return;
+  const list = comboList(input);
+  if (!list || list.hidden) return;
+  const opts = [...list.querySelectorAll(".combo-opt")];
+  const cur = opts.findIndex((o) => o.classList.contains("active"));
+  if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+    e.preventDefault();
+    const next = e.key === "ArrowDown"
+      ? (cur + 1) % opts.length
+      : (cur <= 0 ? opts.length - 1 : cur - 1);
+    opts.forEach((o, i) => o.classList.toggle("active", i === next));
+  } else if (e.key === "Enter" && cur >= 0) {
+    e.preventDefault();   // pick the highlighted brand instead of submitting
+    input.value = opts[cur].dataset.value;
+    closeCombo(input);
+  } else if (e.key === "Escape") {
+    closeCombo(input);
+  }
+});
 
 const citySelect = document.getElementById("city-select");
 citySelect.addEventListener("change", () => {
@@ -533,6 +769,9 @@ async function boot() {
   allVenues = venues.filter((v) => v.brands.length > 0);
   grayVenues = venues.filter((v) => v.brands.length === 0);
   grayVenues.forEach((v, i) => { v.grayIdx = i; });
+  // The search dropdown reaches the whole dataset, chips or no chips: someone
+  // typing a pub name wants that pub, not "no results, because Tankbier".
+  searchPool = venues;
 
   // Brand frequency = number of venues serving each brand, desc.
   const freq = new Map();
@@ -546,12 +785,10 @@ async function boot() {
   }
   brandFreq = [...freq.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], "de"));
 
-  // Datalist for the "Marke hinzufügen" autocomplete.
-  const dl = document.createElement("datalist"); dl.id = "brandlist";
-  for (const b of buildBrandList(allVenues)) {
-    const o = document.createElement("option"); o.value = b; dl.appendChild(o);
-  }
-  document.body.appendChild(dl);
+  // "Marke hinzufügen" autocomplete, commonest brand first — alphabetical order
+  // opens the list on "60" and "7up", which reads like a broken suggestion box.
+  brandNames = buildBrandList(allVenues)
+    .sort((a, b) => (freq.get(b) || 0) - (freq.get(a) || 0) || a.localeCompare(b, "de"));
 
   renderServingChips();
   renderBrandChips();
