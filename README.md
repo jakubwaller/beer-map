@@ -4,7 +4,9 @@
 the repo, Docker service and env files stay `beermap`.
 
 A map of German drinking venues, filterable by draft beer brand and serving type
-(Fassbier/Tankbier). Hamburg and Leipzig are swept in full (every pub/bar/restaurant
+(Fassbier/Tankbier). Twelve major cities — Berlin, Bremen, Dresden, Düsseldorf,
+Frankfurt am Main, Hamburg, Hannover, Köln, Leipzig, München, Nürnberg and
+Stuttgart — are swept in full (every pub/bar/restaurant
 becomes at least a clickable gray dot); the rest of Germany shows every venue with
 a known brand (OSM `brewery=` tag). Built on a human-curated core (`curation.yaml`,
 highest trust), seeded by OpenStreetMap and brand "where to drink" finders. Every

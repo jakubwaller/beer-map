@@ -4,7 +4,7 @@ Guidance for coding agents working in this repository.
 
 ## What this is
 
-A map of Hamburg drinking venues filterable by draft beer brand and serving type (Fassbier/Tankbier). A Python pipeline builds a SQLite DB + GeoJSON export; a static vanilla-JS frontend renders it; a FastAPI app adds anonymous submissions with a moderation queue. Deployed on a Raspberry Pi behind Caddy.
+A map of German drinking venues filterable by draft beer brand and serving type (Fassbier/Tankbier); twelve major cities are swept in full (`SWEEP_AREAS` in `pipeline/config.py`), the rest of the country carries only brewery-tagged venues. A Python pipeline builds a SQLite DB + GeoJSON export; a static vanilla-JS frontend renders it; a FastAPI app adds anonymous submissions with a moderation queue. Deployed on a Raspberry Pi behind Caddy.
 
 ## Commands
 
@@ -36,7 +36,7 @@ Every venue↔brand link (`venue_brand` edge) records its `source`, and sources 
 
 One idempotent build, run nightly via cron and by `docker-run.sh`:
 
-1. **OSM**: fetch Hamburg pubs/bars via Overpass (`osm.py` — tries mirror list `OVERPASS_URLS` with retry/backoff on transient statuses), upsert venues, extract edges from `brewery=` tags. The `opening_hours` tag rides along on the venue row and into the export (OSM is its only source — nothing else writes it).
+1. **OSM**: fetch the sweep cities' pubs/bars (plus brewery-tagged venues nationwide) via Overpass (`osm.py` — tries mirror list `OVERPASS_URLS` with retry/backoff on transient statuses), upsert venues, extract edges from `brewery=` tags. The `opening_hours` tag rides along on the venue row and into the export (OSM is its only source — nothing else writes it).
 2. **Finders**: per-brand "where to drink" scrapers (`pipeline/finders/`), fuzzy-matched to OSM venues by name + distance (`matching.py`, rapidfuzz, 85 threshold / 120 m). A failing finder logs a WARN and never kills the build.
 3. **Curation**: `curation.yaml` entries applied as `source="manual"` (`curation.py`). Entries resolve a venue by `osm_id`, by `lat`+`lon` (creates a `manual/<slug>` venue), or by fuzzy name. An entry without `brand` just pins the venue (gray dot) — for places the amenity sweep can't see, e.g. tagged `shop=alcohol`.
 4. **Community**: all approved submissions re-applied (`submissions.apply_approved`) — this is why approved venue edits/closures survive the OSM re-import each build.
