@@ -3,12 +3,15 @@
 **Live at [zapfkompass.de](https://zapfkompass.de)** — the site is called *Zapfkompass*;
 the repo, Docker service and env files stay `beermap`.
 
-A map of German drinking venues, filterable by draft beer brand and serving type
-(Fassbier/Tankbier). Twelve major cities — Berlin, Bremen, Dresden, Düsseldorf,
-Frankfurt am Main, Hamburg, Hannover, Köln, Leipzig, München, Nürnberg and
-Stuttgart — are swept in full (every pub/bar/restaurant
-becomes at least a clickable gray dot); the rest of Germany shows every venue with
-a known brand (OSM `brewery=` tag). Built on a human-curated core (`curation.yaml`,
+A map of German and Czech drinking venues, filterable by draft beer brand and
+serving type (Fassbier/Tankbier). Seventeen major cities — Berlin, Bremen,
+Dresden, Düsseldorf, Frankfurt am Main, Hamburg, Hannover, Köln, Leipzig,
+München, Nürnberg and Stuttgart, plus Praha, Brno, Plzeň, Ostrava and České
+Budějovice — are swept in full (every pub/bar/restaurant becomes at least a
+clickable gray dot); the rest of both countries shows every venue with a known
+brand (OSM `brewery=` tag). The famous Czech tankovnas (the Lokál chain,
+U Pinkasů, Na Parkánu, Budvarka …) are seeded as curated tank entries — OSM has
+no tag for tank beer. Built on a human-curated core (`curation.yaml`,
 highest trust), seeded by OpenStreetMap and brand "where to drink" finders. Every
 venue↔brand link records its source and last-verified date. Venues also show their
 OSM opening hours ("Jetzt geöffnet · bis 22:00"), and the search ranks matches
@@ -65,13 +68,15 @@ node --test web/*.test.js  # frontend pure functions (needs Node.js)
 ## Status / roadmap
 - **Finders:** Ratsherrn (Fassbier) works via static HTML. The Pilsner Urquell
   Tankovna locator is behind a cookie + age gate and renders via JavaScript, so it
-  yields nothing from a static fetch yet — PU/tank venues are covered by
-  `curation.yaml` meanwhile. A headless fetch is part of the next phase.
+  yields nothing from a static fetch yet — PU/tank venues (including the Czech
+  tankovnas) are covered by `curation.yaml` meanwhile. A headless fetch is part
+  of the next phase.
 - **Post-launch:** venue-menu LLM scraping as a coverage booster (a new low-trust
   source under curation).
-- **Scaling to Germany:** partially done — brewery-tagged venues show nationwide,
-  and adding a fully swept city is one line in `SWEEP_AREAS` (`pipeline/config.py`).
-  Sweeping *all* of Germany (~250k venues) still needs the bbox/brand API from
+- **Scaling beyond the sweep cities:** partially done — brewery-tagged venues
+  show across Germany and Czechia (`COUNTRY_CODES` in `pipeline/config.py`), and
+  adding a fully swept city is one line in `SWEEP_AREAS`. Sweeping *all* venues
+  country-wide (~250k in Germany alone) still needs the bbox/brand API from
   `web/datasource.js`'s roadmap; a country-wide Overpass sweep times out.
 
 ## API & live curation (on the Pi)

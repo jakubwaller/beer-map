@@ -20,11 +20,16 @@ OVERPASS_URLS = [u.strip() for u in os.environ.get(
 OVERPASS_RETRIES = int(os.environ.get("BEERMAP_OVERPASS_RETRIES", "3"))
 OVERPASS_BACKOFF_S = float(os.environ.get("BEERMAP_OVERPASS_BACKOFF_S", "2"))
 _AMENITY = '"amenity"~"^(pub|bar|biergarten|restaurant|cafe)$"'
+# Countries the map covers: the city sweep and the brewery-tagged layer are
+# both clipped to these ISO codes.
+COUNTRY_CODES = ("DE", "CZ")
 # Cities swept in full: every pub/bar/restaurant/cafe there becomes at least a
 # gray dot (the substrate community submissions turn into data). Overpass area
-# filters; admin_level 4 = Stadtstaat, 6 = kreisfreie Stadt, 8 = Stadt inside a
-# Kommunalverband (Hannover sits in the level-6 "Region Hannover"). Levels
-# verified against the OSM boundary relations 2026-08-07.
+# filters; Germany: admin_level 4 = Stadtstaat, 6 = kreisfreie Stadt, 8 = Stadt
+# inside a Kommunalverband (Hannover sits in the level-6 "Region Hannover").
+# Czechia: 8 = statutární město (obec), except Praha, which is its own kraj and
+# mapped at level 4. Levels verified against the OSM boundary relations
+# 2026-08-07.
 SWEEP_AREAS = (
     '["name"="Hamburg"]["admin_level"="4"]',
     '["name"="Leipzig"]["admin_level"="6"]',
@@ -38,26 +43,32 @@ SWEEP_AREAS = (
     '["name"="Hannover"]["admin_level"="8"]',
     '["name"="Nürnberg"]["admin_level"="6"]',
     '["name"="Bremen"]["admin_level"="6"]',
+    '["name"="Praha"]["admin_level"="4"]',
+    '["name"="Brno"]["admin_level"="8"]',
+    '["name"="Plzeň"]["admin_level"="8"]',
+    '["name"="Ostrava"]["admin_level"="8"]',
+    '["name"="České Budějovice"]["admin_level"="8"]',
 )
 
 
-def build_overpass_ql(sweep_areas=SWEEP_AREAS) -> str:
+def build_overpass_ql(sweep_areas=SWEEP_AREAS, country_codes=COUNTRY_CODES) -> str:
     """One query for the whole map: the sweep cities in full, plus every
-    brewery-tagged venue in Germany (~3.9k as of 2026-07) so venues with a
-    known brand show up nationwide. A country-wide sweep of *all* venue types
-    is off the table — even counting them times out at 300s — until venues are
-    served per-viewport by an API. The union dedupes elements both sets catch.
-    The city sweep is additionally intersected with the Germany area: the
-    name+admin_level filters are not globally unique (e.g. Hannover, South
-    Africa), and without the intersection a foreign namesake would dump its
-    venues onto the map."""
+    brewery-tagged venue in the covered countries (~3.9k in DE plus ~1k in CZ
+    as of 2026-08) so venues with a known brand show up nationwide. A
+    country-wide sweep of *all* venue types is off the table — even counting
+    them times out at 300s — until venues are served per-viewport by an API.
+    The union dedupes elements both sets catch. The city sweep is additionally
+    intersected with the countries area: the name+admin_level filters are not
+    globally unique (e.g. Hannover, South Africa), and without the intersection
+    a foreign namesake would dump its venues onto the map."""
     cities = "".join(f"area{a};" for a in sweep_areas)
+    countries = "|".join(country_codes)
     return (
         '[out:json][timeout:300];'
         f'({cities})->.cities;'
-        'area["ISO3166-1"="DE"]["admin_level"="2"]->.de;'
-        f'(nwr[{_AMENITY}](area.cities)(area.de);'
-        f'nwr[{_AMENITY}]["brewery"](area.de););'
+        f'area["ISO3166-1"~"^({countries})$"]["admin_level"="2"]->.countries;'
+        f'(nwr[{_AMENITY}](area.cities)(area.countries);'
+        f'nwr[{_AMENITY}]["brewery"](area.countries););'
         'out center tags;'
     )
 
@@ -85,10 +96,16 @@ BRAND_ALIASES = {
     "plzensky prazdroj": "Pilsner Urquell",
     "urquell": "Pilsner Urquell",
     # In Hamburg venues "Budweiser" on tap is the Czech Budvar, so both names
-    # are folded together.
+    # are folded together — and in Czechia "Budweiser" never means the US beer.
     "budweiser budvar": "Budweiser Budvar",
     "budweiser": "Budweiser Budvar",
     "budvar": "Budweiser Budvar",
+    "budějovický budvar": "Budweiser Budvar",
+    "budejovicky budvar": "Budweiser Budvar",
+    # Czech OSM tags the brand both short and long; "Kozel" is how the taps
+    # (and most of the ~70 CZ tags) spell it.
+    "velkopopovický kozel": "Kozel",
+    "velkopopovicky kozel": "Kozel",
     "weihenstephan": "Weihenstephaner",
     "königpilsener": "König Pilsner",
     "königpilsner": "König Pilsner",

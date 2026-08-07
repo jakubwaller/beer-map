@@ -19,10 +19,11 @@ const OSM_STYLE = {
   layers: [{ id: "osm", type: "raster", source: "osm" }],
 };
 
-// Germany-wide view; `bounds` at init adapts the zoom to the viewport (a phone
-// gets a wider zoom than a desktop for the same box). The topbar overlays the
-// map, so the fit needs extra top padding or Hamburg hides under the chips.
-const DE_BOUNDS = [[5.5, 47.2], [15.4, 55.1]];
+// Whole-map view (Germany + Czechia); `bounds` at init adapts the zoom to the
+// viewport (a phone gets a wider zoom than a desktop for the same box). The
+// topbar overlays the map, so the fit needs extra top padding or Hamburg hides
+// under the chips.
+const MAP_BOUNDS = [[5.5, 47.2], [19.2, 55.1]];
 const CITY_VIEWS = {
   berlin: { center: [13.4050, 52.5200], zoom: 11 },
   bremen: { center: [8.8017, 53.0793], zoom: 11.5 },
@@ -36,6 +37,11 @@ const CITY_VIEWS = {
   muenchen: { center: [11.5820, 48.1351], zoom: 11.5 },
   nuernberg: { center: [11.0767, 49.4521], zoom: 11.5 },
   stuttgart: { center: [9.1829, 48.7758], zoom: 11.5 },
+  praha: { center: [14.4378, 50.0755], zoom: 11 },
+  brno: { center: [16.6068, 49.1951], zoom: 11.5 },
+  plzen: { center: [13.3776, 49.7475], zoom: 11.5 },
+  ostrava: { center: [18.2820, 49.8209], zoom: 11.5 },
+  budejovice: { center: [14.4747, 48.9745], zoom: 12 },
 };
 const dePadding = () => ({
   top: document.getElementById("topbar").offsetHeight + 16,
@@ -43,7 +49,7 @@ const dePadding = () => ({
 });
 
 const map = new maplibregl.Map({
-  container: "map", style: OSM_STYLE, bounds: DE_BOUNDS,
+  container: "map", style: OSM_STYLE, bounds: MAP_BOUNDS,
   fitBoundsOptions: { padding: dePadding() },
   minZoom: 4.5, maxZoom: 18, attributionControl: false,
   // Flat 2D map: without this an off-axis pinch on a phone starts rotating or
@@ -477,7 +483,7 @@ function openStats() {
 }
 
 function openAbout() {
-  openModal("Über das Projekt", `<div class="modal-text"><p>Zapfkompass zeigt, wo es in Deutschland Bier vom Fass oder Tank gibt — Marke für Marke. Zwölf Großstädte — Berlin, Bremen, Dresden, Düsseldorf, Frankfurt am Main, Hamburg, Hannover, Köln, Leipzig, München, Nürnberg und Stuttgart — sind vollständig erfasst (dort ist jede Kneipe anklickbar), im Rest des Landes alle Orte mit bekannter Biermarke. Die Basis bilden von Hand geprüfte Einträge, ergänzt um OpenStreetMap-Daten und die „Wo gibt&#39;s das?“-Seiten der Brauereien. Jede Verknüpfung trägt eine Quelle und ein Prüfdatum.</p></div>`);
+  openModal("Über das Projekt", `<div class="modal-text"><p>Zapfkompass zeigt, wo es in Deutschland und Tschechien Bier vom Fass oder Tank gibt — Marke für Marke. Siebzehn Großstädte — Berlin, Bremen, Dresden, Düsseldorf, Frankfurt am Main, Hamburg, Hannover, Köln, Leipzig, München, Nürnberg und Stuttgart sowie Prag, Brünn, Pilsen, Ostrava und Budweis — sind vollständig erfasst (dort ist jede Kneipe anklickbar), im Rest beider Länder alle Orte mit bekannter Biermarke. Die Basis bilden von Hand geprüfte Einträge, ergänzt um OpenStreetMap-Daten und die „Wo gibt&#39;s das?“-Seiten der Brauereien — darunter die bekannten Prager Tankovnas mit Tankbier von Pilsner Urquell und Budvar. Jede Verknüpfung trägt eine Quelle und ein Prüfdatum.</p></div>`);
 }
 
 function openContact() {
@@ -716,7 +722,7 @@ const citySelect = document.getElementById("city-select");
 citySelect.addEventListener("change", () => {
   const view = CITY_VIEWS[citySelect.value];
   if (view) map.flyTo(view);
-  else map.fitBounds(DE_BOUNDS, { padding: dePadding() });
+  else map.fitBounds(MAP_BOUNDS, { padding: dePadding() });
 });
 
 // ---- Submission forms (delegated on the modal) ----

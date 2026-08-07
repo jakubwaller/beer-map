@@ -9,12 +9,19 @@ def test_overpass_ql_sweeps_cities_and_national_brewery_layer():
     assert '["name"="München"]["admin_level"="6"]' in ql
     # Hannover's city boundary is admin_level 8 (level 6 is Region Hannover).
     assert '["name"="Hannover"]["admin_level"="8"]' in ql
-    # Nationwide only brewery-tagged venues — a full-Germany amenity sweep
+    # Czech sweep cities: Praha doubles as its own kraj (level 4); the other
+    # statutory cities sit at level 8.
+    assert '["name"="Praha"]["admin_level"="4"]' in ql
+    assert '["name"="Brno"]["admin_level"="8"]' in ql
+    assert '["name"="Plzeň"]["admin_level"="8"]' in ql
+    # Nationwide only brewery-tagged venues — a full-country amenity sweep
     # would be ~250k elements and times out on Overpass.
-    assert '"brewery"](area.de)' in ql
+    assert '"brewery"](area.countries)' in ql
     assert ql.count('nwr["amenity"') == 2
-    # City names are not globally unique, so the sweep must stay inside DE.
-    assert '(area.cities)(area.de)' in ql
+    # City names are not globally unique, so the sweep must stay inside the
+    # covered countries (DE + CZ).
+    assert '(area.cities)(area.countries)' in ql
+    assert '"ISO3166-1"~"^(DE|CZ)$"' in ql
 
 
 def test_overpass_ql_takes_custom_sweep_areas():
@@ -25,6 +32,10 @@ def test_overpass_ql_takes_custom_sweep_areas():
 def test_alias_lookup_is_case_insensitive():
     assert normalize_brand("Budweiser") == "Budweiser Budvar"
     assert normalize_brand("budweiser budvar") == "Budweiser Budvar"
+    assert normalize_brand("Budějovický Budvar") == "Budweiser Budvar"
+    assert normalize_brand("Velkopopovický Kozel") == "Kozel"
+    assert normalize_brand("kozel") == "Kozel"
+    assert normalize_brand("Plzeňský Prazdroj") == "Pilsner Urquell"
     assert normalize_brand("König Pilsener") == "König Pilsner"
     assert normalize_brand("königpilsener") == "König Pilsner"
     assert normalize_brand("Ratsherren") == "Ratsherrn"

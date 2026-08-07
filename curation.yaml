@@ -411,3 +411,138 @@
   address: Weidenallee 53-55, 20357 Hamburg
   website: https://www.beyondbeer.de/store-hamburg/
   verified: '2026-07-30'
+
+# --- Tschechien: Tankbier-Seeds (2026-08-07) ---
+# Kein OSM-Tag erfasst Tankbier, und der offizielle Pilsner-Urquell-Locator
+# ist weiter hinter dem JS/Age-Gate — die bekannten Tankovnas kommen deshalb
+# von Hand. Die Lokál-Kette (Ambiente) ist als Tankovna-Konzept gebaut:
+# tankový Pilsner Urquell in jeder Filiale. osm_ids am 2026-08-07 gegen
+# Overpass aufgelöst; lat/lon nur als Fallback, falls der Sweep das Lokal
+# einmal verliert.
+
+- osm_id: node/529129402
+  venue: Lokál Dlouhááá
+  lat: 50.09070
+  lon: 14.42576
+  brand: Pilsner Urquell
+  serving: tank
+  action: add
+  verified: '2026-08-07'
+  note: "Lokál (Ambiente), Praha: Website 'we serve beer from 12 tanks'."
+- osm_id: node/3936690341
+  venue: Lokál U Bílé kuželky
+  lat: 50.08768
+  lon: 14.40750
+  brand: Pilsner Urquell
+  serving: tank
+  action: add
+  verified: '2026-08-07'
+  note: "Lokál (Ambiente), Praha: tankový Pilsner Urquell (Kettenkonzept)."
+- osm_id: node/3936679460
+  venue: Lokál Hamburk
+  lat: 50.09316
+  lon: 14.44668
+  brand: Pilsner Urquell
+  serving: tank
+  action: add
+  verified: '2026-08-07'
+  note: "Lokál (Ambiente), Praha: tankový Pilsner Urquell (Kettenkonzept)."
+- osm_id: node/2004517515
+  venue: Lokál Nad Stromovkou
+  lat: 50.10308
+  lon: 14.41838
+  brand: Pilsner Urquell
+  serving: tank
+  action: add
+  verified: '2026-08-07'
+  note: "Lokál (Ambiente), Praha: tankový Pilsner Urquell (Kettenkonzept)."
+- osm_id: node/1509382553
+  venue: Lokál U Zavadilů
+  lat: 50.01418
+  lon: 14.48564
+  brand: Pilsner Urquell
+  serving: tank
+  action: add
+  verified: '2026-08-07'
+  note: "Lokál (Ambiente), Praha: tankový Pilsner Urquell (Kettenkonzept)."
+- osm_id: node/353281532
+  venue: Lokál Korunní
+  lat: 50.07548
+  lon: 14.44411
+  brand: Pilsner Urquell
+  serving: tank
+  action: add
+  verified: '2026-08-07'
+  note: "Lokál (Ambiente), Praha: tankový Pilsner Urquell (Kettenkonzept)."
+- osm_id: node/3899801095
+  venue: Lokál U Caipla
+  lat: 49.19587
+  lon: 16.60945
+  brand: Pilsner Urquell
+  serving: tank
+  action: add
+  verified: '2026-08-07'
+  note: "Lokál (Ambiente), Brno: tankový Pilsner Urquell (Kettenkonzept)."
+- osm_id: node/3936734566
+  venue: Lokál Pod Divadlem
+  lat: 49.74591
+  lon: 13.37404
+  brand: Pilsner Urquell
+  serving: tank
+  action: add
+  verified: '2026-08-07'
+  note: "Lokál (Ambiente), Plzeň: tankový Pilsner Urquell; OSM brewery-Tag vorhanden."
+- osm_id: node/366277840
+  venue: U Pinkasů
+  lat: 50.08320
+  lon: 14.42341
+  brand: Pilsner Urquell
+  serving: tank
+  action: add
+  verified: '2026-08-07'
+  note: "Praha: erste PU-Schänke (seit 1843), heute Tankovna — Ausschank prüfen."
+- osm_id: node/5167731522
+  venue: U Zlatého tygra
+  lat: 50.08584
+  lon: 14.41804
+  brand: Pilsner Urquell
+  serving: tank
+  action: add
+  verified: '2026-08-07'
+  note: "Praha: berühmte PU-Pivnice (OSM brewery-Tag); Tank — Ausschank prüfen."
+- osm_id: way/1187600327
+  venue: Pivovarský šenk Na Parkánu
+  lat: 49.74872
+  lon: 13.38081
+  brand: Pilsner Urquell
+  serving: tank
+  action: add
+  verified: '2026-08-07'
+  note: "Plzeň, am Brauereimuseum: ungefiltertes PU aus dem Tank — prüfen."
+- osm_id: node/296723381
+  venue: Budvarka
+  lat: 50.09832
+  lon: 14.39607
+  brand: Budweiser Budvar
+  serving: tank
+  action: add
+  verified: '2026-08-07'
+  note: "Praha-Dejvice: Budvar-Tankovna (budvarkadejvice.cz) — prüfen."
+- osm_id: node/4217109388
+  venue: Budvarka - Budvar
+  lat: 48.99335
+  lon: 14.47707
+  brand: Budweiser Budvar
+  serving: tank
+  action: add
+  verified: '2026-08-07'
+  note: "České Budějovice: Budvar-Pivnice der Brauerei — Ausschank prüfen."
+- osm_id: node/677924404
+  venue: U Medvídků
+  lat: 50.08291
+  lon: 14.41870
+  brand: Budweiser Budvar
+  serving: unknown
+  action: add
+  verified: '2026-08-07'
+  note: "Praha: Budvar-Traditionslokal mit eigener Kleinbrauerei; Ausschank prüfen."
