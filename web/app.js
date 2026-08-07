@@ -24,8 +24,18 @@ const OSM_STYLE = {
 // map, so the fit needs extra top padding or Hamburg hides under the chips.
 const DE_BOUNDS = [[5.5, 47.2], [15.4, 55.1]];
 const CITY_VIEWS = {
+  berlin: { center: [13.4050, 52.5200], zoom: 11 },
+  bremen: { center: [8.8017, 53.0793], zoom: 11.5 },
+  dresden: { center: [13.7373, 51.0504], zoom: 11.5 },
+  duesseldorf: { center: [6.7735, 51.2277], zoom: 11.5 },
+  frankfurt: { center: [8.6821, 50.1109], zoom: 11.5 },
   hamburg: { center: [9.9937, 53.5511], zoom: 11.5 },
+  hannover: { center: [9.7320, 52.3759], zoom: 11.5 },
+  koeln: { center: [6.9603, 50.9375], zoom: 11.5 },
   leipzig: { center: [12.3731, 51.3397], zoom: 11.5 },
+  muenchen: { center: [11.5820, 48.1351], zoom: 11.5 },
+  nuernberg: { center: [11.0767, 49.4521], zoom: 11.5 },
+  stuttgart: { center: [9.1829, 48.7758], zoom: 11.5 },
 };
 const dePadding = () => ({
   top: document.getElementById("topbar").offsetHeight + 16,
@@ -70,7 +80,7 @@ const SERVING_DEFS = [
 
 // ---- Filtering ----
 // Venues with beer data get the amber DOM markers; the rest of the dataset
-// (~5000 OSM pubs/bars without beer data, from the fully swept cities) shows
+// (~30k OSM pubs/bars without beer data, from the fully swept cities) shows
 // as small gray dots, but only on "Alle Orte" with no brand selected.
 // "draught" = any known brand; fass/tank require a verified serving.
 function currentVenues() {
@@ -141,7 +151,7 @@ function refreshChips() {
 // the whole marker pipeline independent of the source/tile machinery. Markers
 // are plain maplibregl.Marker elements, rebuilt whenever the filtered set or
 // the view changes (only venues with beer data get DOM markers, and only the
-// ones inside the viewport — the ~5000 no-data venues render as a circle
+// ones inside the viewport — the ~30k no-data venues render as a circle
 // layer, see below).
 const CELL_PX = 46;
 // Off-screen margin (px) that still gets markers: keeps clusters at the edge
@@ -260,7 +270,7 @@ function placeLabels(singles, dotBoxes) {
 }
 
 // ---- Gray dots: venues without beer data ----
-// Unlike the (few) beer venues above, these are ~5000 points, so they render as
+// Unlike the (few) beer venues above, these are ~30k points, so they render as
 // a WebGL circle layer instead of DOM markers. Clicking one opens the normal
 // venue modal, whose "Marke hinzufügen" form turns the gray dot into data.
 const GRAY_SOURCE = "gray-venues";
@@ -467,7 +477,7 @@ function openStats() {
 }
 
 function openAbout() {
-  openModal("Über das Projekt", `<div class="modal-text"><p>Zapfkompass zeigt, wo es in Deutschland Bier vom Fass oder Tank gibt — Marke für Marke. Hamburg und Leipzig sind vollständig erfasst (dort ist jede Kneipe anklickbar), im Rest des Landes alle Orte mit bekannter Biermarke. Die Basis bilden von Hand geprüfte Einträge, ergänzt um OpenStreetMap-Daten und die „Wo gibt&#39;s das?“-Seiten der Brauereien. Jede Verknüpfung trägt eine Quelle und ein Prüfdatum.</p></div>`);
+  openModal("Über das Projekt", `<div class="modal-text"><p>Zapfkompass zeigt, wo es in Deutschland Bier vom Fass oder Tank gibt — Marke für Marke. Zwölf Großstädte — Berlin, Bremen, Dresden, Düsseldorf, Frankfurt am Main, Hamburg, Hannover, Köln, Leipzig, München, Nürnberg und Stuttgart — sind vollständig erfasst (dort ist jede Kneipe anklickbar), im Rest des Landes alle Orte mit bekannter Biermarke. Die Basis bilden von Hand geprüfte Einträge, ergänzt um OpenStreetMap-Daten und die „Wo gibt&#39;s das?“-Seiten der Brauereien. Jede Verknüpfung trägt eine Quelle und ein Prüfdatum.</p></div>`);
 }
 
 function openContact() {

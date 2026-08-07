@@ -99,7 +99,7 @@ export function fold(s) {
 }
 
 // Folded fields are memoized per venue object — the venue list is built once at
-// boot but re-searched on every keystroke, and folding ~5000 venues each time
+// boot but re-searched on every keystroke, and folding ~30k venues each time
 // is what would make typing feel heavy on a phone.
 const foldCache = new WeakMap();
 

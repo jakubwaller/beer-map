@@ -22,10 +22,22 @@ OVERPASS_BACKOFF_S = float(os.environ.get("BEERMAP_OVERPASS_BACKOFF_S", "2"))
 _AMENITY = '"amenity"~"^(pub|bar|biergarten|restaurant|cafe)$"'
 # Cities swept in full: every pub/bar/restaurant/cafe there becomes at least a
 # gray dot (the substrate community submissions turn into data). Overpass area
-# filters; admin_level 4 = Stadtstaat, 6 = kreisfreie Stadt.
+# filters; admin_level 4 = Stadtstaat, 6 = kreisfreie Stadt, 8 = Stadt inside a
+# Kommunalverband (Hannover sits in the level-6 "Region Hannover"). Levels
+# verified against the OSM boundary relations 2026-08-07.
 SWEEP_AREAS = (
     '["name"="Hamburg"]["admin_level"="4"]',
     '["name"="Leipzig"]["admin_level"="6"]',
+    '["name"="Berlin"]["admin_level"="4"]',
+    '["name"="München"]["admin_level"="6"]',
+    '["name"="Köln"]["admin_level"="6"]',
+    '["name"="Frankfurt am Main"]["admin_level"="6"]',
+    '["name"="Stuttgart"]["admin_level"="6"]',
+    '["name"="Düsseldorf"]["admin_level"="6"]',
+    '["name"="Dresden"]["admin_level"="6"]',
+    '["name"="Hannover"]["admin_level"="8"]',
+    '["name"="Nürnberg"]["admin_level"="6"]',
+    '["name"="Bremen"]["admin_level"="6"]',
 )
 
 
@@ -34,13 +46,17 @@ def build_overpass_ql(sweep_areas=SWEEP_AREAS) -> str:
     brewery-tagged venue in Germany (~3.9k as of 2026-07) so venues with a
     known brand show up nationwide. A country-wide sweep of *all* venue types
     is off the table — even counting them times out at 300s — until venues are
-    served per-viewport by an API. The union dedupes elements both sets catch."""
+    served per-viewport by an API. The union dedupes elements both sets catch.
+    The city sweep is additionally intersected with the Germany area: the
+    name+admin_level filters are not globally unique (e.g. Hannover, South
+    Africa), and without the intersection a foreign namesake would dump its
+    venues onto the map."""
     cities = "".join(f"area{a};" for a in sweep_areas)
     return (
         '[out:json][timeout:300];'
         f'({cities})->.cities;'
         'area["ISO3166-1"="DE"]["admin_level"="2"]->.de;'
-        f'(nwr[{_AMENITY}](area.cities);'
+        f'(nwr[{_AMENITY}](area.cities)(area.de);'
         f'nwr[{_AMENITY}]["brewery"](area.de););'
         'out center tags;'
     )

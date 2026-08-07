@@ -5,10 +5,16 @@ def test_overpass_ql_sweeps_cities_and_national_brewery_layer():
     ql = build_overpass_ql()
     assert '["name"="Hamburg"]["admin_level"="4"]' in ql
     assert '["name"="Leipzig"]["admin_level"="6"]' in ql
+    assert '["name"="Berlin"]["admin_level"="4"]' in ql
+    assert '["name"="München"]["admin_level"="6"]' in ql
+    # Hannover's city boundary is admin_level 8 (level 6 is Region Hannover).
+    assert '["name"="Hannover"]["admin_level"="8"]' in ql
     # Nationwide only brewery-tagged venues — a full-Germany amenity sweep
     # would be ~250k elements and times out on Overpass.
     assert '"brewery"](area.de)' in ql
     assert ql.count('nwr["amenity"') == 2
+    # City names are not globally unique, so the sweep must stay inside DE.
+    assert '(area.cities)(area.de)' in ql
 
 
 def test_overpass_ql_takes_custom_sweep_areas():
