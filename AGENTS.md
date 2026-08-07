@@ -4,7 +4,7 @@ Guidance for coding agents working in this repository.
 
 ## What this is
 
-A map of German drinking venues filterable by draft beer brand and serving type (Fassbier/Tankbier); twelve major cities are swept in full (`SWEEP_AREAS` in `pipeline/config.py`), the rest of the country carries only brewery-tagged venues. A Python pipeline builds a SQLite DB + GeoJSON export; a static vanilla-JS frontend renders it; a FastAPI app adds anonymous submissions with a moderation queue. Deployed on a Raspberry Pi behind Caddy.
+A map of German and Czech drinking venues filterable by draft beer brand and serving type (Fassbier/Tankbier); seventeen major cities are swept in full (`SWEEP_AREAS` in `pipeline/config.py`), the rest of both countries carries only brewery-tagged venues. A Python pipeline builds a SQLite DB + GeoJSON export; a static vanilla-JS frontend renders it; a FastAPI app adds anonymous submissions with a moderation queue. Deployed on a Raspberry Pi behind Caddy.
 
 ## Commands
 
