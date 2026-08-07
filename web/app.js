@@ -1,4 +1,5 @@
-import { loadVenues, buildBrandList, venuesByBrand, venuesByServing, searchVenues, fold }
+import { loadVenues, buildBrandList, venuesByBrand, venuesByServing, searchVenues, fold,
+         topBrands }
   from "./datasource.js?v=__ASSET_VERSION__";
 import { parseOpeningHours, openState, statusText, formatWeek }
   from "./hours.js?v=__ASSET_VERSION__";
@@ -107,7 +108,7 @@ function renderServingChips() {
 
 function renderBrandChips() {
   brandBar.textContent = "";
-  const top = brandFreq.slice(0, 9);
+  const top = topBrands(brandFreq, 9);
   if (!top.length) { brandBar.hidden = true; return; }
   brandBar.hidden = false;
   for (const [name, cnt] of top) {
@@ -129,7 +130,7 @@ function refreshChips() {
   SERVING_DEFS.forEach((d, i) =>
     servingButtons[i]?.classList.toggle("active", serving === d.value));
   const brandButtons = brandBar.querySelectorAll(".chip");
-  brandFreq.slice(0, 9).forEach(([name], i) =>
+  topBrands(brandFreq, 9).forEach(([name], i) =>
     brandButtons[i]?.classList.toggle("active", brand === name));
 }
 

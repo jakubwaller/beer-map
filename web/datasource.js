@@ -60,6 +60,23 @@ export function buildBrandList(venues) {
   return [...set].sort((a, b) => a.localeCompare(b, "de"));
 }
 
+// Brands that always get a filter chip when they exist in the data, even when
+// bigger brands crowd them out of the top slots by venue count — the map was
+// built to answer "where pours Pilsner Urquell" (see docs/specs), yet it sits
+// around rank 36 by raw frequency.
+export const PINNED_BRANDS = ["Pilsner Urquell"];
+
+/** Top `n` entries of `freq` ([brand, count] pairs, sorted desc), with pinned
+ *  brands replacing the tail entries when they would otherwise miss the cut. */
+export function topBrands(freq, n, pinned = PINNED_BRANDS) {
+  const top = freq.slice(0, n);
+  const missing = freq.filter(([name]) =>
+    pinned.includes(name) && !top.some(([t]) => t === name));
+  if (missing.length)
+    top.splice(n - missing.length, missing.length, ...missing);
+  return top;
+}
+
 export function venuesByBrand(venues, brand, serving = null) {
   return venues.filter((v) =>
     v.brands.some((b) => b.brand === brand && (!serving || servingMatch(b, serving))));
