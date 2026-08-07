@@ -168,16 +168,16 @@ test("dedupe keeps multiple beers of one brand and drops the brand-only entry", 
   assert.deepEqual(bs.map((b) => b.beer).sort(), ["Edelstoff", "Hell"]);
 });
 
-test("topBrands pins Pilsner Urquell into the chip list when it misses the cut", () => {
+test("topBrands puts Pilsner Urquell first even when it misses the cut", () => {
   const freq = [["Augustiner", 208], ["Bitburger", 152], ["Krombacher", 138],
                 ["Paulaner", 129], ["Pilsner Urquell", 12]];
   assert.deepEqual(topBrands(freq, 3),
-    [["Augustiner", 208], ["Bitburger", 152], ["Pilsner Urquell", 12]]);
+    [["Pilsner Urquell", 12], ["Augustiner", 208], ["Bitburger", 152]]);
 });
 
-test("topBrands leaves the list alone when the pinned brand already made it", () => {
-  const freq = [["Pilsner Urquell", 99], ["Astra", 50], ["Jever", 10]];
-  assert.deepEqual(topBrands(freq, 2), [["Pilsner Urquell", 99], ["Astra", 50]]);
+test("topBrands moves a pinned brand from mid-list to the front", () => {
+  const freq = [["Astra", 50], ["Pilsner Urquell", 40], ["Jever", 10]];
+  assert.deepEqual(topBrands(freq, 2), [["Pilsner Urquell", 40], ["Astra", 50]]);
 });
 
 test("topBrands does not invent a chip for a pinned brand absent from the data", () => {

@@ -67,14 +67,11 @@ export function buildBrandList(venues) {
 export const PINNED_BRANDS = ["Pilsner Urquell"];
 
 /** Top `n` entries of `freq` ([brand, count] pairs, sorted desc), with pinned
- *  brands replacing the tail entries when they would otherwise miss the cut. */
+ *  brands moved to the front; the rest keep their frequency order. */
 export function topBrands(freq, n, pinned = PINNED_BRANDS) {
-  const top = freq.slice(0, n);
-  const missing = freq.filter(([name]) =>
-    pinned.includes(name) && !top.some(([t]) => t === name));
-  if (missing.length)
-    top.splice(n - missing.length, missing.length, ...missing);
-  return top;
+  const first = freq.filter(([name]) => pinned.includes(name));
+  const rest = freq.filter(([name]) => !pinned.includes(name));
+  return [...first, ...rest].slice(0, n);
 }
 
 export function venuesByBrand(venues, brand, serving = null) {
