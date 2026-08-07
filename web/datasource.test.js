@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { loadVenues, buildBrandList, venuesByBrand, venuesByServing, searchVenues, scoreVenue, fold } from "./datasource.js";
+import { loadVenues, buildBrandList, venuesByBrand, venuesByServing, searchVenues, scoreVenue, fold, topBrands } from "./datasource.js";
 
 const FC = {
   type: "FeatureCollection",
@@ -166,4 +166,23 @@ test("dedupe keeps multiple beers of one brand and drops the brand-only entry", 
   const bs = loadVenues(fc)[0].brands;
   assert.equal(bs.length, 2);
   assert.deepEqual(bs.map((b) => b.beer).sort(), ["Edelstoff", "Hell"]);
+});
+
+test("topBrands puts Pilsner Urquell first even when it misses the cut", () => {
+  const freq = [["Augustiner", 208], ["Bitburger", 152], ["Krombacher", 138],
+                ["Paulaner", 129], ["Pilsner Urquell", 12]];
+  assert.deepEqual(topBrands(freq, 3),
+    [["Pilsner Urquell", 12], ["Augustiner", 208], ["Bitburger", 152]]);
+});
+
+test("topBrands moves a pinned brand from mid-list to the front", () => {
+  const freq = [["Astra", 50], ["Pilsner Urquell", 40], ["Jever", 10]];
+  assert.deepEqual(topBrands(freq, 2), [["Pilsner Urquell", 40], ["Astra", 50]]);
+});
+
+test("topBrands does not invent a chip for a pinned brand absent from the data", () => {
+  const freq = [["Astra", 50], ["Jever", 10]];
+  assert.deepEqual(topBrands(freq, 1), [["Astra", 50]]);
+  // Fewer brands than slots: everything shows, nothing is duplicated.
+  assert.deepEqual(topBrands([["Pilsner Urquell", 3]], 9), [["Pilsner Urquell", 3]]);
 });
