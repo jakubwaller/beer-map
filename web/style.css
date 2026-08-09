@@ -316,8 +316,24 @@ header {
   cursor: pointer;
   white-space: nowrap;
 }
-.cta span { font-size: 16px; line-height: 1; }
+.cta span[aria-hidden] { font-size: 16px; line-height: 1; }
 .cta:hover { background: var(--accent-strong); }
+
+/* Language switcher: DE / CZ / EN, styled like the region jumper. */
+#lang-select {
+  appearance: none;
+  -webkit-appearance: none;
+  background: transparent;
+  border: none;
+  padding: 0;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  color: var(--muted);
+  cursor: pointer;
+}
+#lang-select:hover { color: var(--ink); }
 
 /* ---------- Chip filter bars ---------- */
 .chip-bar {
@@ -726,7 +742,8 @@ button:disabled { opacity: .55; cursor: default; }
   .header-actions nav { gap: 14px; font-size: 13px; }
   .nav-long { display: none; }
   .cta { padding: 8px 13px; font-size: 13px; }
-  .cta span { font-size: 15px; }
+  .cta span[aria-hidden] { font-size: 15px; }
+  #lang-select { font-size: 11px; }
   .search-wrap { flex-basis: 100%; order: 3; max-width: none; }
   #modal-card { padding: 22px 20px; }
   /* 16px keeps iOS Safari from zooming the page when a field takes focus —
@@ -741,5 +758,5 @@ button:disabled { opacity: .55; cursor: default; }
    "+" goes as well — losing the glyph beats losing a row of map. */
 @media (max-width: 360px) {
   .header-actions nav { gap: 12px; }
-  .cta span { display: none; }
+  .cta span[aria-hidden] { display: none; }
 }
