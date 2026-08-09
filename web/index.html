@@ -39,9 +39,9 @@
 
   <!-- Zoom controls -->
   <div id="zoom-ctrl">
-    <button id="zoom-in" type="button" aria-label="Hineinzoomen">+</button>
-    <button id="zoom-out" type="button" aria-label="Herauszoomen">−</button>
-    <button id="locate" type="button" aria-label="Meinen Standort anzeigen" title="Mein Standort">
+    <button id="zoom-in" type="button" aria-label="Hineinzoomen" data-i18n-aria="a11y.zoomIn">+</button>
+    <button id="zoom-out" type="button" aria-label="Herauszoomen" data-i18n-aria="a11y.zoomOut">−</button>
+    <button id="locate" type="button" aria-label="Meinen Standort anzeigen" data-i18n-aria="a11y.locate" title="Mein Standort" data-i18n-title="a11y.locateShort">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
            stroke-width="2" stroke-linecap="round" aria-hidden="true">
         <circle cx="12" cy="12" r="6"></circle>
@@ -68,48 +68,54 @@
         </span>
       </a>
       <span class="city-wrap">
-        <select id="city-select" aria-label="Region wählen">
-          <option value="de">Ganze Karte</option>
-          <optgroup label="Deutschland">
-            <option value="berlin">Berlin</option>
-            <option value="bremen">Bremen</option>
-            <option value="dresden">Dresden</option>
-            <option value="duesseldorf">Düsseldorf</option>
-            <option value="frankfurt">Frankfurt am Main</option>
-            <option value="hamburg">Hamburg</option>
-            <option value="hannover">Hannover</option>
-            <option value="koeln">Köln</option>
-            <option value="leipzig">Leipzig</option>
-            <option value="muenchen">München</option>
-            <option value="nuernberg">Nürnberg</option>
-            <option value="stuttgart">Stuttgart</option>
+        <select id="city-select" aria-label="Region wählen" data-i18n-aria="a11y.region">
+          <option value="de" data-i18n="city.map">Ganze Karte</option>
+          <optgroup label="Deutschland" data-i18n-label="country.de">
+            <option value="berlin" data-i18n="city.berlin">Berlin</option>
+            <option value="bremen" data-i18n="city.bremen">Bremen</option>
+            <option value="dresden" data-i18n="city.dresden">Dresden</option>
+            <option value="duesseldorf" data-i18n="city.duesseldorf">Düsseldorf</option>
+            <option value="frankfurt" data-i18n="city.frankfurt">Frankfurt am Main</option>
+            <option value="hamburg" data-i18n="city.hamburg">Hamburg</option>
+            <option value="hannover" data-i18n="city.hannover">Hannover</option>
+            <option value="koeln" data-i18n="city.koeln">Köln</option>
+            <option value="leipzig" data-i18n="city.leipzig">Leipzig</option>
+            <option value="muenchen" data-i18n="city.muenchen">München</option>
+            <option value="nuernberg" data-i18n="city.nuernberg">Nürnberg</option>
+            <option value="stuttgart" data-i18n="city.stuttgart">Stuttgart</option>
           </optgroup>
-          <optgroup label="Tschechien">
-            <option value="brno">Brünn (Brno)</option>
-            <option value="budejovice">Budweis (České Budějovice)</option>
-            <option value="ostrava">Ostrava</option>
-            <option value="plzen">Pilsen (Plzeň)</option>
-            <option value="praha">Prag (Praha)</option>
+          <optgroup label="Tschechien" data-i18n-label="country.cz">
+            <option value="brno" data-i18n="city.brno">Brünn (Brno)</option>
+            <option value="budejovice" data-i18n="city.budejovice">Budweis (České Budějovice)</option>
+            <option value="ostrava" data-i18n="city.ostrava">Ostrava</option>
+            <option value="plzen" data-i18n="city.plzen">Pilsen (Plzeň)</option>
+            <option value="praha" data-i18n="city.praha">Prag (Praha)</option>
           </optgroup>
         </select>
       </span>
 
       <div class="search-wrap">
         <input id="search" type="search" placeholder="Kneipe, Adresse oder Marke suchen…"
+               data-i18n-placeholder="search.placeholder"
                autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
                role="combobox" aria-expanded="false" aria-controls="search-results"
                aria-autocomplete="list" />
-        <button type="button" id="search-clear" aria-label="Suche löschen" hidden>×</button>
-        <div id="search-results" class="suggest" role="listbox" aria-label="Suchergebnisse" hidden></div>
+        <button type="button" id="search-clear" aria-label="Suche löschen" data-i18n-aria="a11y.clearSearch" hidden>×</button>
+        <div id="search-results" class="suggest" role="listbox" aria-label="Suchergebnisse" data-i18n-aria="a11y.searchResults" hidden></div>
       </div>
 
       <div class="header-actions">
         <nav>
-          <button type="button" data-modal="stats">Statistik</button>
-          <button type="button" data-modal="about" aria-label="Über das Projekt">Über<span class="nav-long"> das Projekt</span></button>
-          <button type="button" data-modal="contact">Kontakt</button>
+          <button type="button" data-modal="stats" data-i18n="nav.stats">Statistik</button>
+          <button type="button" data-modal="about" aria-label="Über das Projekt" data-i18n-aria="modal.about"><span data-i18n="nav.about">Über</span><span class="nav-long" data-i18n="nav.aboutLong"> das Projekt</span></button>
+          <button type="button" data-modal="contact" data-i18n="nav.contact">Kontakt</button>
         </nav>
-        <button type="button" id="cta-add" class="cta"><span aria-hidden="true">+</span> Bier melden</button>
+        <select id="lang-select" aria-label="Sprache wählen" data-i18n-aria="a11y.lang">
+          <option value="de">DE</option>
+          <option value="cs">CZ</option>
+          <option value="en">EN</option>
+        </select>
+        <button type="button" id="cta-add" class="cta"><span aria-hidden="true">+</span> <span data-i18n="nav.cta">Bier melden</span></button>
       </div>
     </header>
 
@@ -134,7 +140,7 @@
     <div id="modal-card" role="dialog" aria-modal="true" aria-labelledby="modal-title">
       <div id="modal-head">
         <h2 id="modal-title"></h2>
-        <button type="button" id="modal-close" aria-label="Schließen">×</button>
+        <button type="button" id="modal-close" aria-label="Schließen" data-i18n-aria="a11y.close">×</button>
       </div>
       <div id="modal-body"></div>
     </div>

@@ -1,4 +1,5 @@
-// OpenStreetMap `opening_hours` — parsing, "open now", and a German week view.
+// OpenStreetMap `opening_hours` — parsing, "open now", and a localized week
+// view (German default, Czech and English via the `lang` parameter).
 //
 // The real opening_hours grammar is huge (holidays, month and week ranges,
 // "sunset+01:00", year selectors). This handles the subset venues actually use —
@@ -12,6 +13,24 @@ const DAY_INDEX = {
 };
 export const DAY_LABELS = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
 const DAY = 1440;  // minutes
+
+// Display strings per UI language. Kept here (not in i18n.js) so this module
+// stays dependency-free and its tests run without the rest of the app.
+const LOCALES = {
+  de: { days: DAY_LABELS,
+        openNow: "Jetzt geöffnet", until: "bis", closed: "Geschlossen", opens: "öffnet",
+        today: "heute", tomorrow: "morgen",
+        dayClosed: "geschlossen", allDay: "durchgehend geöffnet", from: "ab" },
+  cs: { days: ["Po", "Út", "St", "Čt", "Pá", "So", "Ne"],
+        openNow: "Nyní otevřeno", until: "do", closed: "Zavřeno", opens: "otevírá",
+        today: "dnes", tomorrow: "zítra",
+        dayClosed: "zavřeno", allDay: "otevřeno nonstop", from: "od" },
+  en: { days: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+        openNow: "Open now", until: "until", closed: "Closed", opens: "opens",
+        today: "today", tomorrow: "tomorrow",
+        dayClosed: "closed", allDay: "open 24 hours", from: "from" },
+};
+const locale = (lang) => LOCALES[lang] || LOCALES.de;
 
 const pad = (n) => String(n).padStart(2, "0");
 export const formatMinutes = (m) => `${pad(Math.floor((m % DAY) / 60))}:${pad(m % 60)}`;
@@ -146,42 +165,44 @@ export function openState(schedule, now = new Date()) {
   return { open: false };  // never open on any day
 }
 
-export function statusText(state) {
+export function statusText(state, lang = "de") {
   if (!state) return "";
+  const L = locale(lang);
   if (state.open)
     return state.until === null
-      ? "Jetzt geöffnet"
-      : `Jetzt geöffnet · bis ${formatMinutes(state.until)}`;
-  if (state.at === undefined) return "Geschlossen";
-  const when = state.nextIn === 0 ? "heute"
-    : state.nextIn === 1 ? "morgen"
-    : DAY_LABELS[state.nextDay];
-  return `Geschlossen · öffnet ${when} ${formatMinutes(state.at)}`;
+      ? L.openNow
+      : `${L.openNow} · ${L.until} ${formatMinutes(state.until)}`;
+  if (state.at === undefined) return L.closed;
+  const when = state.nextIn === 0 ? L.today
+    : state.nextIn === 1 ? L.tomorrow
+    : L.days[state.nextDay];
+  return `${L.closed} · ${L.opens} ${when} ${formatMinutes(state.at)}`;
 }
 
-const dayText = (ranges) => {
-  if (!ranges.length) return "geschlossen";
-  if (ranges.some(([s, e]) => e !== null && e - s >= DAY)) return "durchgehend geöffnet";
+const dayText = (ranges, L) => {
+  if (!ranges.length) return L.dayClosed;
+  if (ranges.some(([s, e]) => e !== null && e - s >= DAY)) return L.allDay;
   return ranges
-    .map(([s, e]) => (e === null ? `ab ${formatMinutes(s)}` : `${formatMinutes(s)}–${formatMinutes(e)}`))
+    .map(([s, e]) => (e === null ? `${L.from} ${formatMinutes(s)}` : `${formatMinutes(s)}–${formatMinutes(e)}`))
     .join(", ");
 };
 
 /** The week as display rows, consecutive identical days folded together:
  *  `[{ label: "Mo–Do", text: "17:00–01:00" }, { label: "So", text: "geschlossen" }]` */
-export function formatWeek(schedule) {
+export function formatWeek(schedule, lang = "de") {
   if (!schedule) return [];
+  const L = locale(lang);
   const groups = [];
   for (let i = 0; i < 7; i++) {
-    const text = dayText(schedule.days[i]);
+    const text = dayText(schedule.days[i], L);
     const last = groups[groups.length - 1];
     if (last && last.text === text) last.end = i;
     else groups.push({ start: i, end: i, text });
   }
   return groups.map((g) => ({
-    label: g.start === g.end ? DAY_LABELS[g.start]
-      : g.end === g.start + 1 ? `${DAY_LABELS[g.start]}, ${DAY_LABELS[g.end]}`
-      : `${DAY_LABELS[g.start]}–${DAY_LABELS[g.end]}`,
+    label: g.start === g.end ? L.days[g.start]
+      : g.end === g.start + 1 ? `${L.days[g.start]}, ${L.days[g.end]}`
+      : `${L.days[g.start]}–${L.days[g.end]}`,
     text: g.text,
   }));
 }

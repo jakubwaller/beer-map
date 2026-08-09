@@ -119,3 +119,26 @@ test("formatWeek spells out a round-the-clock day", () => {
   assert.deepEqual(formatWeek(parseOpeningHours("24/7")),
                    [{ label: "Mo–So", text: "durchgehend geöffnet" }]);
 });
+
+test("statusText and formatWeek speak Czech and English on request", () => {
+  const s = parseOpeningHours("Mo-Fr 17:00-01:00");
+  assert.equal(statusText(openState(s, at("2026-08-03T18:30")), "cs"),
+               "Nyní otevřeno · do 01:00");
+  assert.equal(statusText(openState(s, at("2026-08-03T18:30")), "en"),
+               "Open now · until 01:00");
+  assert.equal(statusText(openState(s, at("2026-08-08T12:00")), "cs"),
+               "Zavřeno · otevírá Po 17:00");
+  assert.equal(statusText(openState(s, at("2026-08-08T12:00")), "en"),
+               "Closed · opens Mon 17:00");
+  assert.deepEqual(formatWeek(s, "cs"), [
+    { label: "Po–Pá", text: "17:00–01:00" },
+    { label: "So, Ne", text: "zavřeno" },
+  ]);
+  assert.deepEqual(formatWeek(s, "en"), [
+    { label: "Mon–Fri", text: "17:00–01:00" },
+    { label: "Sat, Sun", text: "closed" },
+  ]);
+  // An unknown language falls back to German rather than crashing.
+  assert.equal(statusText(openState(s, at("2026-08-03T18:30")), "fr"),
+               "Jetzt geöffnet · bis 01:00");
+});

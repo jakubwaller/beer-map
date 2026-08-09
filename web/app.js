@@ -3,9 +3,16 @@ import { loadVenues, buildBrandList, venuesByBrand, venuesByServing, searchVenue
   from "./datasource.js?v=__ASSET_VERSION__";
 import { parseOpeningHours, openState, statusText, formatWeek }
   from "./hours.js?v=__ASSET_VERSION__";
+import { initLang, getLang, setLang, t, tn }
+  from "./i18n.js?v=__ASSET_VERSION__";
 
-const SERVING_LABEL = { tank: "Tankbier", fass: "Fassbier", unknown: "" };
-const SOURCE_LABEL = { manual: "✓ verifiziert", community: "✓ geprüft", osm: "OSM" };
+initLang();
+
+const servingLabel = (s) =>
+  s === "tank" ? t("badge.tank") : s === "fass" ? t("badge.fass") : "";
+const sourceLabel = (s) =>
+  s === "manual" ? t("source.manual") : s === "community" ? t("source.community")
+  : s === "osm" ? "OSM" : s;
 
 // Venue names/addresses/brands originate from OpenStreetMap (publicly editable),
 // so every interpolated value MUST be HTML-escaped before going into markup.
@@ -78,10 +85,10 @@ const topbar = document.getElementById("topbar");
 const zoomCtrl = document.getElementById("zoom-ctrl");
 
 const SERVING_DEFS = [
-  { value: "all", label: "Alle Orte" },
-  { value: "draught", label: "Nur Zapfbier" },
-  { value: "fass", label: "Nur Fassbier" },
-  { value: "tank", label: "Nur Tankbier" },
+  { value: "all", key: "serving.all" },
+  { value: "draught", key: "serving.draught" },
+  { value: "fass", key: "serving.fass" },
+  { value: "tank", key: "serving.tank" },
 ];
 
 // ---- Filtering ----
@@ -102,7 +109,7 @@ const currentGrayVenues = () => (grayVisible() ? searchVenues(grayVenues, search
 
 function applyFilters() {
   const n = currentVenues().length + currentGrayVenues().length;
-  countEl.textContent = search.trim() ? `${n} Treffer` : `${n} Orte`;
+  countEl.textContent = search.trim() ? tn("count.hits", n) : tn("count.places", n);
   refreshMarkers();
   refreshGrayLayer();
 }
@@ -115,7 +122,7 @@ function renderServingChips() {
     const b = document.createElement("button");
     b.type = "button";
     b.className = "chip" + (serving === d.value ? " active" : "");
-    b.textContent = d.label;
+    b.textContent = t(d.key);
     b.addEventListener("click", () => { serving = d.value; refreshChips(); applyFilters(); });
     frag.appendChild(b);
   }
@@ -354,7 +361,7 @@ function showUserLocation(lngLat) {
 
 locateBtn.addEventListener("click", () => {
   if (!navigator.geolocation) {
-    showToast("Standortbestimmung wird von diesem Browser nicht unterstützt.");
+    showToast(t("toast.noGeo"));
     return;
   }
   locateBtn.classList.add("locating");
@@ -365,9 +372,7 @@ locateBtn.addEventListener("click", () => {
     },
     (err) => {
       locateBtn.classList.remove("locating");
-      showToast(err.code === 1
-        ? "Standortfreigabe abgelehnt — bitte in den Browser-Einstellungen erlauben."
-        : "Standort konnte nicht ermittelt werden.");
+      showToast(err.code === 1 ? t("toast.denied") : t("toast.failed"));
     },
     { enableHighAccuracy: true, timeout: 10000, maximumAge: 30000 }
   );
@@ -391,7 +396,7 @@ document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeModal
 
 // --- Venue detail modal (with add/correct/close forms) ---
 function beerRow(osm, b) {
-  const parts = [SERVING_LABEL[b.serving], SOURCE_LABEL[b.source] || b.source, b.last_seen]
+  const parts = [servingLabel(b.serving), sourceLabel(b.source), b.last_seen]
     .filter(Boolean).map(esc);
   const cls = (b.source === "manual" || b.source === "community") ? "badge manual" : "badge";
   const tank = b.serving === "tank";
@@ -400,12 +405,12 @@ function beerRow(osm, b) {
   return `<li class="beer">
     <span class="beer-name">${esc(b.brand)}${product}<span class="${cls}">${parts.join(" · ")}</span></span>
     <form class="beerform" data-osm="${esc(osm)}" data-brand="${esc(b.brand)}" data-beer="${esc(b.beer || "")}">
-      <select name="serving" aria-label="Ausschank">
-        <option value="fass"${tank ? "" : " selected"}>Fass</option>
-        <option value="tank"${tank ? " selected" : ""}>Tank</option>
+      <select name="serving" aria-label="${esc(t("a11y.serving"))}">
+        <option value="fass"${tank ? "" : " selected"}>${esc(t("beer.fass"))}</option>
+        <option value="tank"${tank ? " selected" : ""}>${esc(t("beer.tank"))}</option>
       </select>
-      <button name="act" value="edit" title="Ausschank korrigieren">✓</button>
-      <button name="act" value="remove" class="danger" title="Bier entfernen">✕</button>
+      <button name="act" value="edit" title="${esc(t("beer.correct"))}">✓</button>
+      <button name="act" value="remove" class="danger" title="${esc(t("beer.remove"))}">✕</button>
       <span class="msg"></span>
     </form>
   </li>`;
@@ -424,14 +429,14 @@ function hoursBlock(v) {
   if (!schedule)
     return `<div class="venue-hours"><span class="hours-raw">🕒 ${esc(v.opening_hours)}</span></div>`;
   const state = openState(schedule);
-  const week = formatWeek(schedule).map((g) =>
+  const week = formatWeek(schedule, getLang()).map((g) =>
     `<div class="hours-row"><span>${esc(g.label)}</span><span>${esc(g.text)}</span></div>`).join("");
   return `<div class="venue-hours">
-      <span class="hours-badge ${state.open ? "open" : "closed"}">${esc(statusText(state))}</span>
+      <span class="hours-badge ${state.open ? "open" : "closed"}">${esc(statusText(state, getLang()))}</span>
       <details class="hours-week">
-        <summary>Öffnungszeiten</summary>
+        <summary>${esc(t("hours.title"))}</summary>
         ${week}
-        <div class="hours-note">Zeiten aus OpenStreetMap — ohne Gewähr.</div>
+        <div class="hours-note">${esc(t("hours.note"))}</div>
       </details>
     </div>`;
 }
@@ -441,32 +446,32 @@ function openVenueModal(v) {
   const brands = v.brands || [];
   const beers = brands.length
     ? `<ul class="beers">${brands.map((b) => beerRow(osm, b)).join("")}</ul>`
-    : `<p class="nobeers">Noch keine Biere erfasst.</p>`;
+    : `<p class="nobeers">${esc(t("venue.noBeers"))}</p>`;
   const html =
     (v.address ? `<div class="venue-addr">${esc(v.address)}</div>` : "") +
     hoursBlock(v) +
     beers +
     `<form class="addbeer" data-osm="${esc(osm)}">
        <span class="combo">
-         <input name="brand" data-combo placeholder="Marke hinzufügen" autocomplete="off" required>
+         <input name="brand" data-combo placeholder="${esc(t("venue.addBrand"))}" autocomplete="off" required>
          <div class="combo-list" hidden></div>
        </span>
-       <input name="beer" placeholder="Sorte (optional)">
-       <label><input type="radio" name="serving" value="fass" checked>Fass</label>
-       <label><input type="radio" name="serving" value="tank">Tank</label>
+       <input name="beer" placeholder="${esc(t("venue.beerOptional"))}">
+       <label><input type="radio" name="serving" value="fass" checked>${esc(t("beer.fass"))}</label>
+       <label><input type="radio" name="serving" value="tank">${esc(t("beer.tank"))}</label>
        <input class="hp" name="hp" tabindex="-1" autocomplete="off">
-       <button>+ Bier melden</button><span class="msg"></span>
+       <button>${esc(t("venue.submitBeer"))}</button><span class="msg"></span>
      </form>
      <details class="venue-actions">
-       <summary>Ort korrigieren</summary>
+       <summary>${esc(t("venue.fix"))}</summary>
        <form class="venueform" data-osm="${esc(osm)}">
-         <input name="address" placeholder="Adresse" value="${esc(v.address || "")}">
-         <button name="act" value="edit_venue">Adresse speichern</button>
-         <button name="act" value="close_venue" class="danger">Als geschlossen melden</button>
+         <input name="address" placeholder="${esc(t("venue.address"))}" value="${esc(v.address || "")}">
+         <button name="act" value="edit_venue">${esc(t("venue.saveAddress"))}</button>
+         <button name="act" value="close_venue" class="danger">${esc(t("venue.reportClosed"))}</button>
          <span class="msg"></span>
        </form>
      </details>`;
-  openModal(v.name || "Kneipe", html);
+  openModal(v.name || t("venue.fallbackName"), html);
 }
 
 // --- Statistik / Über / Kontakt / Bier melden ---
@@ -478,37 +483,37 @@ function openStats() {
       <span class="stat-name">${esc(name)}</span>
       <div class="stat-track"><div class="stat-fill" style="width:${Math.round((cnt / max) * 100)}%"></div></div>
       <span class="stat-count">${cnt}</span>
-    </div>`).join("") || `<p class="nobeers">Noch keine Daten.</p>`;
-  openModal("Statistik", html);
+    </div>`).join("") || `<p class="nobeers">${esc(t("stats.empty"))}</p>`;
+  openModal(t("modal.stats"), html);
 }
 
 function openAbout() {
-  openModal("Über das Projekt", `<div class="modal-text"><p>Zapfkompass zeigt, wo es in Deutschland und Tschechien Bier vom Fass oder Tank gibt — Marke für Marke. Siebzehn Großstädte — Berlin, Bremen, Dresden, Düsseldorf, Frankfurt am Main, Hamburg, Hannover, Köln, Leipzig, München, Nürnberg und Stuttgart sowie Prag, Brünn, Pilsen, Ostrava und Budweis — sind vollständig erfasst (dort ist jede Kneipe anklickbar), im Rest beider Länder alle Orte mit bekannter Biermarke. Die Basis bilden von Hand geprüfte Einträge, ergänzt um OpenStreetMap-Daten und die „Wo gibt&#39;s das?“-Seiten der Brauereien — darunter die bekannten Prager Tankovnas mit Tankbier von Pilsner Urquell und Budvar. Jede Verknüpfung trägt eine Quelle und ein Prüfdatum.</p></div>`);
+  openModal(t("modal.about"), `<div class="modal-text"><p>${esc(t("about.body"))}</p></div>`);
 }
 
 function openContact() {
-  openModal("Kontakt", `<div class="modal-text">
-    <p>Fehler entdeckt oder eine Kneipe fehlt? Schreib uns: <a href="mailto:beermap@jakubwaller.eu">beermap@jakubwaller.eu</a></p>
-    <p>Rechtliches: <a href="impressum.html">Impressum</a> · <a href="datenschutz.html">Datenschutz</a></p>
+  openModal(t("modal.contact"), `<div class="modal-text">
+    <p>${esc(t("contact.intro"))} <a href="mailto:beermap@jakubwaller.eu">beermap@jakubwaller.eu</a></p>
+    <p>${esc(t("contact.legal"))}: <a href="impressum.html">${esc(t("contact.imprint"))}</a> · <a href="datenschutz.html">${esc(t("contact.privacy"))}</a></p>
   </div>`);
 }
 
 function openAddInfo() {
-  openModal("Bier melden", `<div class="modal-text">
-      <p>Klick auf eine Kneipe direkt auf der Karte — dort kannst du eine Marke und Ausschankart (Fass/Tank) melden.</p>
-      <p><strong>Fehlt ein Ort komplett?</strong> Trag ihn hier ein — nach Prüfung erscheint er auf der Karte.</p>
+  openModal(t("modal.add"), `<div class="modal-text">
+      <p>${esc(t("add.p1"))}</p>
+      <p><strong>${esc(t("add.p2strong"))}</strong> ${esc(t("add.p2rest"))}</p>
     </div>
     <form class="venueadd">
-      <input name="venue" placeholder="Name des Lokals" maxlength="120" required>
-      <input name="address" placeholder="Straße Nr., PLZ Stadt" maxlength="200" required>
+      <input name="venue" placeholder="${esc(t("add.venueName"))}" maxlength="120" required>
+      <input name="address" placeholder="${esc(t("add.addressPh"))}" maxlength="200" required>
       <span class="combo">
-        <input name="brand" data-combo placeholder="Marke (optional)" maxlength="80" autocomplete="off">
+        <input name="brand" data-combo placeholder="${esc(t("add.brandOptional"))}" maxlength="80" autocomplete="off">
         <div class="combo-list" hidden></div>
       </span>
-      <label><input type="radio" name="serving" value="fass" checked>Fass</label>
-      <label><input type="radio" name="serving" value="tank">Tank</label>
+      <label><input type="radio" name="serving" value="fass" checked>${esc(t("beer.fass"))}</label>
+      <label><input type="radio" name="serving" value="tank">${esc(t("beer.tank"))}</label>
       <input class="hp" name="hp" tabindex="-1" autocomplete="off">
-      <button>+ Ort melden</button><span class="msg"></span>
+      <button>${esc(t("add.submitVenue"))}</button><span class="msg"></span>
     </form>`);
 }
 
@@ -533,14 +538,14 @@ function suggestRow(v, i) {
   const bits = [];
   if (state)
     bits.push(`<span class="${state.open ? "is-open" : "is-closed"}">`
-      + (state.open ? "geöffnet" : "geschlossen") + `</span>`);
+      + esc(state.open ? t("suggest.open") : t("suggest.closed")) + `</span>`);
   const brands = [...new Set((v.brands || []).map((b) => b.brand))];
   if (brands.length)
     bits.push(esc(brands.slice(0, 2).join(", ")
       + (brands.length > 2 ? ` +${brands.length - 2}` : "")));
   if (v.address) bits.push(esc(v.address));
   return `<button type="button" class="suggest-row" role="option" data-idx="${i}">
-      <span class="suggest-name">${esc(v.name || "Ohne Namen")}</span>
+      <span class="suggest-name">${esc(v.name || t("suggest.unnamed"))}</span>
       <span class="suggest-meta">${bits.join(" · ")}</span>
     </button>`;
 }
@@ -565,8 +570,8 @@ function renderSuggestions() {
   resultsEl.innerHTML = matches.length
     ? matches.slice(0, MAX_SUGGESTIONS).map(suggestRow).join("")
       + `<button type="button" class="suggest-all">`
-      + `Alle ${matches.length} Treffer auf der Karte zeigen</button>`
-    : `<div class="suggest-empty">Keine Treffer für „${esc(q)}“</div>`;
+      + esc(tn("suggest.showAll", matches.length)) + `</button>`
+    : `<div class="suggest-empty">${esc(t("suggest.none", { q }))}</div>`;
   openSuggestions();
 }
 
@@ -718,6 +723,43 @@ modalBody.addEventListener("keydown", (e) => {
   }
 });
 
+// ---- Language ----
+// Static chrome is translated in place via data-i18n attributes; everything
+// rendered by JS goes through t()/tn() at render time, so a language switch
+// just re-renders the visible pieces. Open popups (modal, suggestions) are
+// closed rather than re-rendered — they rebuild translated on next open.
+function applyStaticI18n() {
+  document.documentElement.lang = getLang();
+  document.title = t("title");
+  document.querySelectorAll("[data-i18n]").forEach((el) => {
+    el.textContent = t(el.dataset.i18n);
+  });
+  document.querySelectorAll("[data-i18n-aria]").forEach((el) => {
+    el.setAttribute("aria-label", t(el.dataset.i18nAria));
+  });
+  document.querySelectorAll("[data-i18n-title]").forEach((el) => {
+    el.title = t(el.dataset.i18nTitle);
+  });
+  document.querySelectorAll("[data-i18n-placeholder]").forEach((el) => {
+    el.placeholder = t(el.dataset.i18nPlaceholder);
+  });
+  document.querySelectorAll("[data-i18n-label]").forEach((el) => {
+    el.label = t(el.dataset.i18nLabel);
+  });
+}
+
+const langSelect = document.getElementById("lang-select");
+langSelect.value = getLang();
+langSelect.addEventListener("change", () => {
+  setLang(langSelect.value);
+  applyStaticI18n();
+  closeModal();
+  closeSuggestions();
+  renderServingChips();
+  applyFilters();
+});
+applyStaticI18n();
+
 const citySelect = document.getElementById("city-select");
 citySelect.addEventListener("change", () => {
   const view = CITY_VIEWS[citySelect.value];
@@ -753,14 +795,13 @@ modalBody.addEventListener("submit", async (ev) => {
   if (!f.matches(".addbeer, .beerform, .venueform, .venueadd")) return;
   ev.preventDefault();
   const action = ev.submitter && ev.submitter.value;
-  if (action === "close_venue" &&
-      !confirm("Diesen Ort wirklich als dauerhaft geschlossen melden?")) return;
+  if (action === "close_venue" && !confirm(t("confirm.close"))) return;
   const body = submissionBody(f, action);
   if (!body) return;
   const msg = f.querySelector(".msg");
   const r = await fetch("/api/submit", { method: "POST",
     headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
-  if (msg) msg.textContent = r.ok ? " Danke, wird geprüft!" : " Fehler";
+  if (msg) msg.textContent = r.ok ? t("form.thanks") : t("form.error");
   if (r.ok) f.querySelectorAll("button, input, select").forEach((el) => (el.disabled = true));
 });
 
