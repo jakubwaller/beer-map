@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { LANGS, MESSAGES, detectLang, setLang, getLang, t, tn } from "./i18n.js";
+import { LANGS, MESSAGES, detectLang, langFromQuery, setLang, getLang, t, tn } from "./i18n.js";
 
 // Plural variants differ per language (Czech has "few", German/English don't),
 // so parity is checked on the base keys.
@@ -31,6 +31,15 @@ test("detectLang: stored choice wins, then browser language, then German", () =>
   assert.equal(detectLang(null, ["fr-FR", "it"]), "de");
   assert.equal(detectLang("xx", []), "de");
   assert.equal(detectLang(null, undefined), "de");
+});
+
+test("langFromQuery: shared-link param, case-insensitive, junk ignored", () => {
+  assert.equal(langFromQuery("?lang=cs"), "cs");
+  assert.equal(langFromQuery("?lang=CS"), "cs");
+  assert.equal(langFromQuery("?brand=astra&lang=en"), "en");
+  assert.equal(langFromQuery("?lang=xx"), null);
+  assert.equal(langFromQuery(""), null);
+  assert.equal(langFromQuery(undefined), null);
 });
 
 test("t translates in the active language and interpolates placeholders", () => {

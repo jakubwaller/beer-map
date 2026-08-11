@@ -752,6 +752,13 @@ const langSelect = document.getElementById("lang-select");
 langSelect.value = getLang();
 langSelect.addEventListener("change", () => {
   setLang(langSelect.value);
+  // Keep the address bar shareable: copying the URL reproduces the language
+  // the visitor is looking at.
+  try {
+    const u = new URL(location.href);
+    u.searchParams.set("lang", langSelect.value);
+    history.replaceState(null, "", u);
+  } catch { /* the switcher itself still works */ }
   applyStaticI18n();
   closeModal();
   closeSuggestions();

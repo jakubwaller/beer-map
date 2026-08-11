@@ -374,14 +374,26 @@ export function setLang(l) {
   } catch { /* storage blocked (private mode) — the choice just won't persist */ }
 }
 
+/** Language from a shared link's `?lang=` (case-insensitive), or null. Pure —
+ *  the caller passes location.search. */
+export function langFromQuery(search) {
+  let l = null;
+  try { l = new URLSearchParams(search || "").get("lang"); } catch { return null; }
+  l = l ? String(l).toLowerCase() : null;
+  return LANGS.includes(l) ? l : null;
+}
+
 export function initLang() {
+  // A shared link's ?lang= outranks the visitor's stored choice: whoever sent
+  // the link chose the language on purpose, and the switcher is one tap away.
+  const fromUrl = typeof location !== "undefined" ? langFromQuery(location.search) : null;
   let stored = null;
   try {
     if (typeof localStorage !== "undefined") stored = localStorage.getItem(STORAGE_KEY);
   } catch { /* ditto */ }
   const browserLangs = typeof navigator !== "undefined"
     ? (navigator.languages || [navigator.language]) : [];
-  lang = detectLang(stored, browserLangs);
+  lang = fromUrl || detectLang(stored, browserLangs);
   return lang;
 }
 
