@@ -7957,3 +7957,5036 @@
   action: add
   verified: '2026-08-11'
   note: "Zur gemütlichen Ecke: „…2.80€ Vitamalz 0,33l 2.50€ Bier Päffgen Kölsch frisch vom Fass 0,2l 1.90€…“ (Website)."
+
+# --- Website-Sweep, schwache Treffer (page/none-Tier) nachgeprüft (2026-08-11) ---
+# Zweitdurchgang über die Kandidaten ohne Zapf-Wortlaut direkt an der Marke: Seiten
+# erneut gelesen, weiter Kontext geprüft. serving nur gesetzt, wo die Website den
+# Ausschank explizit nennt; Zitat in der note.
+
+- osm_id: node/13618565029
+  venue: "Aroy"
+  brand: "Flötzinger"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Aroy: „…r Hefe Weissbier Alkoholfrei – 0,5l – 4,80 € Fassbier Flötzing…“ (Website, bremen)."
+
+- osm_id: node/123394567
+  venue: "Beck's Ambiente"
+  brand: "Franziskaner"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Beck's Ambiente: „…ngen, Maracuja, Rhabarberr, Bananen, Kirsche Vom Fass HAAKE Beck Pils (0,2L) 2,90€ HAAKE Beck Pils…“ (Website, bremen)."
+
+- osm_id: node/699745133
+  venue: "Beck's Bistro"
+  brand: "Beck's"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Beck's Bistro: „…rei. Gekocht wird täglich frisch, vom Schnitzel über die Currywurst bis zum hausgemachten Apfelstrudel.…“ (Website, bremen)."
+
+- osm_id: node/699745133
+  venue: "Beck's Bistro"
+  brand: "Haake-Beck"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Beck's Bistro: „…gehört. Drei Sorten am Hahn, dazu die ganze Karte an Flaschen. BECK'S Pilsner Der Klassiker aus Bremen,…“ (Website, bremen)."
+
+- osm_id: node/699745133
+  venue: "Beck's Bistro"
+  brand: "Franziskaner"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Beck's Bistro: „…enfutter 3,90 € Erdnüsse Peanuts 3,30 € BIER VOM FASS DRAFT BEER Beck's oder Alster Beck's or Alster…“ (Website, bremen)."
+
+- osm_id: node/699745133
+  venue: "Beck's Bistro"
+  brand: "Hasseröder"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Beck's Bistro: „…enfutter 3,90 € Erdnüsse Peanuts 3,30 € BIER VOM FASS DRAFT BEER Beck's oder Alster Beck's or Alster…“ (Website, bremen)."
+
+- osm_id: node/239735440
+  venue: "Cafe Del Sol"
+  brand: "Krombacher"
+  action: add
+  verified: '2026-08-11'
+  note: "Cafe Del Sol: „…und vieles mehr! Mehr erfahren Krombacher Feierabendbier Montags bis freitags von 16:00 - 18:30…“ (Website, bremen)."
+
+- osm_id: node/2280982197
+  venue: "Danny's"
+  brand: "Spaten"
+  action: add
+  verified: '2026-08-11'
+  note: "Danny's: „…BIER 0,33l 3,50 € SALITOS 0,33l 4,00 € SPATEN HELLES 0,33l 3,50 € KIRSCH PORTER 0,33l 3,00 € FREI BIER…“ (Website, bremen)."
+
+- osm_id: node/412299665
+  venue: "Drittel"
+  brand: "Franziskaner"
+  action: add
+  verified: '2026-08-11'
+  note: "Drittel: „…0,5l: 5 € Franziskaner Weizen…“ (Website, bremen)."
+
+- osm_id: node/412299686
+  venue: "Enchilada"
+  brand: "Erdinger"
+  action: add
+  verified: '2026-08-11'
+  note: "Enchilada: „…Carlsberg 0,33l alkoholfrei 4,10€ (...) erdinger weissbier 0,5l alkoholfrei 6,20€ (...) Homemade Mexican…“ (Website, bremen)."
+
+- osm_id: node/412299686
+  venue: "Enchilada"
+  brand: "Duckstein"
+  action: add
+  verified: '2026-08-11'
+  note: "Enchilada: „…(...) Bucket Corona (6 Fl.) 24,50€ (...) Duckstein Weizen 0,3l 4,10€ (...) Duckstein Weizen 0,5l 6,20€…“ (Website, bremen)."
+
+- osm_id: node/412299686
+  venue: "Enchilada"
+  brand: "Beck's"
+  action: add
+  verified: '2026-08-11'
+  note: "Enchilada: „…(...) 0,3l San Miguel 4,40€ (...) 0,33l Becks 4,10€ (...) 0,33l Becks Blue Lemon 4,10€ (...) 0,33l Becks…“ (Website, bremen)."
+
+- osm_id: node/412299686
+  venue: "Enchilada"
+  brand: "Carlsberg"
+  action: add
+  verified: '2026-08-11'
+  note: "Enchilada: „…| ausgewogen am Gaumen 27,00€ (...) Bier Carlsberg Pilsener 0,3l 4,10€ (...) Carlsberg Pilsener 0,5l…“ (Website, bremen)."
+
+- osm_id: node/3237246308
+  venue: "Hegarty's"
+  brand: "Haake-Beck"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Hegarty's: „…Musik bis spät in die Nacht ein. Bier Frisch vom Fass Bier Von Irland bis Bremen Bei uns findest du eine…“ (Website, bremen)."
+
+- osm_id: node/3237246308
+  venue: "Hegarty's"
+  brand: "Kilkenny"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Hegarty's: „…Musik bis spät in die Nacht ein. Bier Frisch vom Fass Bier Von Irland bis Bremen Bei uns findest du eine…“ (Website, bremen)."
+
+- osm_id: node/1596366295
+  venue: "Horizont"
+  brand: "Astra"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Horizont: „…ocktails Getränkekarte FASSBIERE Carlsberg 0,3 l 3,60 € Carlsberg 0,5 l 4,60 € Carlsberg 1,5 l Pitche…“ (Website, bremen)."
+
+- osm_id: node/1596366295
+  venue: "Horizont"
+  brand: "Duckstein"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Horizont: „…prizz & Co. Alk frei Cocktails Getränkekarte FASSBIERE Carlsberg 0,3 l 3,60 € Carlsberg 0,5 l 4,60 €…“ (Website, bremen)."
+
+- osm_id: node/314793686
+  venue: "Ibrahimi"
+  brand: "Beck's"
+  action: add
+  verified: '2026-08-11'
+  note: "Ibrahimi: „…ALKOHOLFREIES BIER Fransiskaner 0.5l 4.50 Beck's Blue 0.3l 3.20 Vita Malz 0.3l 3.20 Alster 0.4l 3.90…“ (Website, bremen)."
+
+- osm_id: node/13818215959
+  venue: "Kalimeeraaa"
+  brand: "Heineken"
+  action: add
+  verified: '2026-08-11'
+  note: "Kalimeeraaa: „…Mango, Orangensaft BIER Mythos 0,3 L 4,00 Heineken 0.0 alkoholfrei 0,33 L 4,00 WEINE & SPRITZIGES…“ (Website, bremen)."
+
+- osm_id: node/3768254959
+  venue: "L'Angolino"
+  brand: "Köstritzer"
+  action: add
+  verified: '2026-08-11'
+  note: "L'Angolino: „…Flasche Benediktiner Weissbier I 0,5l 5,50 Köstritzer Schwarzbier I 0,3l 4,50 Bitburger alkoholfrei I 0,3l…“ (Website, bremen)."
+
+- osm_id: node/11065721979
+  venue: "Mochi Bremen - Asian Fusion"
+  brand: "Erdinger"
+  action: add
+  verified: '2026-08-11'
+  note: "Mochi Bremen - Asian Fusion: „…Bier 0,33l 4,50€ Heineken 0,4l 4,20€ Erdinger 0,5l 4,50€ Heissgetränke Trà Sả 5,50€ Frischer…“ (Website, bremen)."
+
+- osm_id: node/11065721979
+  venue: "Mochi Bremen - Asian Fusion"
+  brand: "Heineken"
+  action: add
+  verified: '2026-08-11'
+  note: "Mochi Bremen - Asian Fusion: „…0,5l 4,50€ Japanisches Bier 0,33l 4,50€ Heineken 0,4l 4,20€ Erdinger 0,5l 4,50€ Heissgetränke Trà Sả…“ (Website, bremen)."
+
+- osm_id: node/303252774
+  venue: "Paddy's Irish Pub"
+  brand: "Beck's"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Paddy's Irish Pub: „…via facebook entgegen genommen werden. Becks the famous lager beer from Bremen, Germany Heineken Heineken…“ (Website, bremen)."
+
+- osm_id: node/303252774
+  venue: "Paddy's Irish Pub"
+  brand: "Haake-Beck"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Paddy's Irish Pub: „…. O'Hara's Irish Pale Ale IPA with 5.2% Vol. Draught Beer in Paddy´…“ (Website, bremen)."
+
+- osm_id: node/303252774
+  venue: "Paddy's Irish Pub"
+  brand: "Murphy's"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Paddy's Irish Pub: „…Friday & Saturday Special Live Sports SUNDAY Pint of Murphy's + Irish Flag 8 € MONDAY 3 for 2 Irish…“ (Website, bremen)."
+
+- osm_id: node/303252774
+  venue: "Paddy's Irish Pub"
+  brand: "Heineken"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Paddy's Irish Pub: „…. O'Hara's Irish Pale Ale IPA with 5.2% Vol. Draught Beer in Paddy´s Pit Murphy's Stout Irish Stout from…“ (Website, bremen)."
+
+- osm_id: node/571264515
+  venue: "Paulaner's"
+  brand: "Paulaner"
+  action: add
+  verified: '2026-08-11'
+  note: "Paulaner's: „…Tisch reservieren Herzlich Willkommen im Paulaner’s an der Schlachte! Selbst wer schon lange im Bayern…“ (Website, bremen)."
+
+- osm_id: node/13814277452
+  venue: "Pincho Nation"
+  brand: "Erdinger"
+  action: add
+  verified: '2026-08-11'
+  note: "Pincho Nation: „…€4.50 Duckstein orginal 0,5l GERMANY €5.50 Erdinger 0,5l WHEAT BEER, GERMANY, ALC 5.3% €5.50 Radler 50cl…“ (Website, bremen)."
+
+- osm_id: node/13814277452
+  venue: "Pincho Nation"
+  brand: "Duckstein"
+  action: add
+  verified: '2026-08-11'
+  note: "Pincho Nation: „…blanc 0,3l WHEAT BEER, FRANCE, ALC 5% €4.50 Duckstein orginal 0,5l GERMANY €5.50 Erdinger 0,5l WHEAT BEER,…“ (Website, bremen)."
+
+- osm_id: node/13814277452
+  venue: "Pincho Nation"
+  brand: "Carlsberg"
+  action: add
+  verified: '2026-08-11'
+  note: "Pincho Nation: „…ACIDITY AND SMOOTH TANNINS. €39.90 Beer 16+ Carlsberg 0,3l PALE LAGER, DENMARK, ALC 5% €3.90 Carlsberg 0,5l…“ (Website, bremen)."
+
+- osm_id: node/412299684
+  venue: "Red Rock"
+  brand: "Störtebeker"
+  action: add
+  verified: '2026-08-11'
+  note: "Red Rock: „…Cubanero Dänemark Carlsberg Deutschland Störtebeker Schwarzbier Finnland Lapin Kulta Frankreich Ch'ti…“ (Website, bremen)."
+
+- osm_id: node/412299684
+  venue: "Red Rock"
+  brand: "Carlsberg"
+  action: add
+  verified: '2026-08-11'
+  note: "Red Rock: „…Lager China Tsingtao Cuba Cubanero Dänemark Carlsberg Deutschland Störtebeker Schwarzbier Finnland Lapin…“ (Website, bremen)."
+
+- osm_id: node/412299684
+  venue: "Red Rock"
+  brand: "Budweiser Budvar"
+  action: add
+  verified: '2026-08-11'
+  note: "Red Rock: „…Estrella Damm Südkorea Hite Tschechien Budweiser Budvar Thailand Chang Türkei Efes Pilsener Österreich…“ (Website, bremen)."
+
+- osm_id: node/683757693
+  venue: "Rona's Mezze & Küche"
+  brand: "Franziskaner"
+  action: add
+  verified: '2026-08-11'
+  note: "Rona's Mezze & Küche: „…(0,33 l) . . . . . . . . . . . . . . 3,50 € Franziskaner Weißbier. . . . . . 4,50 € Franziskaner alkoholfrei…“ (Website, bremen)."
+
+- osm_id: node/683757693
+  venue: "Rona's Mezze & Küche"
+  brand: "Beck's"
+  action: add
+  verified: '2026-08-11'
+  note: "Rona's Mezze & Küche: „…. . . . . . . . . . . . . . . 3,00 € Bier Beck's (0,33 l) . . . . . . . . . . .. . . 3,50 € Beck's…“ (Website, bremen)."
+
+- osm_id: node/4247137630
+  venue: "Schwarzer Hermann"
+  brand: "Spaten"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Schwarzer Hermann: „…Pommes, neue Zapfbiere San Miguel und Spaten und viele alkoholfreie Getränke Variationen. HERMANN ❤️…“ (Website, bremen)."
+
+- osm_id: node/4247137630
+  venue: "Schwarzer Hermann"
+  brand: "Franziskaner"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Schwarzer Hermann: „…ap-Bier-Hour genießen! Dann bekommt ihr alle Fassbiere in 0,5 l für je 1,00 Euro günstiger. Never forget…“ (Website, bremen)."
+
+- osm_id: node/4247137630
+  venue: "Schwarzer Hermann"
+  brand: "Haake-Beck"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Schwarzer Hermann: „…ap-Bier-Hour genießen! Dann bekommt ihr alle Fassbiere in 0,5 l für je 1,00 Euro günstiger. Never forget…“ (Website, bremen)."
+
+- osm_id: node/666951749
+  venue: "Schüttinger Gasthausbrauerei"
+  brand: "Schüttinger"
+  action: add
+  verified: '2026-08-11'
+  note: "Schüttinger Gasthausbrauerei: „…Gasthausbrauerei | Bremen Anno 1990 Über Uns Speisen…“ (Website, bremen)."
+
+- osm_id: node/7197756420
+  venue: "Torhaus"
+  brand: "Paulaner"
+  action: add
+  verified: '2026-08-11'
+  note: "Torhaus: „…FREI-BIER alkoholfrei 0,33 l € 3,90 Paulaner Natur Radler 0,33 l € 3,90 Störtebecker…“ (Website, bremen)."
+
+- osm_id: node/3907439485
+  venue: "Union-Braugasthaus"
+  brand: "Union Brauerei"
+  action: add
+  verified: '2026-08-11'
+  note: "Union-Braugasthaus: „…Brauerei Union Brauerei Unsere Craft Biere UNION Craft…“ (Website, bremen)."
+
+- osm_id: node/12329189719
+  venue: "Veganes Küchen Kollektiv"
+  brand: "Flötzinger"
+  action: add
+  verified: '2026-08-11'
+  note: "Veganes Küchen Kollektiv: „…Störtebecker Bernsteinweizen 0,5L 5,50€ Flötzinger Hell 0,5L 5,50€ Sekt & Wein 11 Sekko Soziale 0,1L…“ (Website, bremen)."
+
+- osm_id: node/612570556
+  venue: "Aneet Punjabi Dhaba"
+  brand: "Radeberger"
+  action: add
+  verified: '2026-08-11'
+  note: "Aneet Punjabi Dhaba: „…ro Zucker 1,0l 4,50 € 7Up 1,0l 4,50 € Schöfferhofer Weißbier Hefe alkoholfrei 0,5l 4,00 € Radeberger…“ (Website, dresden)."
+
+- osm_id: node/612570556
+  venue: "Aneet Punjabi Dhaba"
+  brand: "Schöfferhofer"
+  action: add
+  verified: '2026-08-11'
+  note: "Aneet Punjabi Dhaba: „…n 0,25l 3,50 € Ayran, groß 0,5l 4,00 € Pepsi-Cola Zero Zucker 1,0l 4,50 € 7Up 1,0l 4,50 € Schöfferho…“ (Website, dresden)."
+
+- osm_id: node/1209603673
+  venue: "Bombay Mirchi"
+  brand: "Köstritzer"
+  action: add
+  verified: '2026-08-11'
+  note: "Bombay Mirchi: „…Lassi Joghurtgetränk Biere 4 Getränke KÖSTRITZER Kellerbier 0,33l (4,3% vol.) Produktinfo 18+ 11.33…“ (Website, dresden)."
+
+- osm_id: way/203732004
+  venue: "City Beach Strandbar"
+  brand: "Spaten"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "City Beach Strandbar: „…o this text in the module Advanced settings. Fassbier Hasseröder Premium Pils 0,3l 4,20 € 0,5l 5,40 €…“ (Website, dresden)."
+
+- osm_id: way/203732004
+  venue: "City Beach Strandbar"
+  brand: "Franziskaner"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "City Beach Strandbar: „…o this text in the module Advanced settings. Fassbier Hasseröder Premium Pils 0,3l 4,20 € 0,5l 5,40 €…“ (Website, dresden)."
+
+- osm_id: node/2428961680
+  venue: "Der Löwe"
+  brand: "Maisel's"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Der Löwe: „…nic 2 7,20 Sarti Lemon Sprizz 7,20 Bier Bier FASSBIER 0,3l / 0,5l Pilsner Urquell 3,00 4,80 Bayreuther…“ (Website, dresden)."
+
+- osm_id: node/219507523
+  venue: "Die Schmiede"
+  brand: "Guinness"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Die Schmiede: „…Bar ist das „Zentrum“ allen Geschehens: hier zapfen wir für Euch die irischen Biere Guinness und…“ (Website, dresden)."
+
+- osm_id: node/219507523
+  venue: "Die Schmiede"
+  brand: "Kilkenny"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Die Schmiede: „…Bar ist das „Zentrum“ allen Geschehens: hier zapfen wir für Euch die irischen Biere Guinness und…“ (Website, dresden)."
+
+- osm_id: node/12046761969
+  venue: "ElbeGarten"
+  brand: "Paulaner"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "ElbeGarten: „…Zimt o mit Zucker, Zimt & Apfelmus Getränke Faßbiere Feldschlößchen Pilsner Feldschlösschen Radler…“ (Website, dresden)."
+
+- osm_id: node/12046761969
+  venue: "ElbeGarten"
+  brand: "Hacker-Pschorr"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "ElbeGarten: „…Zimt o mit Zucker, Zimt & Apfelmus Getränke Faßbiere Feldschlößchen Pilsner Feldschlösschen Radler…“ (Website, dresden)."
+
+- osm_id: node/12046761969
+  venue: "ElbeGarten"
+  brand: "Jever"
+  action: add
+  verified: '2026-08-11'
+  note: "ElbeGarten: „…Radler alkoholfrei Radeberger Pilsner Jever Pilsner Paulaner Hefeweizen dunkel Paulaner Hefeweizen…“ (Website, dresden)."
+
+- osm_id: node/12046761969
+  venue: "ElbeGarten"
+  brand: "Radeberger"
+  action: add
+  verified: '2026-08-11'
+  note: "ElbeGarten: „…Feldschlößchen Radler alkoholfrei Radeberger Pilsner Jever Pilsner Paulaner Hefeweizen dunkel…“ (Website, dresden)."
+
+- osm_id: node/1594445725
+  venue: "Enchilada"
+  brand: "Wernesgrüner"
+  action: add
+  verified: '2026-08-11'
+  note: "Enchilada: „…Zardetto Spumante Brut 4,50€ (...) Bier Wernesgrüner Pils 0,5l 5,30€ (...) Königspilsener 0,5l 5,30€…“ (Website, dresden)."
+
+- osm_id: node/1594445725
+  venue: "Enchilada"
+  brand: "Köstritzer"
+  action: add
+  verified: '2026-08-11'
+  note: "Enchilada: „…| Zitronenlimonade | 1,0l 16,00€ (...) Köstritzer 0,5 l 5,30€ (...) Alkoholfrei Tafelwasser 0,2l 2,50€…“ (Website, dresden)."
+
+- osm_id: node/5156607708
+  venue: "Feldschlößchen Stammhaus"
+  brand: "Feldschlößchen"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Feldschlößchen Stammhaus: „…von jeher ein beliebter Treffpunkt von Genießern und Bierliebhabern. Hier wird gefeiert, geschlemmt und…“ (Website, dresden)."
+
+- osm_id: node/413462385
+  venue: "Grand Flavor"
+  brand: "Radeberger"
+  action: add
+  verified: '2026-08-11'
+  note: "Grand Flavor: „…€ inkl. Pfand (0,00 €), 12,00 €/l, 0,25l Radeberger Alkoholfrei 0,5l (MEHRWEG) 4,50 € inkl. Pfand (0,08…“ (Website, dresden)."
+
+- osm_id: node/1856842411
+  venue: "Grubers Welt"
+  brand: "Spaten"
+  action: add
+  verified: '2026-08-11'
+  note: "Grubers Welt: „…| 0,3l 3,60€ – 0,5l 4,80€ AUS DER FLASCHE SPATEN HELL ALKOHOLFREI 5,20 € 0,5 l | Alkoholfrei FRANZISKANER…“ (Website, dresden)."
+
+- osm_id: node/1856842411
+  venue: "Grubers Welt"
+  brand: "Franziskaner"
+  action: add
+  verified: '2026-08-11'
+  note: "Grubers Welt: „…HELL ALKOHOLFREI 5,20 € 0,5 l | Alkoholfrei FRANZISKANER WEISSBIER ALKOHOLFREI 5,20 € 0,5 l | Alkoholfrei…“ (Website, dresden)."
+
+- osm_id: node/1856842411
+  venue: "Grubers Welt"
+  brand: "Duckstein"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Grubers Welt: „…ten schmeckt. AUS DEM FASS GRUBERS KELLERBIER ab 3,80 € Unser naturtrübes Kellerbier hat weniger…“ (Website, dresden)."
+
+- osm_id: node/373092447
+  venue: "Gänsedieb"
+  brand: "Paulaner"
+  action: add
+  verified: '2026-08-11'
+  note: "Gänsedieb: „…Orig. Budvar Lager 0,3l € 4,40 0,5l € 5,80 Paulaner Orig. Münchner Dunkel 0,3l € 4,40 0,5l € 5,80 Paulaner…“ (Website, dresden)."
+
+- osm_id: node/373092447
+  venue: "Gänsedieb"
+  brand: "Radeberger"
+  action: add
+  verified: '2026-08-11'
+  note: "Gänsedieb: „…to offer € 7,60 Getränkekarte + Biere Radeberger Pilsner 0,3l € 4,50 0,5l € 5,90 Budweiser Orig.…“ (Website, dresden)."
+
+- osm_id: node/373092447
+  venue: "Gänsedieb"
+  brand: "Budweiser Budvar"
+  action: add
+  verified: '2026-08-11'
+  note: "Gänsedieb: „…Radeberger Pilsner 0,3l € 4,50 0,5l € 5,90 Budweiser Orig. Budvar Lager 0,3l € 4,40 0,5l € 5,80 Paulaner…“ (Website, dresden)."
+
+- osm_id: node/5931727981
+  venue: "Luisenhof Dresden"
+  brand: "Radeberger"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Luisenhof Dresden: „…berger Non-Alcoholic – Enjoy it now, freshly tapped! Our Menu Soups Starters & Salads Main courses Fish…“ (Website, dresden)."
+
+- osm_id: node/3599451995
+  venue: "Mama's Pälzer Stubb"
+  brand: "Feldschlößchen"
+  action: add
+  verified: '2026-08-11'
+  note: "Mama's Pälzer Stubb: „…Pils 3,60 € 4,90 € 0,3 l 0,5 l Feldschlösschen Rubin 3,60 € 4,90 € 0,3 l 0,5 l Radler / Diesel 3,40 €…“ (Website, dresden)."
+
+- osm_id: node/972592639
+  venue: "MammaMia"
+  brand: "Paulaner"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "MammaMia: „…artini (Rosso, Bianco, Dry) …………… 4,50€ BIER VOM FASS Feldschlösschen Pilsner 0.25l …………… 3,80€ 0.40l…“ (Website, dresden)."
+
+- osm_id: node/3677867645
+  venue: "Moment’s"
+  brand: "Feldschlößchen"
+  action: add
+  verified: '2026-08-11'
+  note: "Moment’s: „…4.60€ 0,5l Carlsberg 3,60 € 0,33l Feldschlößchen alkoholfrei 3,60 € 0,33l Killkenny 3,60 € 0,33l…“ (Website, dresden)."
+
+- osm_id: node/1149143483
+  venue: "Museumsgastronomie Dresden 1900"
+  brand: "Radeberger"
+  action: add
+  verified: '2026-08-11'
+  note: "Museumsgastronomie Dresden 1900: „…DRESDEN 1900 Montag ist Stammtischtag 0,4l Radeberger Bier für 3,90 € Freunde treffen, Kollegen einladen…“ (Website, dresden)."
+
+- osm_id: node/4307112650
+  venue: "Nerdpol Café"
+  brand: "Maisel's"
+  action: add
+  verified: '2026-08-11'
+  note: "Nerdpol Café: „…Helles 1436 0,5 l ᵃ³ 3,90 EUR Maisel & Friends Pale Ale 0,33 l ᵃ³ 4,40 EUR Maisel & Friends IPA…“ (Website, dresden)."
+
+- osm_id: node/4307112650
+  venue: "Nerdpol Café"
+  brand: "Wernesgrüner"
+  action: add
+  verified: '2026-08-11'
+  note: "Nerdpol Café: „…3,60 EUR Bayreuther Hell 0,33 l ᵃ³ 3,60 EUR Wernesgrüner Helles 1436 0,5 l ᵃ³ 3,90 EUR Maisel & Friends Pale…“ (Website, dresden)."
+
+- osm_id: node/4307112650
+  venue: "Nerdpol Café"
+  brand: "Carlsberg"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Nerdpol Café: „…rsich, Sauerkirsche, Banane, Cranberry Biere vom Hahn Astra Kleine Freiheit Helles 0,4 l ᵃ³ 4,00 EUR…“ (Website, dresden)."
+
+- osm_id: node/10096037797
+  venue: "Platzhirsch"
+  brand: "Radeberger"
+  action: add
+  verified: '2026-08-11'
+  note: "Platzhirsch: „…der Nähe der Elbe. Durch den Werbespot der Radeberger Brauerei bekannt, wurde Sie schon einige Male als…“ (Website, dresden)."
+
+- osm_id: node/276591438
+  venue: "Reck's"
+  brand: "Jever"
+  action: add
+  verified: '2026-08-11'
+  note: "Reck's: „…Snacks, Warme Küche Biere: Clausthaler, Jever, Radeberger, Schöfferhofer Bierpreis (f�r 0,5 l): 1,89 EUR…“ (Website, dresden)."
+
+- osm_id: node/276591438
+  venue: "Reck's"
+  brand: "Radeberger"
+  action: add
+  verified: '2026-08-11'
+  note: "Reck's: „…Warme Küche Biere: Clausthaler, Jever, Radeberger, Schöfferhofer Bierpreis (f�r 0,5 l): 1,89 EUR…“ (Website, dresden)."
+
+- osm_id: node/276591438
+  venue: "Reck's"
+  brand: "Schöfferhofer"
+  action: add
+  verified: '2026-08-11'
+  note: "Reck's: „…Biere: Clausthaler, Jever, Radeberger, Schöfferhofer Bierpreis (f�r 0,5 l): 1,89 EUR �ffnungszeiten:…“ (Website, dresden)."
+
+- osm_id: node/2707446626
+  venue: "Restaurace Praha - Das kleine Prager Restaurant"
+  brand: "Pilsner Urquell"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Restaurace Praha - Das kleine Prager Restaurant: „…eit empfangen und unsere tschechischen Biere vom Fass ebenfalls servieren. Getränke aus Tschechien in…“ (Website, dresden)."
+
+- osm_id: node/2707446626
+  venue: "Restaurace Praha - Das kleine Prager Restaurant"
+  brand: "Staropramen"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Restaurace Praha - Das kleine Prager Restaurant: „…eit empfangen und unsere tschechischen Biere vom Fass ebenfalls servieren. Getränke aus Tschechien in…“ (Website, dresden)."
+
+- osm_id: node/318669008
+  venue: "Restaurant Kügelgenhaus"
+  brand: "Hofbräu"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Restaurant Kügelgenhaus: „…data-uk-grid-margin> Getränkekarte Gebrautes vom Fass 0,30l Unser Kügelgenhaus Pils (gebraut in Sachsen)…“ (Website, dresden)."
+
+- osm_id: node/246851305
+  venue: "Schillergarten"
+  brand: "Paulaner"
+  action: add
+  verified: '2026-08-11'
+  note: "Schillergarten: „…– mit Feldschlößchen. Freu Dich drauf! Paulaner Hefe-Weißbier Den Weißbiersektor nimmt im…“ (Website, dresden)."
+
+- osm_id: node/246851305
+  venue: "Schillergarten"
+  brand: "Feldschlößchen"
+  action: add
+  verified: '2026-08-11'
+  note: "Schillergarten: „…derzeit gültige Speisekarte PDF ansehen Feldschlößchen-Biere Als Brauereipartner des SchillerGartens…“ (Website, dresden)."
+
+- osm_id: node/456989889
+  venue: "Stadt Riesa"
+  brand: "Schöfferhofer"
+  action: add
+  verified: '2026-08-11'
+  note: "Stadt Riesa: „…€ Freiberger Pilsner alkoholfrei 2,90 € Schöfferhofer Hefeweizen 3,50 € Schöfferhofer alkoholfrei 3,50 €…“ (Website, dresden)."
+
+- osm_id: node/456989889
+  venue: "Stadt Riesa"
+  brand: "Freiberger"
+  action: add
+  verified: '2026-08-11'
+  note: "Stadt Riesa: „…Colabier, … 3,60 € 2,70 € Flaschenbier 0,5l Freiberger Pilsner 2,90 € Freiberger Pilsner alkoholfrei 2,90 €…“ (Website, dresden)."
+
+- osm_id: node/456989889
+  venue: "Stadt Riesa"
+  brand: "Litovel"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Stadt Riesa: „…in Essen auch gerne mitnehmen. Getränkekarte Fassbier 0,5l 0,3l Eibauer Schwarzbier 3,80 € 2,80 €…“ (Website, dresden)."
+
+- osm_id: node/3713926603
+  venue: "The Shamrock"
+  brand: "Paulaner"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "The Shamrock: „…Bierauswahl Wir bieten Ihnen 11 verschiedene frisch gezapfte Biere, sowie mehr als 15 Flaschenbiere.…“ (Website, dresden)."
+
+- osm_id: node/3713926603
+  venue: "The Shamrock"
+  brand: "Freiberger"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "The Shamrock: „…Bierauswahl Wir bieten Ihnen 11 verschiedene frisch gezapfte Biere, sowie mehr als 15 Flaschenbiere.…“ (Website, dresden)."
+
+- osm_id: node/3713926603
+  venue: "The Shamrock"
+  brand: "Staropramen"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "The Shamrock: „…Bierauswahl Wir bieten Ihnen 11 verschiedene frisch gezapfte Biere, sowie mehr als 15 Flaschenbiere.…“ (Website, dresden)."
+
+- osm_id: node/2925654771
+  venue: "Trattoria Pugliese"
+  brand: "Erdinger"
+  action: add
+  verified: '2026-08-11'
+  note: "Trattoria Pugliese: „…San Pellegrino Birra (Bier) Pilsner Urquell Erdinger Alkoholfrei Dunkel Erdinger Erdinger-hefe-weißbier…“ (Website, dresden)."
+
+- osm_id: node/2925654771
+  venue: "Trattoria Pugliese"
+  brand: "Radeberger"
+  action: add
+  verified: '2026-08-11'
+  note: "Trattoria Pugliese: „…Ur-krostitzer Schwarzbier Diesel Radler Radeberger Caffeteria (Heisse Getränke) Tee Heisse Schokolade…“ (Website, dresden)."
+
+- osm_id: node/2925654771
+  venue: "Trattoria Pugliese"
+  brand: "Ur-Krostitzer"
+  action: add
+  verified: '2026-08-11'
+  note: "Trattoria Pugliese: „…Dunkel Erdinger Erdinger-hefe-weißbier Ur-krostitzer Schwarzbier Diesel Radler Radeberger Caffeteria…“ (Website, dresden)."
+
+- osm_id: node/2925654771
+  venue: "Trattoria Pugliese"
+  brand: "Pilsner Urquell"
+  action: add
+  verified: '2026-08-11'
+  note: "Trattoria Pugliese: „…Mineralwasser San Pellegrino Birra (Bier) Pilsner Urquell Erdinger Alkoholfrei Dunkel Erdinger…“ (Website, dresden)."
+
+- osm_id: node/7877853522
+  venue: "Umami Bliss"
+  brand: "Krombacher"
+  action: add
+  verified: '2026-08-11'
+  note: "Umami Bliss: „…BIER 0,5L Bayrisches Lagerbier. A 5,50 € KROMBACHER BIER 0,3L Deutsches Pils. A 3,90 € KROMBACHER BIER…“ (Website, dresden)."
+
+- osm_id: node/4314606120
+  venue: "Vapiano"
+  brand: "Krombacher"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Vapiano: „…eies Weizenbier, < 0,5 % vol Alkohol, 0,5 l Flasche, Mehrwegflasche. 5,60 € Allergene & Zusatzstoffe in…“ (Website, dresden)."
+
+- osm_id: node/246851437
+  venue: "Villa Marie"
+  brand: "Augustiner"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Villa Marie: „…er traditionsreichsten Biere Münchens frisch vom Fass - perfekt temperiert, sauber gezapft und mit…“ (Website, dresden)."
+
+- osm_id: node/5983120378
+  venue: "Wilma Wunder"
+  brand: "Jever"
+  action: add
+  verified: '2026-08-11'
+  note: "Wilma Wunder: „…Weizen Dunkel 0,5L 5,50€ (...) Jever Fun 0,33L 4,50€ (...) Büble Weißbier Alkoholfrei 0,5L…“ (Website, dresden)."
+
+- osm_id: node/5983120378
+  venue: "Wilma Wunder"
+  brand: "Schöfferhofer"
+  action: add
+  verified: '2026-08-11'
+  note: "Wilma Wunder: „…(...) Büble Edelweißbier 0,5l 5,50€ (...) Schöfferhofer Weizen Dunkel 0,5L 5,50€ (...) Jever Fun 0,33L…“ (Website, dresden)."
+
+- osm_id: node/5983120378
+  venue: "Wilma Wunder"
+  brand: "Ur-Krostitzer"
+  action: add
+  verified: '2026-08-11'
+  note: "Wilma Wunder: „…Bier Büble Bayrisch Hell 0,5l 5,50€ (...) Ur-Krostitzer Schwarzes 0,5l 5,50€ (...) Büble Edelweißbier 0,5l…“ (Website, dresden)."
+
+- osm_id: node/219505200
+  venue: "Zum Böhmischen Bürgergarten"
+  brand: "Gambrinus"
+  action: add
+  verified: '2026-08-11'
+  note: "Zum Böhmischen Bürgergarten: „…an. Am Abend 6. 8. 2026 | Bier des Monats: Gambrinus 10° Für die heißen Sommertage haben wir uns bewusst…“ (Website, dresden)."
+
+- osm_id: node/219505200
+  venue: "Zum Böhmischen Bürgergarten"
+  brand: "Budweiser Budvar"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Zum Böhmischen Bürgergarten: „…0 € Kartoffel-Wedges / Petersilienkartoffeln 4,50 € Tartarsoße / Kräuterdip / Knoblauchdip 1,90 €…“ (Website, dresden)."
+
+- osm_id: node/219505200
+  venue: "Zum Böhmischen Bürgergarten"
+  brand: "Bernard"
+  action: add
+  verified: '2026-08-11'
+  note: "Zum Böhmischen Bürgergarten: „…l 4,90 € Birell halbdunkels 0,3 l 4,90 € Bernard Pflaume 0,5 l 4,90 € Birell Radler 0,5 l (Pomelo und…“ (Website, dresden)."
+
+- osm_id: node/1517773673
+  venue: "Brauereiausschank Orginal Schlüssel in Oberkassel"
+  brand: "Schlüssel"
+  action: add
+  verified: '2026-08-11'
+  note: "Brauereiausschank Orginal Schlüssel in Oberkassel: „…Schlüssel Oberkassel Unser Menu Brauereiausschank Schlüssel…“ (Website, duesseldorf)."
+
+- osm_id: node/240272673
+  venue: "Brauhaus Schumacher"
+  brand: "Schumacher"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Brauhaus Schumacher: „…rlesen und nach alter Familientradition. Ein frisch gezapftes Alt vom Fass in der Schumacher…“ (Website, duesseldorf)."
+
+- osm_id: node/10867334378
+  venue: "CLAUDE wein bar"
+  brand: "Heineken"
+  action: add
+  verified: '2026-08-11'
+  note: "CLAUDE wein bar: „…Glenmorangie 10y WhistlePic Ray NOAM Beer Heineken Cafés und Softdrinks Dallmayr Espresso Dallmayr Café…“ (Website, duesseldorf)."
+
+- osm_id: node/7314736008
+  venue: "Casa Gustosa"
+  brand: "Füchschen"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Casa Gustosa: „…r auch aus Deutschland ein. Und ebenso gerne zapfen wir für Sie ein leckeres Füchschen Alt. Lassen Sie…“ (Website, duesseldorf)."
+
+- osm_id: node/2638106520
+  venue: "Das Weiss Blaue Haus"
+  brand: "Paulaner"
+  action: add
+  verified: '2026-08-11'
+  note: "Das Weiss Blaue Haus: „…- Paulaner in Düsseldorf - Das Weiss Blaue Haus Zum Inhalt…“ (Website, duesseldorf)."
+
+- osm_id: node/1785149517
+  venue: "El Greco"
+  brand: "Krombacher"
+  action: add
+  verified: '2026-08-11'
+  note: "El Greco: „…Pfand (0,08 €), 3,52 €/l, 0,500l 2,99 € 214 Krombacher Weizen 0,5l inkl. Pfand (0,08 €), 3,92 €/l, 0,500l…“ (Website, duesseldorf)."
+
+- osm_id: node/1588487494
+  venue: "En de Canon"
+  brand: "Schumacher"
+  action: add
+  verified: '2026-08-11'
+  note: "En de Canon: „…| Terrasse | Promenade | Raum | Event | Schumacher Alt | Engist | Glühwein | Firmenfeier |…“ (Website, duesseldorf)."
+
+- osm_id: way/95373975
+  venue: "Frankenheim Brauhaus Holzheim"
+  brand: "Frankenheim"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Frankenheim Brauhaus Holzheim: „…mit uns die unkomplizierte Atmosphäre, ob in unseren Gästeräumen, in der Bierschänke mit Freunden bei…“ (Website, duesseldorf)."
+
+- osm_id: node/4782910752
+  venue: "Fuchs im Hofmann's"
+  brand: "Füchschen"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Fuchs im Hofmann's: „…das ausgezeichnete Essen, ein lecker Füchschen und diskutieren Seite an Seite das kulturelle,…“ (Website, duesseldorf)."
+
+- osm_id: node/1577235176
+  venue: "Hausbrauerei Zum Schlüssel"
+  brand: "Schlüssel"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Hausbrauerei Zum Schlüssel: „…Zum Schlüssel – Ihr Brauhaus in Düsseldorf 0 Es befinden sich keine…“ (Website, duesseldorf)."
+
+- osm_id: node/3260847461
+  venue: "Herr Knillmann"
+  brand: "Maisel's"
+  action: add
+  verified: '2026-08-11'
+  note: "Herr Knillmann: „…ZWICKEL KELLERBIER 0,5 l Tonkrug 5,90 MAISELS WEIZEN 0,5 l 5,90 MAISELS WEIZEN ALKOHOLFREI 0,5 l 5,90…“ (Website, duesseldorf)."
+
+- osm_id: node/3260847461
+  venue: "Herr Knillmann"
+  brand: "Jever"
+  action: add
+  verified: '2026-08-11'
+  note: "Herr Knillmann: „…Metzger – du trinkst ja auch kein Jever in Oberbayern. Die Metzgerei Ludwig, Traditionsunternehmen…“ (Website, duesseldorf)."
+
+- osm_id: node/3260847461
+  venue: "Herr Knillmann"
+  brand: "Bolten"
+  action: add
+  verified: '2026-08-11'
+  note: "Herr Knillmann: „…PILSENER URQUELL + 0,3 l 3,80 + 0,5 l 6 BOLTEN ALT/URALT + 0,3 l 3,20 + 0,4 l 4,90 HANNEN HELLES + 0,3 l…“ (Website, duesseldorf)."
+
+- osm_id: node/3260847461
+  venue: "Herr Knillmann"
+  brand: "Pilsner Urquell"
+  action: add
+  verified: '2026-08-11'
+  note: "Herr Knillmann: „…Rooibos + Ingwer 0,30 3,50 BIER PILSENER URQUELL + 0,3 l 3,80 + 0,5 l 6 BOLTEN ALT/URALT + 0,3 l 3,20 + 0,4…“ (Website, duesseldorf)."
+
+- osm_id: node/2465725143
+  venue: "Himmel & Ähd"
+  brand: "Füchschen"
+  action: add
+  verified: '2026-08-11'
+  note: "Himmel & Ähd: „…Alt' Nichts geht über ein kühles, frisches Füchschen aus der Düsseldorfer Traditionsbrauerei - Wir bieten…“ (Website, duesseldorf)."
+
+- osm_id: node/1577235288
+  venue: "Im Füchschen"
+  brand: "Füchschen"
+  action: add
+  verified: '2026-08-11'
+  note: "Im Füchschen: „…Alt Facebook Instagram Twitter YouTube Deutsch English…“ (Website, duesseldorf)."
+
+- osm_id: node/1577235313
+  venue: "Im Goldenen Kessel"
+  brand: "Schumacher"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Im Goldenen Kessel: „…rlesen und nach alter Familientradition. Ein frisch gezapftes Alt vom Fass in der Schumacher…“ (Website, duesseldorf)."
+
+- osm_id: node/3498901378
+  venue: "Julio's Guinness Pub"
+  brand: "Guinness"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Julio's Guinness Pub: „…n: als erster Pub in NRW mit GUINNESS frisch vom Fass. Schon damals bestätigten selbst die Dubliner…“ (Website, duesseldorf)."
+
+- osm_id: node/1351112825
+  venue: "Restaurant per voi Cucina Italiana"
+  brand: "Warsteiner"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Restaurant per voi Cucina Italiana: „…l Tonic Water 3,20 0,2l Ginger Ale 3,20 0,2l Bier / Fass Füchschen Alt 3,50 0,25l Warsteiner Pils 3,90…“ (Website, duesseldorf)."
+
+- osm_id: node/1351112825
+  venue: "Restaurant per voi Cucina Italiana"
+  brand: "Füchschen"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Restaurant per voi Cucina Italiana: „…l Tonic Water 3,20 0,2l Ginger Ale 3,20 0,2l Bier / Fass Füchschen Alt 3,50 0,25l Warsteiner Pils 3,90…“ (Website, duesseldorf)."
+
+- osm_id: node/11910481268
+  venue: "SamaQ"
+  brand: "Erdinger"
+  action: add
+  verified: '2026-08-11'
+  note: "SamaQ: „…0,33 l 3,30€ Pilsner Urquell 0,33 l 3,30€ Erdinger Alkoholfrei (<0,5% vol) 0,5 l 4,70€ Aperol Spritz 0,2 l…“ (Website, duesseldorf)."
+
+- osm_id: node/11910481268
+  venue: "SamaQ"
+  brand: "Schlüssel"
+  action: add
+  verified: '2026-08-11'
+  note: "SamaQ: „…Getränke Gösser NaturRadler 0,33 l 3,30€ Schlüssel Alt 0,33 l 3,30€ Pilsner Urquell 0,33 l 3,30€ Erdinger…“ (Website, duesseldorf)."
+
+- osm_id: node/11910481268
+  venue: "SamaQ"
+  brand: "Pilsner Urquell"
+  action: add
+  verified: '2026-08-11'
+  note: "SamaQ: „…0,33 l 3,30€ Schlüssel Alt 0,33 l 3,30€ Pilsner Urquell 0,33 l 3,30€ Erdinger Alkoholfrei (<0,5% vol)…“ (Website, duesseldorf)."
+
+- osm_id: node/1705602580
+  venue: "Schumacher am Klemensplatz"
+  brand: "Füchschen"
+  action: add
+  verified: '2026-08-11'
+  note: "Schumacher am Klemensplatz: „…an und hoffen, bald ein leckeres Füchschen mit Ihnen trinken zu können. Wenn Sie Anregungen oder…“ (Website, duesseldorf)."
+
+- osm_id: node/449272319
+  venue: "Spoerl-Fabrik"
+  brand: "Jever"
+  action: add
+  verified: '2026-08-11'
+  note: "Spoerl-Fabrik: „…0,33l 3,20 Schöfferhofer Weizen 0,50l 4,90 Jever Fun 0,33l 3,20 Cava 7,50 49,00 Cremant 7,50 49,00 „Zero“…“ (Website, duesseldorf)."
+
+- osm_id: node/449272319
+  venue: "Spoerl-Fabrik"
+  brand: "Radeberger"
+  action: add
+  verified: '2026-08-11'
+  note: "Spoerl-Fabrik: „…Bier / Spritziges Füchschen Alt 0,33l 3,20 Radeberger Pils 0,33l 3,20 Schöfferhofer Weizen 0,50l 4,90 Jever…“ (Website, duesseldorf)."
+
+- osm_id: node/449272319
+  venue: "Spoerl-Fabrik"
+  brand: "Schöfferhofer"
+  action: add
+  verified: '2026-08-11'
+  note: "Spoerl-Fabrik: „…Alt 0,33l 3,20 Radeberger Pils 0,33l 3,20 Schöfferhofer Weizen 0,50l 4,90 Jever Fun 0,33l 3,20 Cava 7,50…“ (Website, duesseldorf)."
+
+- osm_id: node/449272319
+  venue: "Spoerl-Fabrik"
+  brand: "Füchschen"
+  action: add
+  verified: '2026-08-11'
+  note: "Spoerl-Fabrik: „…Orangensaft 0,20l 5,50 Bier / Spritziges Füchschen Alt 0,33l 3,20 Radeberger Pils 0,33l 3,20…“ (Website, duesseldorf)."
+
+- osm_id: way/95550174
+  venue: "Stadtwaldhaus"
+  brand: "Maisel's"
+  action: add
+  verified: '2026-08-11'
+  note: "Stadtwaldhaus: „…Radler Alkoholfrei 0,33 l ⋯ 4,00 € Maisel’s Weisse Original 0,50 l ⋯ 6,00 € Maisel’s Weisse Dunkel…“ (Website, duesseldorf)."
+
+- osm_id: node/388198774
+  venue: "Suli's Café"
+  brand: "Franziskaner"
+  action: add
+  verified: '2026-08-11'
+  note: "Suli's Café: „…0,33l 3,50€ Uerige 0,33l 3,50€ Weizen Franziskaner 0,5l 4,10€ Franziskaner Alk. fr. 0,5l 4,10€…“ (Website, duesseldorf)."
+
+- osm_id: node/388198774
+  venue: "Suli's Café"
+  brand: "Tegernseer"
+  action: add
+  verified: '2026-08-11'
+  note: "Suli's Café: „…0,33l 3,50€ Staropramen 0,33l 3,50€ Tegernseer Hell 0,33l 3,50€ Tannenzäpfle Alk. fr. 0,33l 3,50€…“ (Website, duesseldorf)."
+
+- osm_id: node/388198774
+  venue: "Suli's Café"
+  brand: "Astra"
+  action: add
+  verified: '2026-08-11'
+  note: "Suli's Café: „…Feta, Tomaten & Rucola 11,50€ Bier Pils Astra 0,33l 3,50€ Tannenzäpfle 0,33l 3,50€ Staropramen 0,33l…“ (Website, duesseldorf)."
+
+- osm_id: node/388198774
+  venue: "Suli's Café"
+  brand: "Bitburger"
+  action: add
+  verified: '2026-08-11'
+  note: "Suli's Café: „…3,50€ Tannenzäpfle Alk. fr. 0,33l 3,50€ Bitburger Radler 0,33l 3,50€ Vita Malz 0,33l 3,50€ Alt Schlüssel…“ (Website, duesseldorf)."
+
+- osm_id: node/388198774
+  venue: "Suli's Café"
+  brand: "Rothaus"
+  action: add
+  verified: '2026-08-11'
+  note: "Suli's Café: „…11,50€ Bier Pils Astra 0,33l 3,50€ Tannenzäpfle 0,33l 3,50€ Staropramen 0,33l 3,50€ Tegernseer Hell 0,33l…“ (Website, duesseldorf)."
+
+- osm_id: node/388198774
+  venue: "Suli's Café"
+  brand: "Uerige"
+  action: add
+  verified: '2026-08-11'
+  note: "Suli's Café: „…Malz 0,33l 3,50€ Alt Schlüssel 0,33l 3,50€ Uerige 0,33l 3,50€ Weizen Franziskaner 0,5l 4,10€ Franziskaner…“ (Website, duesseldorf)."
+
+- osm_id: node/388198774
+  venue: "Suli's Café"
+  brand: "Staropramen"
+  action: add
+  verified: '2026-08-11'
+  note: "Suli's Café: „…Astra 0,33l 3,50€ Tannenzäpfle 0,33l 3,50€ Staropramen 0,33l 3,50€ Tegernseer Hell 0,33l 3,50€ Tannenzäpfle…“ (Website, duesseldorf)."
+
+- osm_id: node/5309423421
+  venue: "Tam Tam"
+  brand: "König Pilsner"
+  action: add
+  verified: '2026-08-11'
+  note: "Tam Tam: „…Saigon Bier 0,33l Flasche, 0,33L € 4,50 105 König Ludwig Weizen Alkoholfrei 0,5l 0,5L (auch alkoholfrei…“ (Website, duesseldorf)."
+
+- osm_id: node/10959923985
+  venue: "Trattoria Valentina"
+  brand: "Franziskaner"
+  action: add
+  verified: '2026-08-11'
+  note: "Trattoria Valentina: „…Urquell 0,4l 5,50 € Peroni 0,33l 5,50 € Franziskaner Weizen 0,5l 5,50 € Franziskaner Weizen Alkoholfrei,…“ (Website, duesseldorf)."
+
+- osm_id: node/10959923985
+  venue: "Trattoria Valentina"
+  brand: "Krombacher"
+  action: add
+  verified: '2026-08-11'
+  note: "Trattoria Valentina: „…Weizen Alkoholfrei, 0,5l 4,50 € Krombacher Alkoholfrei, 0,33l 4,50 € Füchschen Alt 0,33l 4,50 €…“ (Website, duesseldorf)."
+
+- osm_id: node/10959923985
+  venue: "Trattoria Valentina"
+  brand: "Füchschen"
+  action: add
+  verified: '2026-08-11'
+  note: "Trattoria Valentina: „…4,50 € Krombacher Alkoholfrei, 0,33l 4,50 € Füchschen Alt 0,33l 4,50 € Spirituosen Limoncello 2cl 5,50 €…“ (Website, duesseldorf)."
+
+- osm_id: node/10959923985
+  venue: "Trattoria Valentina"
+  brand: "Pilsner Urquell"
+  action: add
+  verified: '2026-08-11'
+  note: "Trattoria Valentina: „…0,1l 3,00 € Apfelschorle 0,25l 3,50 € Bier Pilsner Urquell 0,4l 5,50 € Peroni 0,33l 5,50 € Franziskaner…“ (Website, duesseldorf)."
+
+- osm_id: node/3503765535
+  venue: "Uerige Hausbrauerei"
+  brand: "Uerige"
+  action: add
+  verified: '2026-08-11'
+  note: "Uerige Hausbrauerei: „…– Uerige - Das Alt der Stadt Zum Hauptinhalt springen EN…“ (Website, duesseldorf)."
+
+- osm_id: node/4742686091
+  venue: "Uerige am Markt"
+  brand: "Uerige"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Uerige am Markt: „…möglich! Auszug aus der Getränkekarte Getränkekarte download PDF neu List of beverages download PDF neu…“ (Website, duesseldorf)."
+
+- osm_id: node/2475940355
+  venue: "Vereinshaus Unterbach"
+  brand: "Erdinger"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Vereinshaus Unterbach: „…ene erhalten Sie beim Servicepersonal FRISCH VOM FASS ORIGINAL SCHLÜSSEL ALT 0,25l 2,95 € 0,5l 5,45 €…“ (Website, duesseldorf)."
+
+- osm_id: node/2982609961
+  venue: "Waldgasthof Gut Wolfsaap"
+  brand: "Erdinger"
+  action: add
+  verified: '2026-08-11'
+  note: "Waldgasthof Gut Wolfsaap: „…König Pilsener 0,3l 3,20 € alkoholfrei Erdinger Weizen 0,5l 5,00 € alkoholfrei | hell | dunkel…“ (Website, duesseldorf)."
+
+- osm_id: node/3761414995
+  venue: "Weggen am Handweiser"
+  brand: "Veltins"
+  action: add
+  verified: '2026-08-11'
+  note: "Weggen am Handweiser: „…Bier, wie der Name schon sagt, das Urpils Veltins Pilsener, ein feinherbes, leicht bekömmliches Bier nach…“ (Website, duesseldorf)."
+
+- osm_id: node/3761414995
+  venue: "Weggen am Handweiser"
+  brand: "Pilsner Urquell"
+  action: add
+  verified: '2026-08-11'
+  note: "Weggen am Handweiser: „…der Düsseldorfer Altstadt Pilsener Urquell, das echte, tschechische Bier, wie der Name schon sagt, das…“ (Website, duesseldorf)."
+
+- osm_id: node/2734009243
+  venue: "What's Beef"
+  brand: "Warsteiner"
+  action: add
+  verified: '2026-08-11'
+  note: "What's Beef: „…– König Ludwig Dunkel (0.5l) – 6,00€ – Warsteiner Regular (0.33l) – 4,50€ – Letzte Aenderung 6/2025 |…“ (Website, duesseldorf)."
+
+- osm_id: node/7598059932
+  venue: "YATANA"
+  brand: "Warsteiner"
+  action: add
+  verified: '2026-08-11'
+  note: "YATANA: „…voller exotischer Ananasaromen 0,33l BIER Warsteiner Pilsener 2,40€ 4,90€ 0,20l|0,40l Alster/ Radler 2,40€…“ (Website, duesseldorf)."
+
+- osm_id: node/7598059932
+  venue: "YATANA"
+  brand: "Frankenheim"
+  action: add
+  verified: '2026-08-11'
+  note: "YATANA: „…Warsteiner alkoholfrei 4,20€ 0,33l Frankenheimer Alt 2,40€ 4,90€ 0,20l |0,40l Krefelder 2,40€ 4,90€…“ (Website, duesseldorf)."
+
+- osm_id: node/504318467
+  venue: "Zur Alten Apotheke"
+  brand: "Füchschen"
+  action: add
+  verified: '2026-08-11'
+  note: "Zur Alten Apotheke: „…Oder vielleicht mal mittwochs, wenn es Füchschen gibt? Wir lieben, was wir tun. Diese Passion leben wir…“ (Website, duesseldorf)."
+
+- osm_id: node/504318467
+  venue: "Zur Alten Apotheke"
+  brand: "Guinness"
+  action: add
+  verified: '2026-08-11'
+  note: "Zur Alten Apotheke: „…guter Musik ein gepflegtes Alt, Pils oder Guinness zu trinken. Oder vielleicht mal mittwochs, wenn es…“ (Website, duesseldorf)."
+
+- osm_id: node/1577236943
+  venue: "Zur Uel"
+  brand: "Füchschen"
+  action: add
+  verified: '2026-08-11'
+  note: "Zur Uel: „…bekommt man hier seitdem süffiges Füchschen Alt. Zurzeit ist das Gasthaus unter der Leitung des…“ (Website, duesseldorf)."
+
+- osm_id: node/4787717321
+  venue: "Aarappar Restaurant"
+  brand: "Erdinger"
+  action: add
+  verified: '2026-08-11'
+  note: "Aarappar Restaurant: „…€ CORONA EXTRA 0,33 L 3,90 € WEISEN BIER (ERDINGER) 0,5 L 4,50 € Wein ROTWEIN 0,2 L 4,50 € WEIßWEIN 0,2 L…“ (Website, frankfurt)."
+
+- osm_id: node/4787717321
+  venue: "Aarappar Restaurant"
+  brand: "Beck's"
+  action: add
+  verified: '2026-08-11'
+  note: "Aarappar Restaurant: „…Kashewnuss Add Drinks Menu Beers BECKS 0,33 L 3,50 € BECKS 0,5 0,5 L 4,50 € ALCOHOL FREE BEER 0,5 L…“ (Website, frankfurt)."
+
+- osm_id: node/13865557178
+  venue: "Amala Café & Bar"
+  brand: "Licher"
+  action: add
+  verified: '2026-08-11'
+  note: "Amala Café & Bar: „…0,33l 3,88 € 5% vol, inkl. Pfand (0,08 €) Licher Radler 0,33l 3,98 € 3% vol, inkl. Pfand (0,08 €) Heineken…“ (Website, frankfurt)."
+
+- osm_id: node/13865557178
+  venue: "Amala Café & Bar"
+  brand: "Heineken"
+  action: add
+  verified: '2026-08-11'
+  note: "Amala Café & Bar: „…0,33l 3,98 € 3% vol, inkl. Pfand (0,08 €) Heineken 0,33l 3,98 € 5% vol, inkl. Pfand (0,08 €) Online Essen…“ (Website, frankfurt)."
+
+- osm_id: node/6490674590
+  venue: "Asia Thai Food"
+  brand: "Rothaus"
+  action: add
+  verified: '2026-08-11'
+  note: "Asia Thai Food: „…4,50 € Singha Beer 0,33l 4,50 € 3,50 € Rothaus Tannenzäpfle Pils 0,33l 3,50 € Stand MÄRZ 2024 -…“ (Website, frankfurt)."
+
+- osm_id: node/6490674590
+  venue: "Asia Thai Food"
+  brand: "Bitburger"
+  action: add
+  verified: '2026-08-11'
+  note: "Asia Thai Food: „…3,90 € Singha Beer 0,33l 3,90 € 2,60 € Bitburger Premium Pils 0,33l 2,60 € Stand März 2024 - Änderungen…“ (Website, frankfurt)."
+
+- osm_id: node/1508988483
+  venue: "Avocateur"
+  brand: "Krombacher"
+  action: add
+  verified: '2026-08-11'
+  note: "Avocateur: „…Half-Half-Limonade Biere Krombacher Pils 1c Starnberger Hell 1c Krombacher Pils…“ (Website, frankfurt)."
+
+- osm_id: node/13935146334
+  venue: "Cresco"
+  brand: "König Pilsner"
+  action: add
+  verified: '2026-08-11'
+  note: "Cresco: „…9,50 Euro Soft Drinks 0,25 l 4,50 Euro BEER König Pilsener 0,33 l 4,50 Euro König Pilsener 0,4 l 6,00 Euro…“ (Website, frankfurt)."
+
+- osm_id: node/4330794624
+  venue: "Das Nudel Ding"
+  brand: "Maisel's"
+  action: add
+  verified: '2026-08-11'
+  note: "Das Nudel Ding: „…0,33L 4,20 € Radler 0,33L 4,20 € Maisel’s Weißbier 0,5L 4,80 € Maisel’s Weißbier alkoholfrei 0,5L…“ (Website, frankfurt)."
+
+- osm_id: node/4330794624
+  venue: "Das Nudel Ding"
+  brand: "Bitburger"
+  action: add
+  verified: '2026-08-11'
+  note: "Das Nudel Ding: „…5,80 € Bier · Wein · Schnaps Bitburger Pils 0,33L 4,20 € Bitburger Pils alkoholfrei 0,33L…“ (Website, frankfurt)."
+
+- osm_id: node/2536706361
+  venue: "Der Grieche - Taverna"
+  brand: "Spaten"
+  action: add
+  verified: '2026-08-11'
+  note: "Der Grieche - Taverna: „…0,33 l 5.50 € Corona Extra 0,33 l 5.50 € Spaten hell 0,33 l 5.50 € Heiße Getränke Espresso / macchiato…“ (Website, frankfurt)."
+
+- osm_id: node/443920915
+  venue: "Dionysos"
+  brand: "Tucher"
+  action: add
+  verified: '2026-08-11'
+  note: "Dionysos: „…Leckeres Fleisch für fairen Preis. Das Tucher-Bier war sehr gut. Minas ist ein sehr netter Chef und ein…“ (Website, frankfurt)."
+
+- osm_id: node/1580420543
+  venue: "Frankfurter Küche"
+  brand: "Schöfferhofer"
+  action: add
+  verified: '2026-08-11'
+  note: "Frankfurter Küche: „…€ Kostritzer dunkel Flasche - 0,5l 6,90 € SCHÖFFERHOFER WEIZEN - 0,5 L 6,90 € AUS DER FLASCHE Bottled Beer…“ (Website, frankfurt)."
+
+- osm_id: node/6036170086
+  venue: "Frankfurter Wirtshaus"
+  brand: "Binding"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Frankfurter Wirtshaus: „…nsere Getränkekarte umfasst neben Softdrinks Fassbiere der Binding Brauerei, Craft Beer von Braufactum,…“ (Website, frankfurt)."
+
+- osm_id: node/6348853900
+  venue: "Franziska"
+  brand: "Henninger"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Franziska: „…re zu sorgen. Aber keine Panik, selbstverständlich servieren wir unseren Gästen auch gerne ein eiskaltes…“ (Website, frankfurt)."
+
+- osm_id: node/11422392837
+  venue: "Fräulein Fleur"
+  brand: "Rothaus"
+  action: add
+  verified: '2026-08-11'
+  note: "Fräulein Fleur: „…0,2l € 8.00 Hugo 0,2l € 8.00 __ bière Tannenzäpfle 0,33l € 4.00 Tannenzäpfle – alkoholfrei 0,33l € 4.00…“ (Website, frankfurt)."
+
+- osm_id: node/6408736150
+  venue: "Ganesha"
+  brand: "Radeberger"
+  action: add
+  verified: '2026-08-11'
+  note: "Ganesha: „…- Sprite - Mezzo Mix 4.5 EUR 1 Liter Bier Radeberger Bier 4.5 EUR 0,5 Liter Kingfisher Beer 4.5 EUR 0,33…“ (Website, frankfurt)."
+
+- osm_id: node/4195048002
+  venue: "Glauburg Café"
+  brand: "Franziskaner"
+  action: add
+  verified: '2026-08-11'
+  note: "Glauburg Café: „…Helles Beck‘s, Beck‘s alkoholfrei Franziskaner Hefeweizen Wein Glauburg Weißwein, Scheurebe, Baden…“ (Website, frankfurt)."
+
+- osm_id: node/1878906986
+  venue: "Injera - African Pearl"
+  brand: "König Pilsner"
+  action: add
+  verified: '2026-08-11'
+  note: "Injera - African Pearl: „…und Bieren. Insbesondere unser Spitzenbier KÖNIG PILSENER macht seinem Namen alle Ehre. Besonders…“ (Website, frankfurt)."
+
+- osm_id: node/495333507
+  venue: "Irish Pub Bornheim"
+  brand: "Guinness"
+  action: add
+  verified: '2026-08-11'
+  note: "Irish Pub Bornheim: „…Irish classics such as the famous Beef & Guinness stew, German favourites like the schnitzel and specials…“ (Website, frankfurt)."
+
+- osm_id: node/2683677760
+  venue: "Klaane Sachsehäuser"
+  brand: "Schöfferhofer"
+  action: add
+  verified: '2026-08-11'
+  note: "Klaane Sachsehäuser: „…Pils 0,4 l EUR 3,20 Radler 0,4 l EUR 3,20 Schöfferhofer Weizen 0,5 l EUR 3,80 Sekt Hausmarke 1 Fl. EUR…“ (Website, frankfurt)."
+
+- osm_id: node/2683677760
+  venue: "Klaane Sachsehäuser"
+  brand: "Binding"
+  action: add
+  verified: '2026-08-11'
+  note: "Klaane Sachsehäuser: „…(Rotwein, halbtrocken) 0,2 l EUR 3,60 Bier Binding Pils 0,4 l EUR 3,20 Radler 0,4 l EUR 3,20 Schöfferhofer…“ (Website, frankfurt)."
+
+- osm_id: node/1784575413
+  venue: "Klosterhof"
+  brand: "Binding"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Klosterhof: „…ften höchstens Flaschenbier bereitzuhalten – frisch gezapftes Bier angeboten. Die Kundschaft nahm es…“ (Website, frankfurt)."
+
+- osm_id: node/9688106626
+  venue: "Leib & Wohl"
+  brand: "Krombacher"
+  action: add
+  verified: '2026-08-11'
+  note: "Leib & Wohl: „…Naturtrüb / Hefe Dunkel ALKOHOLFREIES BIER Krombacher Alkoholfrei 0,33l € 2,50 Benediktiner Weißbier…“ (Website, frankfurt)."
+
+- osm_id: node/4551107990
+  venue: "Little Italy"
+  brand: "Fürstenberg"
+  action: add
+  verified: '2026-08-11'
+  note: "Little Italy: „…die alkoholfreie Alternative 0,5l € 5,90 Fürstenberg Pils null Alkohol, voller Genuss. Hopfenherb und…“ (Website, frankfurt)."
+
+- osm_id: node/2801580765
+  venue: "Main Diner"
+  brand: "Krombacher"
+  action: add
+  verified: '2026-08-11'
+  note: "Main Diner: „…0,1l 7,50€ Champagner 0,1l 12,50€ BIER Krombacher Pilsner 0,2l 3,50€ Krombacher Pilsner 0,4l 5,00€…“ (Website, frankfurt)."
+
+- osm_id: node/9156178339
+  venue: "Mirch Masala"
+  brand: "Beck's"
+  action: add
+  verified: '2026-08-11'
+  note: "Mirch Masala: „…inkl. Pfand (0,00 €), 12,71 €/l, 0,7l Becks 0,33l 2,80 € 5% vol, inkl. Pfand (0,08 €), 5,52 €/l, 0,5l…“ (Website, frankfurt)."
+
+- osm_id: node/2848876383
+  venue: "Naïv"
+  brand: "Löwenbräu"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Naïv: „…lben naïv-DNA. MASSIFnaïv entdecken → Gerade On Tap Komplette Karte ansehen → #1 ï ♥ lager 2.0…“ (Website, frankfurt)."
+
+- osm_id: node/2848876383
+  venue: "Naïv"
+  brand: "Störtebeker"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Naïv: „…Brauerei Weizen · 6.4% ABV #7 ATLANTIK ALE Störtebeker Pale Ale · 5.1% ABV #8 I AM FRESH Frau Gruber NEIPA…“ (Website, frankfurt)."
+
+- osm_id: node/2848876383
+  venue: "Naïv"
+  brand: "Mahrs Bräu"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Naïv: „…lben naïv-DNA. MASSIFnaïv entdecken → Gerade On Tap Komplette Karte ansehen → #1 ï ♥ lager 2.0…“ (Website, frankfurt)."
+
+- osm_id: node/5423043921
+  venue: "Normalkneipe"
+  brand: "Schneider Weisse"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Normalkneipe: „…0,3 l 7,20 € WEISSBIER Alk. Menge Preis Schneider Weisse Tap I (Meine helle Weisse) 5,2% Alk. 0,5 l 5,00…“ (Website, frankfurt)."
+
+- osm_id: node/5423043921
+  venue: "Normalkneipe"
+  brand: "Jever"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Normalkneipe: „…Geschmack. Getränkekarte Was wir einschenken AUS DEM FASS / DRAUGHT BEER Alk. Menge Preis Binding Römer…“ (Website, frankfurt)."
+
+- osm_id: node/5423043921
+  venue: "Normalkneipe"
+  brand: "Guinness"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Normalkneipe: „…schmack. Getränkekarte Was wir einschenken AUS DEM FASS / DRAUGHT BEER Alk. Menge Preis Binding Römer…“ (Website, frankfurt)."
+
+- osm_id: node/5423043921
+  venue: "Normalkneipe"
+  brand: "Kilkenny"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Normalkneipe: „…Geschmack. Getränkekarte Was wir einschenken AUS DEM FASS / DRAUGHT BEER Alk. Menge Preis Binding Römer…“ (Website, frankfurt)."
+
+- osm_id: node/5423043921
+  venue: "Normalkneipe"
+  brand: "Budweiser Budvar"
+  action: add
+  verified: '2026-08-11'
+  note: "Normalkneipe: „…Fun weniger als 0,5% Alk. 0,33 l 3,50 € Budweiser Budvar 5,0% Alk. 0,33 l 3,50 € Jever Pilsner 4,9% Alk.…“ (Website, frankfurt)."
+
+- osm_id: node/6375117255
+  venue: "Ong Tao Vegan"
+  brand: "Licher"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Ong Tao Vegan: „…€ 5,50 Benediktiner Helles 0,5L € 5,50 BIER VOM FASS € 3,90 / € 5,20 Licher Pils 0,25L / 0,4L € 3,90 / €…“ (Website, frankfurt)."
+
+- osm_id: node/2819332857
+  venue: "Paulaner"
+  brand: "Paulaner"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Paulaner: „…in unseren unterschiedlichen Gasträumen ein frisch gezapftes Paulaner vom Fass und wählen aus unserer reichhal…“ (Website, frankfurt)."
+
+- osm_id: node/292373304
+  venue: "Paulaner am Dom"
+  brand: "Paulaner"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Paulaner am Dom: „…ypisch bayerische Wirtshausgemütlichkeit erwarten Sie bei uns. Genießen Sie in unseren unterschiedlichen…“ (Website, frankfurt)."
+
+- osm_id: node/12144211833
+  venue: "Pizzeria Engel"
+  brand: "Beck's"
+  action: add
+  verified: '2026-08-11'
+  note: "Pizzeria Engel: „…0,5l 3,50 € Bitburger 0,5l 3,50 € Becks 0,5l 3,50 € Apfelwein 1,0 l 5,90 € Lambrusco 0,7 l 11,90 €…“ (Website, frankfurt)."
+
+- osm_id: node/12144211833
+  venue: "Pizzeria Engel"
+  brand: "Warsteiner"
+  action: add
+  verified: '2026-08-11'
+  note: "Pizzeria Engel: „…( 1,0 l) 5,00 € ALKOHOLISCHE GETRÄNKE Warsteiner 0,5l 3,50 € Bitburger 0,5l 3,50 € Becks 0,5l 3,50 €…“ (Website, frankfurt)."
+
+- osm_id: node/12144211833
+  venue: "Pizzeria Engel"
+  brand: "Bitburger"
+  action: add
+  verified: '2026-08-11'
+  note: "Pizzeria Engel: „…GETRÄNKE Warsteiner 0,5l 3,50 € Bitburger 0,5l 3,50 € Becks 0,5l 3,50 € Apfelwein 1,0 l 5,90 €…“ (Website, frankfurt)."
+
+- osm_id: node/316234964
+  venue: "Pizzeria Jonny Frankfurt"
+  brand: "Beck's"
+  action: add
+  verified: '2026-08-11'
+  note: "Pizzeria Jonny Frankfurt: „…süß 0,5 L 6,00 € Alkoholische Getränke Beck's 0,5l 3,80 € Helles Bier - Benediktiner 0,5l 4,50 € Weizen…“ (Website, frankfurt)."
+
+- osm_id: node/2706991161
+  venue: "Ristorante Colosseo"
+  brand: "Maisel's"
+  action: add
+  verified: '2026-08-11'
+  note: "Ristorante Colosseo: „…4.00 0.40L Veltins Pilsener € 4.50 0.50L Maisels Weisse Original € 4.50 0.50L Maisels Weisse Kristall € 4.50…“ (Website, frankfurt)."
+
+- osm_id: node/2706991161
+  venue: "Ristorante Colosseo"
+  brand: "Veltins"
+  action: add
+  verified: '2026-08-11'
+  note: "Ristorante Colosseo: „…eine Phenylanalinquelle .......... 0.25L Veltins Pilsener € 4.00 0.25L Veltins Pilsener, alkoholfrei €…“ (Website, frankfurt)."
+
+- osm_id: node/491082759
+  venue: "Römer Pils Brunnen"
+  brand: "Guinness"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Römer Pils Brunnen: „…ahr 1759 in Dublin gegründet wurde. Guinness Draught wird mit einem Gemisch aus 30 % Kohlensäure und 70…“ (Website, frankfurt)."
+
+- osm_id: node/1759883944
+  venue: "Safran & Sauerkraut"
+  brand: "Augustiner"
+  action: add
+  verified: '2026-08-11'
+  note: "Safran & Sauerkraut: „…Pils alkoholfrei Brauhaus Faust – 0.3l 3,20 Augustiner Hell – 0.5l 4.90 Budweiser 'Budvar' – 0.5l 4.90…“ (Website, frankfurt)."
+
+- osm_id: node/1759883944
+  venue: "Safran & Sauerkraut"
+  brand: "Unertl"
+  action: add
+  verified: '2026-08-11'
+  note: "Safran & Sauerkraut: „…Sinfonie Bockbier, Rhöner – 0.5l 4.90 Unertl Weizenbier dunkel, Haag, Oberbayern – 0.5l 4.90…“ (Website, frankfurt)."
+
+- osm_id: node/1759883944
+  venue: "Safran & Sauerkraut"
+  brand: "Veltins"
+  action: add
+  verified: '2026-08-11'
+  note: "Safran & Sauerkraut: „…Brauhaus Faust – 0.4l/ 0.25l - 4.60/ 3.20 Veltins Pils – 0.3l 3,20 Pils alkoholfrei Brauhaus Faust – 0.3l…“ (Website, frankfurt)."
+
+- osm_id: node/1759883944
+  venue: "Safran & Sauerkraut"
+  brand: "Budweiser Budvar"
+  action: add
+  verified: '2026-08-11'
+  note: "Safran & Sauerkraut: „…– 0.3l 3,20 Augustiner Hell – 0.5l 4.90 Budweiser 'Budvar' – 0.5l 4.90 Hopfen Sinfonie Bockbier, Rhöner…“ (Website, frankfurt)."
+
+- osm_id: way/174512173
+  venue: "Salzkammer"
+  brand: "Binding"
+  action: add
+  verified: '2026-08-11'
+  note: "Salzkammer: „…Salzkammer Helles €4,10 0,3 l €5,90 0,5 l Binding Naturtrüb €4,10 0,3 l €5,90 0,5 l Salzkammer's…“ (Website, frankfurt)."
+
+- osm_id: node/1611097300
+  venue: "Savanna Restaurant"
+  brand: "Radeberger"
+  action: add
+  verified: '2026-08-11'
+  note: "Savanna Restaurant: „…5,90€ Maracuja- oder Mango mit Minze Radeberger 3.90€ Clausthaler extra herb, alkoholfrei 3,80€…“ (Website, frankfurt)."
+
+- osm_id: node/1611097300
+  venue: "Savanna Restaurant"
+  brand: "Schöfferhofer"
+  action: add
+  verified: '2026-08-11'
+  note: "Savanna Restaurant: „…extra herb, alkoholfrei 3,80€ Radler 4,80€ Schöfferhofer Hefe 5,20€ hell, dunkel, kristall, alkoholfrei…“ (Website, frankfurt)."
+
+- osm_id: node/634855082
+  venue: "Schiffsmeldestelle"
+  brand: "Krombacher"
+  action: add
+  verified: '2026-08-11'
+  note: "Schiffsmeldestelle: „…News Jobs Kontakt Drinks Bier und Apfelwein Krombacher (a) 0,4 ltr. 5,00 Starnberger Hell (a) 0,4 ltr. 5,50…“ (Website, frankfurt)."
+
+- osm_id: node/634855082
+  venue: "Schiffsmeldestelle"
+  brand: "Schöfferhofer"
+  action: add
+  verified: '2026-08-11'
+  note: "Schiffsmeldestelle: „…Krombacher Hefeweizen (a) 0,5 ltr. 5,50 Schöfferhofer Grape (a)(1,3) 0,33 ltr. 4,50 Apfelwein (3,5) 0,25…“ (Website, frankfurt)."
+
+- osm_id: node/13935145754
+  venue: "SenSaSion"
+  brand: "Bitburger"
+  action: add
+  verified: '2026-08-11'
+  note: "SenSaSion: „…Grey, Kamillenblüten, Früchte, Grüner Bier Bitburger 0,33 €4.3 Benediktiner Weizen 0.5 €5.5 Corona €5…“ (Website, frankfurt)."
+
+- osm_id: node/491077246
+  venue: "Shishantash"
+  brand: "Schöfferhofer"
+  action: add
+  verified: '2026-08-11'
+  note: "Shishantash: „…CORONA 6,90€ 0,33L DESPERADOS 6,90€ 0,33L SCHÖFFERHOFER 6,90€ 0,5L | HEFEWEIZEN HELL SCHÖFFERHOFER 6,90€…“ (Website, frankfurt)."
+
+- osm_id: node/491077246
+  venue: "Shishantash"
+  brand: "Heineken"
+  action: add
+  verified: '2026-08-11'
+  note: "Shishantash: „…Süßungsmittel A Glutenhaltig G Milch Bier HEINEKEN 4,50€ 0,33L HEINEKEN ALKOHOLFREI 4,50€ 0,33L CORONA…“ (Website, frankfurt)."
+
+- osm_id: node/2255604489
+  venue: "The Cosy Bar"
+  brand: "Erdinger"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "The Cosy Bar: „…und Kirschnektar BIER & APFELWEIN Krombacher vom Fass Guinness vom Fass Kilkenny Äppler Walther Darüber…“ (Website, frankfurt)."
+
+- osm_id: node/5161580524
+  venue: "Whats Beef"
+  brand: "Warsteiner"
+  action: add
+  verified: '2026-08-11'
+  note: "Whats Beef: „…– König Ludwig Dunkel (0.5l) – 6,00€ – Warsteiner Regular (0.33l) – 4,50€ – Letzte Aenderung 6/2025 |…“ (Website, frankfurt)."
+
+- osm_id: node/1130968249
+  venue: "Zum alten Schlagbaum"
+  brand: "Binding"
+  action: add
+  verified: '2026-08-11'
+  note: "Zum alten Schlagbaum: „…Gewinner 2018 Kategorie 'Die beste Binding-Gastronomie' ﻿Preisliste gültig ab 11. März 2025, damit…“ (Website, frankfurt)."
+
+- osm_id: node/1109640487
+  venue: "o'reilly's irish pub"
+  brand: "Guinness"
+  action: add
+  verified: '2026-08-11'
+  note: "o'reilly's irish pub: „…Whether you're here for a proper pint of Guinness, hearty pub grub, live sports, or just some good…“ (Website, frankfurt)."
+
+- osm_id: node/3093059607
+  venue: "platzhirsch"
+  brand: "Paulaner"
+  action: add
+  verified: '2026-08-11'
+  note: "platzhirsch: „…Abend zu bescheren. ANFRAGEN KONTAKT Paulaner Platzhirsch am Main Mainwasenweg 34 60599 Frankfurt am…“ (Website, frankfurt)."
+
+- osm_id: node/13335863743
+  venue: "Ako - Sushi"
+  brand: "Erdinger"
+  action: add
+  verified: '2026-08-11'
+  note: "Ako - Sushi: „…€ 1333. Gilde Radler 0.33l 3,20 € 1334. Erdinger Hefe 0.5l 4,20 € 1335. Erdinger Hefe Dunke 0.5l 4,20 €…“ (Website, hannover)."
+
+- osm_id: node/13335863743
+  venue: "Ako - Sushi"
+  brand: "Gilde"
+  action: add
+  verified: '2026-08-11'
+  note: "Ako - Sushi: „…€ 1331. Vodka 40% vol 2,80 € BIER 1332. Gilde Pils 0.33l 3,10 € 1333. Gilde Radler 0.33l 3,20 € 1334.…“ (Website, hannover)."
+
+- osm_id: node/539069162
+  venue: "Alexander"
+  brand: "Guinness"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Alexander: „…braut! 30167 Pils 0,3 · 4,30 0,5 · 6,50 Guinness 0,3 · 4,30 0,5 · 6,50 Flaschenbiere Gilde Free 0,33 ·…“ (Website, hannover)."
+
+- osm_id: node/270503036
+  venue: "Ambrosia"
+  brand: "Maisel's"
+  action: add
+  verified: '2026-08-11'
+  note: "Ambrosia: „…141 Alkoholfreies Bier 0,33 l 3,90 € 142 Maisel‘s Weißbier 0,5 l 5,50 € 143 Malzbier 0,33 l 3,90 € 143…“ (Website, hannover)."
+
+- osm_id: node/12118851978
+  venue: "Busan Chicken"
+  brand: "Heineken"
+  action: add
+  verified: '2026-08-11'
+  note: "Busan Chicken: „…0.25l € 3.50 Demi Soda Peach 0.25l € 3.50 Heineken 0.33l € 4.20 Heineken alkoholfrei 0.33l € 4.20 Cass…“ (Website, hannover)."
+
+- osm_id: node/11794983028
+  venue: "Doli"
+  brand: "Paulaner"
+  action: add
+  verified: '2026-08-11'
+  note: "Doli: „…Coca-Cola Zero / Fanta / Sprite 4,00 0,33l Paulaner Spezi 5,50 € 0,5l Redbull 5,50 € 0,25l Thomas Henry…“ (Website, hannover)."
+
+- osm_id: node/11794983028
+  venue: "Doli"
+  brand: "Maisel's"
+  action: add
+  verified: '2026-08-11'
+  note: "Doli: „…Schwarzbier 4,8% vol. 5,50 € 0,5l Maisel's Weisse 5,1% vol. 5,50 € 0,5l Zedezani - Georgisches…“ (Website, hannover)."
+
+- osm_id: node/11794983028
+  venue: "Doli"
+  brand: "Veltins"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Doli: „…| Weiße Kirsche, Kornelkirsche, Feijoa Bier von Fass Veltins Pilsner 4,8% vol. 4,00 € / 5,50 € 0,33l /…“ (Website, hannover)."
+
+- osm_id: node/11794983028
+  venue: "Doli"
+  brand: "Köstritzer"
+  action: add
+  verified: '2026-08-11'
+  note: "Doli: „…naturtrübes Landbier 5,2% vol. 5,50 € 0,5l Köstritzer Schwarzbier 4,8% vol. 5,50 € 0,5l Maisel's Weisse…“ (Website, hannover)."
+
+- osm_id: way/159114386
+  venue: "Dornröschen"
+  brand: "Herrenhäuser"
+  action: add
+  verified: '2026-08-11'
+  note: "Dornröschen: „…Hefeweizen --- 5,00 € Flaschenbier Herrenhäuser 0,33 l 3,50 € Jever 0,33 l 3,50 € Jever Fun…“ (Website, hannover)."
+
+- osm_id: node/323101227
+  venue: "El Cuentro"
+  brand: "Beck's"
+  action: add
+  verified: '2026-08-11'
+  note: "El Cuentro: „…vol, inkl. Pfand (0,00 €), 71,29 €/l, 0,7l Beck's Green Lemon 0,33l (MEHRWEG) 3,50 € 3% vol, inkl. Pfand…“ (Website, hannover)."
+
+- osm_id: node/798406257
+  venue: "Eliniko"
+  brand: "Einbecker"
+  action: add
+  verified: '2026-08-11'
+  note: "Eliniko: „…2,80€ Tee verschiedene Sorten 2,50€ Biere Einbecker Brauherrenpils 0,3l 4,00€ Alsterwasser 0,3l 4,00€…“ (Website, hannover)."
+
+- osm_id: node/338503012
+  venue: "Ente von Peking"
+  brand: "Paulaner"
+  action: add
+  verified: '2026-08-11'
+  note: "Ente von Peking: „…(0.3 l) 4,90€ Weizenbier, Flasche 0,5 l Paulaner Hefe Weißbier, naturtrüb (0.5 l) 5,00€ Paulaner Hefe…“ (Website, hannover)."
+
+- osm_id: node/9146996336
+  venue: "Felix Restaurant-Bar-Events"
+  brand: "Köstritzer"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Felix Restaurant-Bar-Events: „…18,5 %) 4,80 € Fino / Medium Dry Bier Frisch vom Fass König Pilsener · 0,3 l / 0,5 l 4,30 € / 5,70 €…“ (Website, hannover)."
+
+- osm_id: node/268808490
+  venue: "Izarro"
+  brand: "Franziskaner"
+  action: add
+  verified: '2026-08-11'
+  note: "Izarro: „…Bier Beck's Green Lemon Jever Gilde Free Franziskaner Hefeweizen Franziskaner Kristallweizen Franziskaner…“ (Website, hannover)."
+
+- osm_id: node/268808490
+  venue: "Izarro"
+  brand: "Jever"
+  action: add
+  verified: '2026-08-11'
+  note: "Izarro: „…Flaschenbier Beck's Bier Beck's Green Lemon Jever Gilde Free Franziskaner Hefeweizen Franziskaner…“ (Website, hannover)."
+
+- osm_id: node/268808490
+  venue: "Izarro"
+  brand: "Beck's"
+  action: add
+  verified: '2026-08-11'
+  note: "Izarro: „…Alster, kl. Alster, gr. Flaschenbier Beck's Bier Beck's Green Lemon Jever Gilde Free Franziskaner…“ (Website, hannover)."
+
+- osm_id: node/503562830
+  venue: "Kreuzklappe"
+  brand: "Franziskaner"
+  action: add
+  verified: '2026-08-11'
+  note: "Kreuzklappe: „…sich inklusive der gesetzlichen MwSt . Franziskaner Weißbier 0,5l €5,30 Alle Preise verstehen sich…“ (Website, hannover)."
+
+- osm_id: node/503562830
+  venue: "Kreuzklappe"
+  brand: "Beck's"
+  action: add
+  verified: '2026-08-11'
+  note: "Kreuzklappe: „…sich inklusive der gesetzlichen MwSt . Becks Alkoholfreies Pilsener 0,33l €3,50 Alle Preise verstehen sich…“ (Website, hannover)."
+
+- osm_id: node/503562830
+  venue: "Kreuzklappe"
+  brand: "Hasseröder"
+  action: add
+  verified: '2026-08-11'
+  note: "Kreuzklappe: „…sich inklusive der gesetzlichen MwSt . Bier Hasseröder Pils Dunkel 0,3l €3,50 0,4l €4,50 Alle Preise…“ (Website, hannover)."
+
+- osm_id: node/253165451
+  venue: "Kuriosum"
+  brand: "Jever"
+  action: add
+  verified: '2026-08-11'
+  note: "Kuriosum: „…Postcard- Box Aktionstage Inet- Radio Jever Strong Urige Kneipe GUINNESS 0.0 The Hanover Irish Session…“ (Website, hannover)."
+
+- osm_id: node/253165451
+  venue: "Kuriosum"
+  brand: "Astra"
+  action: add
+  verified: '2026-08-11'
+  note: "Kuriosum: „…Kapuziner Schneider Weizen Einbecker Astra Urtyp Budweiser Diebels Jever Gerolsteiner Coca Cola Säfte…“ (Website, hannover)."
+
+- osm_id: node/253165451
+  venue: "Kuriosum"
+  brand: "Einbecker"
+  action: add
+  verified: '2026-08-11'
+  note: "Kuriosum: „…Kilkenny Kapuziner Schneider Weizen Einbecker Astra Urtyp Budweiser Diebels Jever Gerolsteiner Coca…“ (Website, hannover)."
+
+- osm_id: node/253165451
+  venue: "Kuriosum"
+  brand: "Diebels"
+  action: add
+  verified: '2026-08-11'
+  note: "Kuriosum: „…Weizen Einbecker Astra Urtyp Budweiser Diebels Jever Gerolsteiner Coca Cola Säfte Schweppes vis-à-vis ﻿…“ (Website, hannover)."
+
+- osm_id: node/253165451
+  venue: "Kuriosum"
+  brand: "Herrenhäuser"
+  action: add
+  verified: '2026-08-11'
+  note: "Kuriosum: „…Acoustic Guitar Roggen-Weizen Kellerbier Herrenhäuser Jever Guinness Kilkenny India Pale Ale Lüttje Lage…“ (Website, hannover)."
+
+- osm_id: node/253165451
+  venue: "Kuriosum"
+  brand: "Guinness"
+  action: add
+  verified: '2026-08-11'
+  note: "Kuriosum: „…Inet- Radio Jever Strong Urige Kneipe GUINNESS 0.0 The Hanover Irish Session Open Stage for Acoustic…“ (Website, hannover)."
+
+- osm_id: node/253165451
+  venue: "Kuriosum"
+  brand: "Kilkenny"
+  action: add
+  verified: '2026-08-11'
+  note: "Kuriosum: „…Kellerbier Herrenhäuser Jever Guinness Kilkenny India Pale Ale Lüttje Lage Ginger Beer Herrenhäuser…“ (Website, hannover)."
+
+- osm_id: node/253165451
+  venue: "Kuriosum"
+  brand: "Budweiser Budvar"
+  action: add
+  verified: '2026-08-11'
+  note: "Kuriosum: „…Schneider Weizen Einbecker Astra Urtyp Budweiser Diebels Jever Gerolsteiner Coca Cola Säfte Schweppes…“ (Website, hannover)."
+
+- osm_id: node/10969307342
+  venue: "Mozzaria"
+  brand: "Erdinger"
+  action: add
+  verified: '2026-08-11'
+  note: "Mozzaria: „…Moretti 0,33L 3,50 3,50 EUR Bier und Limone Erdinger 0,5L 4,90 4,90 EUR Hefeweizen, Alkoholfrei, Dunkel und…“ (Website, hannover)."
+
+- osm_id: node/10969307342
+  venue: "Mozzaria"
+  brand: "Gilde"
+  action: add
+  verified: '2026-08-11'
+  note: "Mozzaria: „…EUR Sprudel und still Alkoholische Getranke Gilde Pils 0,33L 3,50 3,50 EUR Moretti 0,33L 3,50 3,50 EUR Bier…“ (Website, hannover)."
+
+- osm_id: node/335497413
+  venue: "Paulaner am Thielenplatz"
+  brand: "Paulaner"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Paulaner am Thielenplatz: „…der cremigen Käsespätzle, bis zur gegrillten Schweinshaxe – für jeden Genießer ist etwas dabei.…“ (Website, hannover)."
+
+- osm_id: node/1646073438
+  venue: "Pharos"
+  brand: "Franziskaner"
+  action: add
+  verified: '2026-08-11'
+  note: "Pharos: „…Alster 3,70€/4,90€ Flaschenbiere Franziskaner Hefeweizen 5,60 € 0,5l - hell, dunkel oder…“ (Website, hannover)."
+
+- osm_id: node/1646073438
+  venue: "Pharos"
+  brand: "Beck's"
+  action: add
+  verified: '2026-08-11'
+  note: "Pharos: „…oder alkoholfrei Bananenweizen 5,60€ 0,5l Becks Blue alkoholfrei 3,70€ 0,33l Offene Weine Hauswein Trocken…“ (Website, hannover)."
+
+- osm_id: node/11084175498
+  venue: "Pizza Frischdienst"
+  brand: "Beck's"
+  action: add
+  verified: '2026-08-11'
+  note: "Pizza Frischdienst: „…inkl. Pfand (0,00 €), 14,29 €/l, 0,7l Becks 0,33l 2,50 € 5% vol, inkl. Pfand (0,08 €), 7,41 €/l, 0,33l…“ (Website, hannover)."
+
+- osm_id: node/11084175498
+  venue: "Pizza Frischdienst"
+  brand: "Warsteiner"
+  action: add
+  verified: '2026-08-11'
+  note: "Pizza Frischdienst: „…vol, inkl. Pfand (0,08 €), 7,41 €/l, 0,33l Warsteiner 0,33l 2,50 € 5% vol, inkl. Pfand (0,08 €), 7,41 €/l,…“ (Website, hannover)."
+
+- osm_id: node/8507772124
+  venue: "Pizza Service Hannover Vital"
+  brand: "Beck's"
+  action: add
+  verified: '2026-08-11'
+  note: "Pizza Service Hannover Vital: „…€ 145 Krombacher 0,5l 3,00 €/l 2,00 € 145A Beck's 0,5l 4,00 €/L 2,00 € red bul 2,50 € Weine 150 Soave 8,57…“ (Website, hannover)."
+
+- osm_id: node/8507772124
+  venue: "Pizza Service Hannover Vital"
+  brand: "Krombacher"
+  action: add
+  verified: '2026-08-11'
+  note: "Pizza Service Hannover Vital: „…144 Mineralwasser 1,5l 0,93 €/L 1,40 € 145 Krombacher 0,5l 3,00 €/l 2,00 € 145A Beck's 0,5l 4,00 €/L 2,00 €…“ (Website, hannover)."
+
+- osm_id: node/442934515
+  venue: "Rosencafé"
+  brand: "Erdinger"
+  action: add
+  verified: '2026-08-11'
+  note: "Rosencafé: „…Allergene und Zusatzstoffe 5,20 € 0,53 l Erdinger Weißbier hell oder alkoholfrei Allergene und…“ (Website, hannover)."
+
+- osm_id: node/442934515
+  venue: "Rosencafé"
+  brand: "Herrenhäuser"
+  action: add
+  verified: '2026-08-11'
+  note: "Rosencafé: „…und Zusatzstoffe 2,90 € 0,20 l Bier Herrenhäuser Pilsener oder alkoholfrei 3,10 € 0,33 l…“ (Website, hannover)."
+
+- osm_id: way/10142063
+  venue: "Schlossküche Herrenhausen"
+  brand: "Flötzinger"
+  action: add
+  verified: '2026-08-11'
+  note: "Schlossküche Herrenhausen: „…je eine Fl. 0,33 l Flötzi Box 14 € 2x Flötzinger Radler 0,33l / 2x Flötzinger Helles 0,33l Gin Box €…“ (Website, hannover)."
+
+- osm_id: node/291195737
+  venue: "Siam Thai Restaurant"
+  brand: "Warsteiner"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Siam Thai Restaurant: „…chmacksverstärker BIERE 154. Warsteiner Pils vom Fass 0.3 l 3.20 155.…“ (Website, hannover)."
+
+- osm_id: node/503560800
+  venue: "Teestübchen"
+  brand: "Herrenhäuser"
+  action: add
+  verified: '2026-08-11'
+  note: "Teestübchen: „…ausgewählten Winzern, regionale Biere wie Herrenhäuser und das legendäre Tannenzäpfle aus dem Schwarzwald,…“ (Website, hannover)."
+
+- osm_id: node/266649173
+  venue: "Trattoria il Padrino"
+  brand: "König Pilsner"
+  action: add
+  verified: '2026-08-11'
+  note: "Trattoria il Padrino: „…2 cl 8,00 € Grappa Amarone 2 cl 9,00 € Bier König Pilsner 0,3 l 3,90 € König Pilsner 0,4 l 4,80 € Alster 0,3…“ (Website, hannover)."
+
+- osm_id: way/140255242
+  venue: "Waterloo Biergarten"
+  brand: "Paulaner"
+  action: add
+  verified: '2026-08-11'
+  note: "Waterloo Biergarten: „…auf LED-Großbildleinwand MASSKRUG (1l) Paulaner Münchner Hell UNSERE FACEBOOK-AKTIVITÄTEN Tagesaktuelle…“ (Website, hannover)."
+
+- osm_id: node/5678432133
+  venue: "Wirtshaus Hannover"
+  brand: "Löwenbräu"
+  action: add
+  verified: '2026-08-11'
+  note: "Wirtshaus Hannover: „…5.90 Altbierbowle 0,3l 4.50 || 0,5l 5.90 Löwenbräu Dunkel 0,3l 3.90 || 0,5l 5.90 Franziskaner Dunkles…“ (Website, hannover)."
+
+- osm_id: node/5678432133
+  venue: "Wirtshaus Hannover"
+  brand: "Diebels"
+  action: add
+  verified: '2026-08-11'
+  note: "Wirtshaus Hannover: „…Die älteste Biersorte der Welt. Diebels Alt 0,3l 3.90 || 0,5l 5.90 Altbierbowle 0,3l 4.50 ||…“ (Website, hannover)."
+
+- osm_id: node/3848938584
+  venue: "Zio Totonno"
+  brand: "Erdinger"
+  action: add
+  verified: '2026-08-11'
+  note: "Zio Totonno: „…Written by: Malte Comments: Comments: 0 Erdinger Hefeweizen alkoholfrei 0.5l 4.50€ Posted on: 21 Feb.…“ (Website, hannover)."
+
+- osm_id: node/6176117622
+  venue: "Addis Café"
+  brand: "Maisel's"
+  action: add
+  verified: '2026-08-11'
+  note: "Addis Café: „…Bayreuther Hell 0,25l 2,50€ 0,5l 4,00€ Maisel’s Weisse (Weißbier) 0,5l 4,00€ Maisel’s Weisse alkoholfrei…“ (Website, leipzig)."
+
+- osm_id: node/6176117622
+  venue: "Addis Café"
+  brand: "Ur-Krostitzer"
+  action: add
+  verified: '2026-08-11'
+  note: "Addis Café: „…Bayreuther Zwickel (Kellerbier) 0,5l 4,00€ Ur-Krostitzer Pils 0,5l 3,50€ Ur-Krostitzer Schwarzbier 0,5l…“ (Website, leipzig)."
+
+- osm_id: node/5417086731
+  venue: "Augustiner am Markt"
+  brand: "Augustiner"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Augustiner am Markt: „…ie lebendige Atmosphäre mitten in der Stadt erleben, können Sie traditionelle Wirtshausküche und bestes…“ (Website, leipzig)."
+
+- osm_id: node/814769453
+  venue: "Auszeit"
+  brand: "Erdinger"
+  action: add
+  verified: '2026-08-11'
+  note: "Auszeit: „…l 3,9 Astra Kiezmische (Radler) 0,33 l 3,9 Erdinger Hefeweißbier hell 0,5 l 4,9 Erdinger Hefeweißbier…“ (Website, leipzig)."
+
+- osm_id: node/512195488
+  venue: "Barfly"
+  brand: "Erdinger"
+  action: add
+  verified: '2026-08-11'
+  note: "Barfly: „…Pils Staropramen Desperados Peroni Corona Erdinger Hefeweizen hell Köstritzer Schwarzbier Twisted Thistle…“ (Website, leipzig)."
+
+- osm_id: node/512195488
+  venue: "Barfly"
+  brand: "Köstritzer"
+  action: add
+  verified: '2026-08-11'
+  note: "Barfly: „…Peroni Corona Erdinger Hefeweizen hell Köstritzer Schwarzbier Twisted Thistle IPA Pale Ale Heineken…“ (Website, leipzig)."
+
+- osm_id: node/512195488
+  venue: "Barfly"
+  brand: "Heineken"
+  action: add
+  verified: '2026-08-11'
+  note: "Barfly: „…Schwarzbier Twisted Thistle IPA Pale Ale Heineken 0,0% Odin Trunk Honigbier Carlsberg 0,0 % Roséwein 0,2l…“ (Website, leipzig)."
+
+- osm_id: node/512195488
+  venue: "Barfly"
+  brand: "Carlsberg"
+  action: add
+  verified: '2026-08-11'
+  note: "Barfly: „…Pale Ale Heineken 0,0% Odin Trunk Honigbier Carlsberg 0,0 % Roséwein 0,2l Barefoot White Zinfandel,…“ (Website, leipzig)."
+
+- osm_id: node/512195488
+  venue: "Barfly"
+  brand: "Staropramen"
+  action: add
+  verified: '2026-08-11'
+  note: "Barfly: „…& Soda Flaschenbier Beck’s Pils Staropramen Desperados Peroni Corona Erdinger Hefeweizen hell…“ (Website, leipzig)."
+
+- osm_id: node/3368020614
+  venue: "Barthels Hof"
+  brand: "Ur-Krostitzer"
+  action: add
+  verified: '2026-08-11'
+  note: "Barthels Hof: „…€ 26,10 zum Mutzbraten eenen kutteln Ur-Krostitzer Schwarzbier aus der Region 0,5l € 5,90 Mit einer…“ (Website, leipzig)."
+
+- osm_id: node/5721067153
+  venue: "Bauhütte"
+  brand: "Freiberger"
+  action: add
+  verified: '2026-08-11'
+  note: "Bauhütte: „…in der Bauhütte Beim Bier setzen wir auf Freiberger Pils für Euch. Die Biere aus Freiberg sind…“ (Website, leipzig)."
+
+- osm_id: way/41311573
+  venue: "Bayerischer Bahnhof"
+  brand: "Bayerischer Bahnhof"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Bayerischer Bahnhof: „…Bahnhof Tisch reservieren Speisekarte Kontakt…“ (Website, leipzig)."
+
+- osm_id: node/13995783202
+  venue: "Blüthner"
+  brand: "BRLO"
+  action: add
+  verified: '2026-08-11'
+  note: "Blüthner: „…Aperol Spritz, Blüthner Spritz Biere von BRLO Beer BLÜTHNER – Das Weincafé am Stadthafen…“ (Website, leipzig)."
+
+- osm_id: node/13723637703
+  venue: "Blüthner Weincafe"
+  brand: "BRLO"
+  action: add
+  verified: '2026-08-11'
+  note: "Blüthner Weincafe: „…Aperol Spritz, Blüthner Spritz Biere von BRLO Beer BLÜTHNER – Das Weincafé am Stadthafen…“ (Website, leipzig)."
+
+- osm_id: node/4143668689
+  venue: "Cafe Wagner"
+  brand: "Beck's"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Cafe Wagner: „…tte 4,20 0,25 l Biere Krombacher Pils vom Fass 0,3 l 2,50 0,5 l 3,90 Krombacher alkoholfrei 0,3 l 2,50…“ (Website, leipzig)."
+
+- osm_id: node/4143668689
+  venue: "Cafe Wagner"
+  brand: "Köstritzer"
+  action: add
+  verified: '2026-08-11'
+  note: "Cafe Wagner: „…Krombacher Weizen - alkoholfrei 3,90 0,5 l Köstritzer Schwarzbier 3,20 0,5 l Becks Pils 2,50 0,3 l…“ (Website, leipzig)."
+
+- osm_id: node/713817013
+  venue: "Co Co Bistro"
+  brand: "Radeberger"
+  action: add
+  verified: '2026-08-11'
+  note: "Co Co Bistro: „…vol, inkl. Pfand (0,08 €), 5,92 €/l, 0,5l Radeberger 0,5l (MEHRWEG) 3,00 € 5% vol, inkl. Pfand (0,08 €),…“ (Website, leipzig)."
+
+- osm_id: node/359549718
+  venue: "Enchilada"
+  brand: "Radeberger"
+  action: add
+  verified: '2026-08-11'
+  note: "Enchilada: „…| 1,0l 25,00€ (...) Radler 0,5L 5,30€ (...) Radeberger 0,0% 3,20€ (...) Alkoholfrei Tafelwasser 0,4l 3,50€…“ (Website, leipzig)."
+
+- osm_id: node/869737632
+  venue: "Gasthaus Neue Pfefferkiste"
+  brand: "Radeberger"
+  action: add
+  verified: '2026-08-11'
+  note: "Gasthaus Neue Pfefferkiste: „…vol, inkl. Pfand (0,15 €), 10,85 €/l, 0,5l Radeberger Pils 0,5l (MEHRWEG) 3,80 € 5% vol, inkl. Pfand (0,15…“ (Website, leipzig)."
+
+- osm_id: node/869737632
+  venue: "Gasthaus Neue Pfefferkiste"
+  brand: "Schöfferhofer"
+  action: add
+  verified: '2026-08-11'
+  note: "Gasthaus Neue Pfefferkiste: „…€ inkl. Pfand (0,15 €), 14,75 €/l, 0,25l Schöfferhofer Alkoholfrei 0,5l (MEHRWEG) 5,50 € 1% vol, inkl.…“ (Website, leipzig)."
+
+- osm_id: node/869737632
+  venue: "Gasthaus Neue Pfefferkiste"
+  brand: "Ur-Krostitzer"
+  action: add
+  verified: '2026-08-11'
+  note: "Gasthaus Neue Pfefferkiste: „…vol, inkl. Pfand (0,15 €), 7,45 €/l, 0,5l Ur-Krostitzer Alkoholfrei 0,5l (MEHRWEG) 5,50 € 1% vol, inkl.…“ (Website, leipzig)."
+
+- osm_id: way/363266524
+  venue: "Gasthof Holzhausen"
+  brand: "Ur-Krostitzer"
+  action: add
+  verified: '2026-08-11'
+  note: "Gasthof Holzhausen: „…einheimische Getränke wie Wasser und Ur-Krostitzer Bier aus. Unsere Services Barrierefrei Büfett…“ (Website, leipzig)."
+
+- osm_id: way/242738808
+  venue: "Gasthof zum schwarzen Ross"
+  brand: "Ur-Krostitzer"
+  action: add
+  verified: '2026-08-11'
+  note: "Gasthof zum schwarzen Ross: „…Und damit es besser rutscht 1 x Ur-Krostitzer 0,5l nur 24,50 € (inkl. MwSt.) Donnerstag Haxentag…“ (Website, leipzig)."
+
+- osm_id: node/1106471576
+  venue: "Gemrieli"
+  brand: "Schöfferhofer"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Gemrieli: „…Jasmin Biere 3.50 € / 5.50 € Radeberger Pils vom Fass 0.3l - 3.50 € 0.5l - 5.50 € 3.50 € / 5.50 € Radler…“ (Website, leipzig)."
+
+- osm_id: node/6239839213
+  venue: "Gute Quelle"
+  brand: "Störtebeker"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Gute Quelle: „…nix machen... --> Katalog Vom Fass (auch als Radler oder Diesel möglich) Hausbier (Pils) 0,3l/0,5l 2,80/…“ (Website, leipzig)."
+
+- osm_id: node/6239839213
+  venue: "Gute Quelle"
+  brand: "BRLO"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Gute Quelle: „…eue Preise Kannste nix machen... --> Katalog Vom Fass (auch als Radler oder Diesel möglich) Hausbier…“ (Website, leipzig)."
+
+- osm_id: node/6239839213
+  venue: "Gute Quelle"
+  brand: "Pilsner Urquell"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Gute Quelle: „…eue Preise Kannste nix machen... --> Katalog Vom Fass (auch als Radler oder Diesel möglich) Hausbier…“ (Website, leipzig)."
+
+- osm_id: node/267420513
+  venue: "Holzwurm"
+  brand: "Köstritzer"
+  action: add
+  verified: '2026-08-11'
+  note: "Holzwurm: „…l Benediktiner Weizen dunkel 3,80 € 0,5 l Köstritzer Schwarzbier 3,80 € 0,5 l Flaschenbier 3,80 € 0,5 l…“ (Website, leipzig)."
+
+- osm_id: node/267420513
+  venue: "Holzwurm"
+  brand: "Ur-Krostitzer"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Holzwurm: „…1,14,15 3,50 € Red Bull 1,14,15 4,50 € Biere vom Fass Hausmarke Pils 2,70 € 0,3 l Hausmarke Pils 3,40 €…“ (Website, leipzig)."
+
+- osm_id: node/1887930014
+  venue: "Indian City"
+  brand: "Erdinger"
+  action: add
+  verified: '2026-08-11'
+  note: "Indian City: „…€ inkl. Pfand (0,00 €), 13,75 €/l, 0,4l Erdinger Weizen alkoholfrei 0,5l (MEHRWEG) 5,50 € 1% vol, inkl.…“ (Website, leipzig)."
+
+- osm_id: node/1593323625
+  venue: "Kollektiv"
+  brand: "Schneider Weisse"
+  action: add
+  verified: '2026-08-11'
+  note: "Kollektiv: „…Blue alkoholfrei 4,50 < 0,5%Vol. 0,33l Schneider Weisse Tap 1 hell 5,50 0,5l Schneider Weisse Tap 3…“ (Website, leipzig)."
+
+- osm_id: node/1593323625
+  venue: "Kollektiv"
+  brand: "Beck's"
+  action: add
+  verified: '2026-08-11'
+  note: "Kollektiv: „…Gose 5,50 wahlweise mit Schuss 0,5l Becks Blue alkoholfrei 4,50 < 0,5%Vol. 0,33l Schneider Weisse Tap…“ (Website, leipzig)."
+
+- osm_id: node/1593323625
+  venue: "Kollektiv"
+  brand: "Pilsner Urquell"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Kollektiv: „…ee, Früchtetee, Kamillentee, Kräutertee Bier vom Fass Sankt Jaro Pils 3,90 0,3l Sankt Jaro Pils 4,90…“ (Website, leipzig)."
+
+- osm_id: node/1593323625
+  venue: "Kollektiv"
+  brand: "Kozel"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Kollektiv: „…ee, Früchtetee, Kamillentee, Kräutertee Bier vom Fass Sankt Jaro Pils 3,90 0,3l Sankt Jaro Pils 4,90…“ (Website, leipzig)."
+
+- osm_id: node/1449094066
+  venue: "Kümmel-Apotheke"
+  brand: "Paulaner"
+  action: add
+  verified: '2026-08-11'
+  note: "Kümmel-Apotheke: „…Charakter, Salz und Koriander 0,33l 4,80 Paulaner Hefe Weizen hell 0,5l 5,80 Paulaner Hefe Weizen dunkel…“ (Website, leipzig)."
+
+- osm_id: node/12152818026
+  venue: "Lulu Lottenstein"
+  brand: "Pilsner Urquell"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Lulu Lottenstein: „…n. Für Bierliebhaber haben wir 3 Sorten Bier aus dem Fass, besonders das Pilsner Urquell aus dem Fass…“ (Website, leipzig)."
+
+- osm_id: node/276380292
+  venue: "Maharani"
+  brand: "Jever"
+  action: add
+  verified: '2026-08-11'
+  note: "Maharani: „…(0,4 l) (Grundpreis 11,25 €/l) 4,90 G08. Jever alkoholfrei (0,3 l) (Grundpreis 10,67 €/l) 3,20 Bier…“ (Website, leipzig)."
+
+- osm_id: node/50837886
+  venue: "McCormack's"
+  brand: "Guinness"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "McCormack's: „…lick auf die Screens, bestell dir ein kühles Pint Guinness oder Kilkenny und erlebe echte…“ (Website, leipzig)."
+
+- osm_id: node/50837886
+  venue: "McCormack's"
+  brand: "Kilkenny"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "McCormack's: „…lick auf die Screens, bestell dir ein kühles Pint Guinness oder Kilkenny und erlebe echte…“ (Website, leipzig)."
+
+- osm_id: node/401788226
+  venue: "Morrison's"
+  brand: "Astra"
+  action: add
+  verified: '2026-08-11'
+  note: "Morrison's: „…House, Lager 13, Ireland € 6,00 (0,33 l) Astra Rotlicht € 5,50 (0,33 l) Radeberger Pils € 4,50 (0,5 l)…“ (Website, leipzig)."
+
+- osm_id: node/401788226
+  venue: "Morrison's"
+  brand: "Radeberger"
+  action: add
+  verified: '2026-08-11'
+  note: "Morrison's: „…(0,33 l) Astra Rotlicht € 5,50 (0,33 l) Radeberger Pils € 4,50 (0,5 l) Ur-Krostitzer, Schwarzbier € 4,50…“ (Website, leipzig)."
+
+- osm_id: node/401788226
+  venue: "Morrison's"
+  brand: "Schöfferhofer"
+  action: add
+  verified: '2026-08-11'
+  note: "Morrison's: „…Ur-Krostitzer, Schwarzbier € 4,50 (0,5 l) Schöfferhofer Hefeweizen € 4,50 (0,5 l) hell, dunkel, kristall &…“ (Website, leipzig)."
+
+- osm_id: node/401788226
+  venue: "Morrison's"
+  brand: "Ur-Krostitzer"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Morrison's: „…(0,3 l) | € 6,00 (0,5 l) | € 17,50 (1,5 l) Ur-Krostitzer, Pils € 3,20 (0,3 l) | € 4,90 (0,5 l) | € 14,50…“ (Website, leipzig)."
+
+- osm_id: node/401788226
+  venue: "Morrison's"
+  brand: "Heineken"
+  action: add
+  verified: '2026-08-11'
+  note: "Morrison's: „…Grolsch, Netherlands € 4,50 (0,45 l) Heineken € 4,50 (0,33 l) Hop House, Lager 13, Ireland € 6,00…“ (Website, leipzig)."
+
+- osm_id: node/401788226
+  venue: "Morrison's"
+  brand: "Pilsner Urquell"
+  action: add
+  verified: '2026-08-11'
+  note: "Morrison's: „…5,6 %) Belhaven, Stout € 6,60 (0,33 l) Pilsner Urquell, Czech € 4,50 (0,5 l) Grimbergen Blonde, Belgium…“ (Website, leipzig)."
+
+- osm_id: node/401788226
+  venue: "Morrison's"
+  brand: "BrewDog"
+  action: add
+  verified: '2026-08-11'
+  note: "Morrison's: „…Bier mit Kaffeeröstaromen. NEUHEITEN Brewdog Brewdog Elvis Juice: Fruchtige Aromen von Grapefruit,…“ (Website, leipzig)."
+
+- osm_id: node/401788226
+  venue: "Morrison's"
+  brand: "Guinness"
+  action: add
+  verified: '2026-08-11'
+  note: "Morrison's: „…ein einzigartiges Erlebnis. Dein bestelltes Guinness mit Deinem Bild. Alle weiteren Events bis Ende Mai…“ (Website, leipzig)."
+
+- osm_id: node/50837889
+  venue: "Pata Negra"
+  brand: "Paulaner"
+  action: add
+  verified: '2026-08-11'
+  note: "Pata Negra: „…4,50 € 0,33l Heineken 0,0% 4,00 € 0,33l Paulaner Weißbier 5,50 € 0,5l Paulaner Weißbier dunkel 5,50 €…“ (Website, leipzig)."
+
+- osm_id: node/50837889
+  venue: "Pata Negra"
+  brand: "Radeberger"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Pata Negra: „…e süße Naschereien ↑ Top Getränke (Auszug) 🍺 Fassbier 0,3l 0,4l San Miguel España 0,3l: 3,60 € 0,4l:…“ (Website, leipzig)."
+
+- osm_id: node/50837889
+  venue: "Pata Negra"
+  brand: "Köstritzer"
+  action: add
+  verified: '2026-08-11'
+  note: "Pata Negra: „…Paulaner Weißbier alkoholfrei 5,50 € 0,5l Köstritzer Schwarzbier 4,50 € 0,33l ↑ Top ⭐ !!! Angebot !!! ⭐…“ (Website, leipzig)."
+
+- osm_id: node/50837889
+  venue: "Pata Negra"
+  brand: "Heineken"
+  action: add
+  verified: '2026-08-11'
+  note: "Pata Negra: „…Corona Extra (Mexico) 4,50 € 0,33l Heineken 0,0% 4,00 € 0,33l Paulaner Weißbier 5,50 € 0,5l…“ (Website, leipzig)."
+
+- osm_id: way/151604015
+  venue: "Patina 45"
+  brand: "Ur-Krostitzer"
+  action: add
+  verified: '2026-08-11'
+  note: "Patina 45: „…€3.00 - Tonic €3.00 - Vica con Agua €2.00 - Ur-Krostitzer 0.3 €2.80 - Ur-Krostitzer 0.5 €3.80 - Radler 0.3…“ (Website, leipzig)."
+
+- osm_id: node/401788360
+  venue: "Paulaner"
+  brand: "Paulaner"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Paulaner: „…hte wie Schweinshaxe, Schnitzel, Leber sowie frisch gezapftes Paulaner Bier. Besonders bekannt ist das…“ (Website, leipzig)."
+
+- osm_id: node/269434766
+  venue: "Piccola Italia"
+  brand: "Krombacher"
+  action: add
+  verified: '2026-08-11'
+  note: "Piccola Italia: „…- Bananensaft - Kiba 0.2 l - 3,50 € Bier Krombacher Pils 0.25 l - 3,50 € 0.4 l - 4,90 € Krombacher Weizen…“ (Website, leipzig)."
+
+- osm_id: node/264502549
+  venue: "Saigon Food"
+  brand: "Beck's"
+  action: add
+  verified: '2026-08-11'
+  note: "Saigon Food: „…Wasser 0,33l 2,90 € Grüne Tee 3,90 € Bier Becks 0,5l 3,50 € Ur-krostitzer 0,5l 3,50 € Bier ToGo 2,50 €…“ (Website, leipzig)."
+
+- osm_id: node/264502549
+  venue: "Saigon Food"
+  brand: "Ur-Krostitzer"
+  action: add
+  verified: '2026-08-11'
+  note: "Saigon Food: „…€ Grüne Tee 3,90 € Bier Becks 0,5l 3,50 € Ur-krostitzer 0,5l 3,50 € Bier ToGo 2,50 € Saigon bier 3,50 €…“ (Website, leipzig)."
+
+- osm_id: node/9402082324
+  venue: "Singh Pizzaservice Leipzig"
+  brand: "Beck's"
+  action: add
+  verified: '2026-08-11'
+  note: "Singh Pizzaservice Leipzig: „…3.84 €/1l 1.92 € Mehrweg zzgl. 0.08 € Pfand Beck's Pils 0,5l (4,9% vol.) Produktinfo 18+ 3.84 €/1l 1.92 €…“ (Website, leipzig)."
+
+- osm_id: node/9402082324
+  venue: "Singh Pizzaservice Leipzig"
+  brand: "Radeberger"
+  action: add
+  verified: '2026-08-11'
+  note: "Singh Pizzaservice Leipzig: „…9.00 €/1l 4.50 € Biere 5 Getränke Radeberger Pilsner 0,5l (4,8% vol.) Produktinfo 18+ 3.84 €/1l…“ (Website, leipzig)."
+
+- osm_id: node/9402082324
+  venue: "Singh Pizzaservice Leipzig"
+  brand: "Sternburg"
+  action: add
+  verified: '2026-08-11'
+  note: "Singh Pizzaservice Leipzig: „…3.84 €/1l 1.92 € Mehrweg zzgl. 0.08 € Pfand Sternburg Pils 0,5l (5% vol.) Produktinfo 18+ 3.84 €/1l 1.92 €…“ (Website, leipzig)."
+
+- osm_id: node/9402082324
+  venue: "Singh Pizzaservice Leipzig"
+  brand: "Ur-Krostitzer"
+  action: add
+  verified: '2026-08-11'
+  note: "Singh Pizzaservice Leipzig: „…3.84 €/1l 1.92 € Mehrweg zzgl. 0.08 € Pfand Ur-Krostitzer Pilsner 0,5l (4,9% vol.) Produktinfo 18+ 3.84 €/1l…“ (Website, leipzig)."
+
+- osm_id: node/1049346763
+  venue: "Umaii"
+  brand: "Radeberger"
+  action: add
+  verified: '2026-08-11'
+  note: "Umaii: „…( 3g, 0,0%) 0,33l 3,80 Im Umaii Leipzig: Radeberger alkoholfrei Flasche Gösser Radler (3g) 0,5l 4,10 |…“ (Website, leipzig)."
+
+- osm_id: node/8979306986
+  venue: "Wied Nam"
+  brand: "Paulaner"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Wied Nam: „…serer Münchner Biere, die wir für Sie frisch vom Fass zapfen (Pils, Helles, Hefeweizen, Dunkles).…“ (Website, leipzig)."
+
+- osm_id: node/1304091106
+  venue: "Zest"
+  brand: "Primátor"
+  action: add
+  verified: '2026-08-11'
+  note: "Zest: „…Westfleteren Abt Nachbräu] 0,33l 6,8 Primator IPA [India Pale Ale, Pivovar Náchod, Náchod, Tschechien,…“ (Website, leipzig)."
+
+- osm_id: node/1304091106
+  venue: "Zest"
+  brand: "Rohozec"
+  action: add
+  verified: '2026-08-11'
+  note: "Zest: „…5,3 Podskalák [helles Schankbier, Pivovar Rohozec, Alc. 4,2 vol%, Stammwürze 10°, Tschechien] 0,30l 3,9 |…“ (Website, leipzig)."
+
+- osm_id: node/250736532
+  venue: "Zur Sandgrube"
+  brand: "Budweiser Budvar"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Zur Sandgrube: „…- schmeckt übrigens auch im Winter. Prost! Budweiser Bier Das Geburtsjahr des Budweiser Budvar war 1895,…“ (Website, leipzig)."
+
+- osm_id: node/1527179560
+  venue: "Barockhäusle"
+  brand: "Erdinger"
+  action: add
+  verified: '2026-08-11'
+  note: "Barockhäusle: „…leicht St. Georgen Hefeweizen dunkel Erdinger Hefeweizen alkoholfrei St. Georgen alkoholfrei Bier…“ (Website, nuernberg)."
+
+- osm_id: node/949822538
+  venue: "Bratwurstglöcklein"
+  brand: "Tucher"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Bratwurstglöcklein: „…ränkekarte Biere vom Fass und aus der Flasche von der fränkischen Privatbrauerei aus Bruckberg…“ (Website, nuernberg)."
+
+- osm_id: node/1668797722
+  venue: "Burgwächter"
+  brand: "Tucher"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Burgwächter: „…1,00 GETRÄNKE BIERE Fränkische Gerstensäfte VOM FASS Glas/Krug 0.5L Rotbier 4,90 Schlenkerla Rauchbier…“ (Website, nuernberg)."
+
+- osm_id: node/398315122
+  venue: "Café Arte"
+  brand: "Schanzenbräu"
+  action: add
+  verified: '2026-08-11'
+  note: "Café Arte: „…Schloss Hallburg 6,5 bier NÜRNBERGER SCHANZENBRÄU HELL oder ROT | 0,5 4,5 Stadtbrauerei Spalt Pils |…“ (Website, nuernberg)."
+
+- osm_id: node/958195297
+  venue: "Crazy Nate's West Coast Mexican"
+  brand: "Tucher"
+  action: add
+  verified: '2026-08-11'
+  note: "Crazy Nate's West Coast Mexican: „…Local IPA .33 €6 Schanzenbraü Rot .5 €5 Tucher Rot .5 €5 Corona .33 €5 Red Radler Pink Lemonade and…“ (Website, nuernberg)."
+
+- osm_id: node/3117360088
+  venue: "Crazy Nate´s"
+  brand: "Tucher"
+  action: add
+  verified: '2026-08-11'
+  note: "Crazy Nate´s: „…Local IPA .33 €6 Schanzenbraü Rot .5 €5 Tucher Rot .5 €5 Corona .33 €5 Red Radler Pink Lemonade and…“ (Website, nuernberg)."
+
+- osm_id: node/5506063659
+  venue: "Dai Poke Bowls"
+  brand: "Jever"
+  action: add
+  verified: '2026-08-11'
+  note: "Dai Poke Bowls: „…% vol, inkl. Pfand (0,08 €), 6,92 €/l, 500ml 3,50 € Tucher Weizen alkoholfrei 0,5l 3,50 € Jever Fun…“ (Website, nuernberg)."
+
+- osm_id: node/5506063659
+  venue: "Dai Poke Bowls"
+  brand: "Tucher"
+  action: add
+  verified: '2026-08-11'
+  note: "Dai Poke Bowls: „…tränke | Biere Zeltner Helles 0,5l 5,0% vol, inkl. Pfand (0,08 €), 6,92 €/l, 500ml 3,50 € Tucher Wei…“ (Website, nuernberg)."
+
+- osm_id: node/5506063659
+  venue: "Dai Poke Bowls"
+  brand: "Zirndorfer"
+  action: add
+  verified: '2026-08-11'
+  note: "Dai Poke Bowls: „…l, 500ml 3,50 € Tucher Weizen 0,5l 5,2% vol, inkl. Pfand (0,08 €), 6,92 €/l, 500ml 3,50 € Zirndorfer…“ (Website, nuernberg)."
+
+- osm_id: node/8851007462
+  venue: "Die Wirtschaft"
+  brand: "Schanzenbräu"
+  action: add
+  verified: '2026-08-11'
+  note: "Die Wirtschaft: „…Unser Hausbier 0,5l | 5,70 € ROTBIER Schanzenbräu Nürnberg 0,5l | 5,70 € WEIßBIER Kapuziner, Kulmbach…“ (Website, nuernberg)."
+
+- osm_id: node/1528865640
+  venue: "Downtown"
+  brand: "Augustiner"
+  action: add
+  verified: '2026-08-11'
+  note: "Downtown: „…with Love DRINKS BIER AMMERNDORFER 4,00 € AUGUSTINER 4,00 € BAYREUTHER 4,00 € GREIF-BRÄU 4,00 € LEINBURGER…“ (Website, nuernberg)."
+
+- osm_id: node/1528865640
+  venue: "Downtown"
+  brand: "Tegernseer"
+  action: add
+  verified: '2026-08-11'
+  note: "Downtown: „…€ MAHR'S BRÄU 4,00 € SCHANZENBRÄU 4,00 € TEGERNSEER 4,00 € WINKLER 4,00 € DUNKEL MAHR'S BRÄU ETA 4,00 €…“ (Website, nuernberg)."
+
+- osm_id: node/1528865640
+  venue: "Downtown"
+  brand: "Schanzenbräu"
+  action: add
+  verified: '2026-08-11'
+  note: "Downtown: „…4,00 € LINDENBRÄU 4,00 € MAHR'S BRÄU 4,00 € SCHANZENBRÄU 4,00 € TEGERNSEER 4,00 € WINKLER 4,00 € DUNKEL…“ (Website, nuernberg)."
+
+- osm_id: node/1528865640
+  venue: "Downtown"
+  brand: "Mahrs Bräu"
+  action: add
+  verified: '2026-08-11'
+  note: "Downtown: „…4,00 € LINDENBRÄU 4,00 € MAHR'S BRÄU 4,00 € SCHANZENBRÄU 4,00 € TEGERNSEER 4,00 € WINKLER 4,00 € DUNKEL…“ (Website, nuernberg)."
+
+- osm_id: node/11829138867
+  venue: "Engel"
+  brand: "Tucher"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Engel: „…reien Tucher, Grüner, Lederer und Zirndorfer zapfen wir auch das Hetzelsdorfer Landbier der Brauerei…“ (Website, nuernberg)."
+
+- osm_id: node/11829138867
+  venue: "Engel"
+  brand: "Zirndorfer"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Engel: „…reien Tucher, Grüner, Lederer und Zirndorfer zapfen wir auch das Hetzelsdorfer Landbier der Brauerei…“ (Website, nuernberg)."
+
+- osm_id: node/11829138867
+  venue: "Engel"
+  brand: "Lederer"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Engel: „…reien Tucher, Grüner, Lederer und Zirndorfer zapfen wir auch das Hetzelsdorfer Landbier der Brauerei…“ (Website, nuernberg)."
+
+- osm_id: node/2044146163
+  venue: "Gasthaus Bammes"
+  brand: "Tucher"
+  action: add
+  verified: '2026-08-11'
+  note: "Gasthaus Bammes: „…fränkischen Küche und einer ordentliche Maß Tucher-Bier oder lieber leicht und südländisch mediterran mit…“ (Website, nuernberg)."
+
+- osm_id: node/1528865660
+  venue: "Kaiserburg"
+  brand: "Kozel"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Kaiserburg: „…ingelegtem Camembert. Dazu servieren wir dir frisch gezapfte tschechische Biere wie Pilsner Urquell,…“ (Website, nuernberg)."
+
+- osm_id: node/14011296164
+  venue: "Kuhstall"
+  brand: "Erdinger"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Kuhstall: „…STALL SCHÄNKE Das Herzstück des Hauses: Die Kuhstall Schänke ist Treffpunkt, Bühne und Genusszone…“ (Website, nuernberg)."
+
+- osm_id: node/1583577638
+  venue: "Kuhstall"
+  brand: "Erdinger"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Kuhstall: „…STALL SCHÄNKE Das Herzstück des Hauses: Die Kuhstall Schänke ist Treffpunkt, Bühne und Genusszone…“ (Website, nuernberg)."
+
+- osm_id: node/1528865680
+  venue: "L'angelo"
+  brand: "Erdinger"
+  action: add
+  verified: '2026-08-11'
+  note: "L'angelo: „…Krug Lager Dunkles Lagerbier 0,50l 3,90 € ​ Erdinger Weizen hell / Weizen alkolholfrei 0,50l 3,90 € ​…“ (Website, nuernberg)."
+
+- osm_id: node/1528865680
+  venue: "L'angelo"
+  brand: "Heineken"
+  action: add
+  verified: '2026-08-11'
+  note: "L'angelo: „…3,90 € ​ Moretti Vollbier 0,33l 3,90 € ​ Heineken Vollbier 0,33l 3,90 € ​ Heineken alkfr. alkoholfreies…“ (Website, nuernberg)."
+
+- osm_id: node/4892747904
+  venue: "My Hao"
+  brand: "Jever"
+  action: add
+  verified: '2026-08-11'
+  note: "My Hao: „…Pilsener (0.33 L) 1, a2 3,60 € 573. Jever Fun Alkoholfrei (0.33 L) 1, a2 3,60 € 578. Radler (0.33 L)…“ (Website, nuernberg)."
+
+- osm_id: node/4892747904
+  venue: "My Hao"
+  brand: "Warsteiner"
+  action: add
+  verified: '2026-08-11'
+  note: "My Hao: „…Tequila, Orangensaft, Grenadine BIERE 563. Warsteiner Pilsener (0.33 L) 1, a2 3,60 € 573. Jever Fun…“ (Website, nuernberg)."
+
+- osm_id: node/4892747904
+  venue: "My Hao"
+  brand: "Tucher"
+  action: add
+  verified: '2026-08-11'
+  note: "My Hao: „…Bier) (0.33 L) a2 4,50 € 580. Tucher Helles Hefe Weizen (0.50 L) 1, a1 5,50 € 581. Tucher Hefe…“ (Website, nuernberg)."
+
+- osm_id: node/1867533750
+  venue: "PanOlio"
+  brand: "Tucher"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "PanOlio: „…ter Lemon 0,4l 4,20 € Ginger Ale 0,4l 4,20 € Fass-Biere Zirndorfer Hell (aus Nürnberg) 0,4l 4,40 €…“ (Website, nuernberg)."
+
+- osm_id: node/1867533750
+  venue: "PanOlio"
+  brand: "Zirndorfer"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "PanOlio: „…ter Lemon 0,4l 4,20 € Ginger Ale 0,4l 4,20 € Fass-Biere Zirndorfer Hell (aus Nürnberg) 0,4l 4,40 €…“ (Website, nuernberg)."
+
+- osm_id: node/1540554308
+  venue: "Safran"
+  brand: "Tucher"
+  action: add
+  verified: '2026-08-11'
+  note: "Safran: „…1. Zirndorfer – Landbier (0,5 l) 3.50 € 2. Tucher – Pilsener, Alkoholfrei, Weizen 3.50 € 1. Merlot-trocken…“ (Website, nuernberg)."
+
+- osm_id: node/1540554308
+  venue: "Safran"
+  brand: "Zirndorfer"
+  action: add
+  verified: '2026-08-11'
+  note: "Safran: „…€ 2. Apolinaris, Vio (0,25 l) 2.60 € 1. Zirndorfer – Landbier (0,5 l) 3.50 € 2. Tucher – Pilsener,…“ (Website, nuernberg)."
+
+- osm_id: node/305552494
+  venue: "Sanders Steakhaus"
+  brand: "Tegernseer"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Sanders Steakhaus: „…Biere Wir schenken Biere der Brauereien Tegernseer, Winkler Bräu, Erdinger, Gutmann und Bitburger aus.…“ (Website, nuernberg)."
+
+- osm_id: node/305552494
+  venue: "Sanders Steakhaus"
+  brand: "Erdinger"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Sanders Steakhaus: „…der Brauereien Tegernseer, Winkler Bräu, Erdinger, Gutmann und Bitburger aus. Weine Unsere Weine vom…“ (Website, nuernberg)."
+
+- osm_id: node/305552494
+  venue: "Sanders Steakhaus"
+  brand: "Bitburger"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Sanders Steakhaus: „…Winkler Bräu, Erdinger, Gutmann und Bitburger aus. Weine Unsere Weine vom Weingut Sanders & Sanders,…“ (Website, nuernberg)."
+
+- osm_id: node/513062391
+  venue: "Schanzenbräu Schankwirtschaft"
+  brand: "Schanzenbräu"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Schanzenbräu Schankwirtschaft: „…Biergarten und Schankwirtschaft und Biergarten in…“ (Website, nuernberg)."
+
+- osm_id: node/1565036925
+  venue: "Sportgaststätte ESV Nürnberg Rangierbahnhof"
+  brand: "Mönchshof"
+  action: add
+  verified: '2026-08-11'
+  note: "Sportgaststätte ESV Nürnberg Rangierbahnhof: „…Sie mit leckeren Speisen. Dazu ein leckeres Mönchshof-Bier. Speisekarte Der Hauptgastraum Kaum ein Raum in…“ (Website, nuernberg)."
+
+- osm_id: node/1539224251
+  venue: "Stari Most"
+  brand: "Mönchshof"
+  action: add
+  verified: '2026-08-11'
+  note: "Stari Most: „…€ Biere/Pivo Heineken (0,33l) (c) 3,90 € Mönchshof Lager Bier (0,5l) (c) 3,90 € Domace Pivo (0,33l) /…“ (Website, nuernberg)."
+
+- osm_id: node/1539224251
+  venue: "Stari Most"
+  brand: "Heineken"
+  action: add
+  verified: '2026-08-11'
+  note: "Stari Most: „…l) Tee versch. Sorten 5,00 € Biere/Pivo Heineken (0,33l) (c) 3,90 € Mönchshof Lager Bier (0,5l) (c) 3,90…“ (Website, nuernberg)."
+
+- osm_id: node/292461439
+  venue: "Thai Food 1"
+  brand: "Mönchshof"
+  action: add
+  verified: '2026-08-11'
+  note: "Thai Food 1: „…l Alkoholfrei (JeverFun) 0,5 l/0,3 l 3,50 € Mönchshof Radler 0,5 l Mönchshof Radler 0,5 l 3,50 € Rotwein…“ (Website, nuernberg)."
+
+- osm_id: node/4040323993
+  venue: "Trödelstuben"
+  brand: "Tucher"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Trödelstuben: „…alität 'STEAK AUF DEM HEISSEN STEIN' zu. Zum Ausschank kommen ausschließlich regionale…“ (Website, nuernberg)."
+
+- osm_id: node/789892498
+  venue: "Tucher Bräu am Opernhaus"
+  brand: "Tucher"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Tucher Bräu am Opernhaus: „…- Tucher-Bräu am Opernhaus Skip to content Zum Inhalt springen Das…“ (Website, nuernberg)."
+
+- osm_id: node/1582440712
+  venue: "Tucher Mautkeller"
+  brand: "Tucher"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Tucher Mautkeller: „…über Google Maps. mautkeller-impressionen-2 tucher-mautkeller-braukunst-3 mautkeller-impressionen-3…“ (Website, nuernberg)."
+
+- osm_id: node/2951010227
+  venue: "Tucherhof"
+  brand: "Tucher"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Tucherhof: „…werden. Bewerbung gerne per E-Mail: mk@tucherhof.de Ansprechpartner Michael Katusic Speisen und…“ (Website, nuernberg)."
+
+- osm_id: node/1675605507
+  venue: "Wanderer"
+  brand: "Löwenbräu"
+  action: add
+  verified: '2026-08-11'
+  note: "Wanderer: „…das immer wieder überraschend anders ist.… Löwenbräu, Adelsdorf Das Original 1747 Hell von der Löwenbräu in…“ (Website, nuernberg)."
+
+- osm_id: node/1582440711
+  venue: "Wilma Wunder"
+  brand: "Kulmbacher"
+  action: add
+  verified: '2026-08-11'
+  note: "Wilma Wunder: „…5,20€ (...) Naturradler 0,5l 5,20€ (...) Kulmbacher Edelherb 0,33 Ausgeprägte Hopfenblume und feine…“ (Website, nuernberg)."
+
+- osm_id: node/1582440711
+  venue: "Wilma Wunder"
+  brand: "Mönchshof"
+  action: add
+  verified: '2026-08-11'
+  note: "Wilma Wunder: „…vom „Roten Kreuz“. 29,50€ (...) Bier Mönchshof Hell 0,5 l Ausgewogen mild, weiches Malzaroma, goldene…“ (Website, nuernberg)."
+
+- osm_id: node/5108132149
+  venue: "Zeytin"
+  brand: "Heineken"
+  action: add
+  verified: '2026-08-11'
+  note: "Zeytin: „…l Grüner (A) 4,70 Efes Pilsener (A) 4,90 Heineken Alkoholfrei (A) 5,20 Heineken (A) 5,30 Moretti (A) 5,60…“ (Website, nuernberg)."
+
+- osm_id: node/5316320837
+  venue: "Augustin"
+  brand: "Franziskaner"
+  action: add
+  verified: '2026-08-11'
+  note: "Augustin: „…Kellerpils 0,5l (Nicht auf Lager) 5,00€ Franziskaner Hefeweizen 0,5l 4,50€ Franziskaner Kristall 0,5l…“ (Website, stuttgart)."
+
+- osm_id: node/5316320837
+  venue: "Augustin"
+  brand: "Beck's"
+  action: add
+  verified: '2026-08-11'
+  note: "Augustin: „…0,33l 4,00€ Wulle 0,33l 4,00€ Becks, Becks Gold, Becks Green Lemon 0,33l 4,00€ Becks alkoholfrei…“ (Website, stuttgart)."
+
+- osm_id: node/5316320837
+  venue: "Augustin"
+  brand: "Rothaus"
+  action: add
+  verified: '2026-08-11'
+  note: "Augustin: „…4,50€ Franziskaner Dunkelweizen 0,5l 4,50€ Rothaus Tannenzäpfle 0,33l 4,00€ Wulle 0,33l 4,00€ Becks, Becks…“ (Website, stuttgart)."
+
+- osm_id: node/5316320837
+  venue: "Augustin"
+  brand: "Wulle"
+  action: add
+  verified: '2026-08-11'
+  note: "Augustin: „…0,5l 4,50€ Rothaus Tannenzäpfle 0,33l 4,00€ Wulle 0,33l 4,00€ Becks, Becks Gold, Becks Green Lemon 0,33l…“ (Website, stuttgart)."
+
+- osm_id: node/1674998225
+  venue: "Biddy Early's Irish Pub"
+  brand: "Kilkenny"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Biddy Early's Irish Pub: „…Chips € 2,40 Erdnüsse € 2,20 Beer Beer Irish Draft Beer & more (0,5L) O'Haras Irish Pale Ale € 6,60 Hop…“ (Website, stuttgart)."
+
+- osm_id: way/40816669
+  venue: "Brauereigaststätte Dinkelacker-Schwaben Bräu"
+  brand: "Dinkelacker"
+  action: add
+  verified: '2026-08-11'
+  note: "Brauereigaststätte Dinkelacker-Schwaben Bräu: „…Dinkelacker | Brauereigaststätte Dinkelacker | Stuttgart top of…“ (Website, stuttgart)."
+
+- osm_id: node/946739742
+  venue: "Café Le Mai"
+  brand: "Wulle"
+  action: add
+  verified: '2026-08-11'
+  note: "Café Le Mai: „…Martini 0,2 L 10,00 € Mimosa 0,1 L 5,90 € Wulle Bier 0,3 L 4,00 € All Day Breakfast Healthy & Sweet Acai…“ (Website, stuttgart)."
+
+- osm_id: node/2790423495
+  venue: "Carls Brauhaus"
+  brand: "Dinkelacker"
+  action: add
+  verified: '2026-08-11'
+  note: "Carls Brauhaus: „…herrlich süffigen Bieren der Privatbrauerei Dinkelacker-Schwaben Bräu. Viel Spaß und eine gute Zeit! - Ihr…“ (Website, stuttgart)."
+
+- osm_id: node/2790423495
+  venue: "Carls Brauhaus"
+  brand: "Schwaben Bräu"
+  action: add
+  verified: '2026-08-11'
+  note: "Carls Brauhaus: „…Bieren der Privatbrauerei Dinkelacker-Schwaben Bräu. Viel Spaß und eine gute Zeit! - Ihr Carls…“ (Website, stuttgart)."
+
+- osm_id: node/505030149
+  venue: "Classic Rock Café"
+  brand: "Schwaben Bräu"
+  action: add
+  verified: '2026-08-11'
+  note: "Classic Rock Café: „…unseren Speisen findest du hier! GETRÄNKE Schwaben Bräu Meister Pils 0,3l 3,90 11,3% Stammwürze | 4,9%…“ (Website, stuttgart)."
+
+- osm_id: node/505030149
+  venue: "Classic Rock Café"
+  brand: "Wulle"
+  action: add
+  verified: '2026-08-11'
+  note: "Classic Rock Café: „…hell 0,5l 5,20 11,8% Stammwürze | 5,0% Alk. Wulle 0,33l 4,40 11,4% Stammwürze | 5,0% Alk. Diehl…“ (Website, stuttgart)."
+
+- osm_id: node/505030149
+  venue: "Classic Rock Café"
+  brand: "Sanwald"
+  action: add
+  verified: '2026-08-11'
+  note: "Classic Rock Café: „…0,3l 3,90 11,5% Stammwürze | 5,0% Alk. Sanwald Hefe Weizen hell 0,5l 5,20 11,8% Stammwürze | 5,0% Alk.…“ (Website, stuttgart)."
+
+- osm_id: node/269689048
+  venue: "Dionysos"
+  brand: "Dinkelacker"
+  action: add
+  verified: '2026-08-11'
+  note: "Dionysos: „…3,90 Biere € 0,30 l 0,50 l Radler 2,90 3,90 Dinkelacker Privat 2,90 3,90 Dinkelacker Pils 3,50 - Sanwald…“ (Website, stuttgart)."
+
+- osm_id: node/269689048
+  venue: "Dionysos"
+  brand: "Sanwald"
+  action: add
+  verified: '2026-08-11'
+  note: "Dionysos: „…Privat 2,90 3,90 Dinkelacker Pils 3,50 - Sanwald Kristallweizen - 4,20 Sanwald Hefeweizen / Hefeweizen…“ (Website, stuttgart)."
+
+- osm_id: way/131187735
+  venue: "Eiscafe La Luna"
+  brand: "Wulle"
+  action: add
+  verified: '2026-08-11'
+  note: "Eiscafe La Luna: „…oder Kaltgetränke an. Auch das Stuttgarter Wulle Bier erhält man hier zu einem Spitzenpreis für diese…“ (Website, stuttgart)."
+
+- osm_id: node/2335051039
+  venue: "Kaito"
+  brand: "Alpirsbacher"
+  action: add
+  verified: '2026-08-11'
+  note: "Kaito: „…NE CAFFE 4,50 € Bestellen BIER BIER 400. ALPIRSBACHER PILS 0,33L 3,80 € Bestellen 401. ALPIRSBACHER HEFE…“ (Website, stuttgart)."
+
+- osm_id: way/38578854
+  venue: "Katzenbacher Hof"
+  brand: "Erdinger"
+  action: add
+  verified: '2026-08-11'
+  note: "Katzenbacher Hof: „…Alle Rechte vorbehalten. Page load link Erdinger Almhütte in Stuttgart Info zu abgeänderter Öffnungszeit…“ (Website, stuttgart)."
+
+- osm_id: node/3167403331
+  venue: "Kursaal Cannstatt"
+  brand: "Augustiner"
+  action: add
+  verified: '2026-08-11'
+  note: "Kursaal Cannstatt: „…König Karl Kaminzimmer König Wilhelm Augustiner Biergarten Stuttgart nesenbach Brauhaus Events…“ (Website, stuttgart)."
+
+- osm_id: node/3167403331
+  venue: "Kursaal Cannstatt"
+  brand: "Erdinger"
+  action: add
+  verified: '2026-08-11'
+  note: "Kursaal Cannstatt: „…Hell Augustiner Bräu aus München 5.20 € Erdinger Kristallweizen 5.20 € Sauvignon Blanc. trocken…“ (Website, stuttgart)."
+
+- osm_id: node/12042622869
+  venue: "LIB-ROOM"
+  brand: "Dinkelacker"
+  action: add
+  verified: '2026-08-11'
+  note: "LIB-ROOM: „…und mit feiner Frucht 0,25 l € 6,50 Bier Dinkelacker Wulle 0,33 l € 3,80 Natur Radler 0,33 l € 3,50…“ (Website, stuttgart)."
+
+- osm_id: node/12042622869
+  venue: "LIB-ROOM"
+  brand: "Wulle"
+  action: add
+  verified: '2026-08-11'
+  note: "LIB-ROOM: „…Frucht 0,25 l € 6,50 Bier Dinkelacker Wulle 0,33 l € 3,80 Natur Radler 0,33 l € 3,50 Sanwald…“ (Website, stuttgart)."
+
+- osm_id: node/12042622869
+  venue: "LIB-ROOM"
+  brand: "Sanwald"
+  action: add
+  verified: '2026-08-11'
+  note: "LIB-ROOM: „…0,33 l € 3,80 Natur Radler 0,33 l € 3,50 Sanwald Hefeweizen 0,5 l € 4,30 Dinkelacker Alkoholfrei 0,33 l €…“ (Website, stuttgart)."
+
+- osm_id: node/3814578843
+  venue: "Makamba"
+  brand: "Hofbräu"
+  action: add
+  verified: '2026-08-11'
+  note: "Makamba: „…Bier / Alkoholic bier Pils / Pils Hofbräu Export Erdinger Hefeweißen, naturtrüb / Erdinger…“ (Website, stuttgart)."
+
+- osm_id: node/3814578843
+  venue: "Makamba"
+  brand: "Erdinger"
+  action: add
+  verified: '2026-08-11'
+  note: "Makamba: „…/ Alkoholic bier Pils / Pils Hofbräu Export Erdinger Hefeweißen, naturtrüb / Erdinger weissbier Erdinger…“ (Website, stuttgart)."
+
+- osm_id: node/2080369149
+  venue: "Marshall Matt"
+  brand: "Dinkelacker"
+  action: add
+  verified: '2026-08-11'
+  note: "Marshall Matt: „…Whiskey, internationale Drinks. Dazu Dinkelacker-Biere und gepflegte Rauchkultur – willkommen im…“ (Website, stuttgart)."
+
+- osm_id: node/3372009623
+  venue: "PizzaExpress"
+  brand: "Stuttgarter Hofbräu"
+  action: add
+  verified: '2026-08-11'
+  note: "PizzaExpress: „…3 Bitter-Lemon 1,0l 4,30 € 183 Ginger Ale 1,0l 4,30 € 184 Red Bull 0,25l 3,00 € Biere 185 Stuttgarte…“ (Website, stuttgart)."
+
+- osm_id: node/3372009623
+  venue: "PizzaExpress"
+  brand: "Beck's"
+  action: add
+  verified: '2026-08-11'
+  note: "PizzaExpress: „…r Ale 1,0l 4,30 € 184 Red Bull 0,25l 3,00 € Biere 185 Stuttgarter Hofbräu 0,5l 3,00 € 186 Becks 0,5l…“ (Website, stuttgart)."
+
+- osm_id: node/3372009623
+  venue: "PizzaExpress"
+  brand: "Wulle"
+  action: add
+  verified: '2026-08-11'
+  note: "PizzaExpress: „…Red Bull 0,25l 3,00 € Biere 185 Stuttgarter Hofbräu 0,5l 3,00 € 186 Becks 0,5l 3,00 € 187 Wulle 0,33…“ (Website, stuttgart)."
+
+- osm_id: node/3372009623
+  venue: "PizzaExpress"
+  brand: "Heineken"
+  action: add
+  verified: '2026-08-11'
+  note: "PizzaExpress: „…iere 185 Stuttgarter Hofbräu 0,5l 3,00 € 186 Becks 0,5l 3,00 € 187 Wulle 0,33l 3,00 € 188 Heineken 0…“ (Website, stuttgart)."
+
+- osm_id: node/387473077
+  venue: "Safran"
+  brand: "Beck's"
+  action: add
+  verified: '2026-08-11'
+  note: "Safran: „…0,3l 3,90 € BECK´S GOLD (A) | 0,3l 3,90 € BECKS´S GREEN LEMON (A, 2, 3) | 0,3l 3,90 € TANNENZÄPFLE (A) |…“ (Website, stuttgart)."
+
+- osm_id: node/269176742
+  venue: "Schwanen"
+  brand: "Schwaben Bräu"
+  action: add
+  verified: '2026-08-11'
+  note: "Schwanen: „…Naturradler 0,33l 3,70€ Alkoholfreie Biere Schwaben Bräu Freibier 0,33l 3,70€ Sanwald Sport Weizen 0,5l…“ (Website, stuttgart)."
+
+- osm_id: node/269176742
+  venue: "Schwanen"
+  brand: "Wulle"
+  action: add
+  verified: '2026-08-11'
+  note: "Schwanen: „…Helles 0,5l 4,40€ CD Kellerbier 0,5l 4,40€ Wulle 0,33l 3,70€ Sanwald Hefeweizen 0,5l 4,60€ Sanwald…“ (Website, stuttgart)."
+
+- osm_id: node/269176742
+  venue: "Schwanen"
+  brand: "Sanwald"
+  action: add
+  verified: '2026-08-11'
+  note: "Schwanen: „…CD Kellerbier 0,5l 4,40€ Wulle 0,33l 3,70€ Sanwald Hefeweizen 0,5l 4,60€ Sanwald Kristallweizen 0,5l 4,60€…“ (Website, stuttgart)."
+
+- osm_id: node/292740979
+  venue: "Steirer Stüble"
+  brand: "Sanwald"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Steirer Stüble: „…3,90 Red Bull 0,25 l 3,90 BIER & WEIZEN Bier vom Fass 0,3 l 0,5 l Schwaben Bräu Urtyp Export 3,40 4,90…“ (Website, stuttgart)."
+
+- osm_id: node/3914263225
+  venue: "Stöckle"
+  brand: "Dinkelacker"
+  action: add
+  verified: '2026-08-11'
+  note: "Stöckle: „…und Sportweizen 0,0% (0,5l) 4,90 Dinkelacker Alkoholfrei (0,33l) 4,20 Sekt / Champagner Prosecco…“ (Website, stuttgart)."
+
+- osm_id: node/3644951436
+  venue: "Tauberquelle"
+  brand: "Schwaben Bräu"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Tauberquelle: „…0,3l 4,50 € Dinkelacker Privat im Steinkrug vom Fass 0,5l 5,30 € Sanwald Hefe Weizen vom Fass 0,3l 4,50…“ (Website, stuttgart)."
+
+- osm_id: node/6036940764
+  venue: "The Clansman"
+  brand: "Murphy's"
+  action: add
+  verified: '2026-08-11'
+  note: "The Clansman: „…Vom Newcastle Brown Ale über das leckere Murphys und O`Haras Pale Ale haben wir auch eine Auswahl an…“ (Website, stuttgart)."
+
+- osm_id: node/266381584
+  venue: "Trattoria da Peppe"
+  brand: "Dinkelacker"
+  action: add
+  verified: '2026-08-11'
+  note: "Trattoria da Peppe: „…D.O.C. (enthält 12) 0,2l €6,50 Biere Dinkelacker Pils (enthält 1) 0,33l €3,90 Dinkelacker Pils…“ (Website, stuttgart)."
+
+- osm_id: node/266381584
+  venue: "Trattoria da Peppe"
+  brand: "Sanwald"
+  action: add
+  verified: '2026-08-11'
+  note: "Trattoria da Peppe: „…Peroni (enthält 1) 0,33l €4,10 Hefeweizen Sanwald (enthält 1) 0,5l €4,60 Hefeweizen Sanwald alkoholfrei…“ (Website, stuttgart)."
+
+- osm_id: node/12669128295
+  venue: "Trattoria l'Ulivo"
+  brand: "Franziskaner"
+  action: add
+  verified: '2026-08-11'
+  note: "Trattoria l'Ulivo: „…0,33 a. Gerste 4.00 € € € Hefe Weizen Franziskaner 0,5 a. Weizen, Gerste 4.90 € € € Hefe Weizen…“ (Website, stuttgart)."
+
+- osm_id: way/33514098
+  venue: "Unithekle"
+  brand: "Paulaner"
+  action: add
+  verified: '2026-08-11'
+  note: "Unithekle: „…- La Cerveza Mediterranea 2,60 € Jetzt Neu! Paulaner Spezi Bunte Farben, Retro-Vibes und ein…“ (Website, stuttgart)."
+
+- osm_id: node/1243819077
+  venue: "Vaihinger Marktstüble"
+  brand: "Alpirsbacher"
+  action: add
+  verified: '2026-08-11'
+  note: "Vaihinger Marktstüble: „…Bier ist die familiengeführte Brauerei Alpirsbacher - das Bier mit dem berühmten Brauwasser aus dem…“ (Website, stuttgart)."
+
+- osm_id: node/115583950
+  venue: "Waldschenke 7 Linden"
+  brand: "Stuttgarter Hofbräu"
+  action: add
+  verified: '2026-08-11'
+  note: "Waldschenke 7 Linden: „…Essen und Service sehr gut. Leider nur Stuttgarter Hofbräu und für 4,20 Euro zu teuer. Und oft…“ (Website, stuttgart)."
+
+- osm_id: node/293604074
+  venue: "Waranga"
+  brand: "Spaten"
+  action: add
+  verified: '2026-08-11'
+  note: "Waranga: „…Martini 15 € Bier Becks Lemon Brew 4.5 € Spaten Hell 4.5 € Estrella 3.5€ Corona 5.5 € Corona Zero 4.5 €…“ (Website, stuttgart)."
+
+- osm_id: node/293604074
+  venue: "Waranga"
+  brand: "Beck's"
+  action: add
+  verified: '2026-08-11'
+  note: "Waranga: „…Coffee 13 € Espresso Martini 15 € Bier Becks Lemon Brew 4.5 € Spaten Hell 4.5 € Estrella 3.5€ Corona 5.5…“ (Website, stuttgart)."
+
+- osm_id: node/9404404904
+  venue: "Wilma Wunder"
+  brand: "Dinkelacker"
+  action: add
+  verified: '2026-08-11'
+  note: "Wilma Wunder: „…sich im Mund entfalten. 30,50€ (...) Bier Dinkelacker Kellerbier 0,5l Naturtrübe Bierspezialität. Gebraut…“ (Website, stuttgart)."
+
+- osm_id: node/9404404904
+  venue: "Wilma Wunder"
+  brand: "Sanwald"
+  action: add
+  verified: '2026-08-11'
+  note: "Wilma Wunder: „…aus der guten, alten Zeit. 5,00€ (...) Sanwald Hefeweizen 0,5l Hefetrübes Weizenbier. Unfiltriert, mit…“ (Website, stuttgart)."
+
+- osm_id: node/652426622
+  venue: "Alvin"
+  brand: "Pilsner Urquell"
+  action: add
+  verified: '2026-08-11'
+  note: "Alvin: „…0,3/05 l Mustang 11° 45/55 Kč 0,3/0,5 l Pilsner Urquell 12 ° 53/63 Kč 0,4 l Pivní speciál - dle nabídky…“ (Website, brno)."
+
+- osm_id: node/3218210049
+  venue: "Amici Pizza & Burgers"
+  brand: "Radegast"
+  action: add
+  verified: '2026-08-11'
+  note: "Amici Pizza & Burgers: „…Do košíku Zobrazit alergeny Alergeny 1 16 Radegast Ryze hořká 12° 0,5 l Dvanáctka Radegast se pyšní plnou,…“ (Website, brno)."
+
+- osm_id: node/9990037961
+  venue: "Bernard Bar"
+  brand: "Bernard"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Bernard Bar: „…nolky, tatarská omáčka | A: 1,3,7,10 Zobrazit celý lístek Zobrazit seznam alergenů Nabídka piv Bernard…“ (Website, brno)."
+
+- osm_id: node/3159165870
+  venue: "Buddha"
+  brand: "Starobrno"
+  action: add
+  verified: '2026-08-11'
+  note: "Buddha: „…l svařené víno 70,- Kč Pivo // Beer 0,3l Starobrno Medium 11° 38,- Kč 0,5l Starobrno Medium 11° 52,- Kč…“ (Website, brno)."
+
+- osm_id: node/13186608865
+  venue: "Charlie's Park"
+  brand: "Radegast"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Charlie's Park: „…nách a na platbu stravenkami nevracíme. Pivo čepované 0,47 l Pilsner Urquell hladinka 62 Kč 0,25 l…“ (Website, brno)."
+
+- osm_id: node/13186608865
+  venue: "Charlie's Park"
+  brand: "Pilsner Urquell"
+  action: add
+  verified: '2026-08-11'
+  note: "Charlie's Park: „…l Birell Mango&Citron sklo 35 Kč 0,25 l Pilsner Urquell 45 Kč Zpomalte a nechte chuť vyniknout Zobrazit…“ (Website, brno)."
+
+- osm_id: node/4075086221
+  venue: "Dělnický dům"
+  brand: "Poutník"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Dělnický dům: „…7) 80,- Horká čokoláda se šlehačkou (7) 70,- Čepované pivo 0,5l Moravia 10° NEFILTR 55,- 0,3l Moravia…“ (Website, brno)."
+
+- osm_id: node/1133663947
+  venue: "FAKO CLUB"
+  brand: "Radegast"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "FAKO CLUB: „…nou a omáčkou z lesních plodů 145 Kč (1,3,7) Čepované pivo 0,3l/0,5l Pilsner Urquell 42/59 Kč 0,3l/0,5l…“ (Website, brno)."
+
+- osm_id: node/296533890
+  venue: "Garden Restaurant & Pub"
+  brand: "Pilsner Urquell"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Garden Restaurant & Pub: „…olba sládků 0,4 l 69,- Kč Birell Pomelo&Grep čepovaný 0,5 l 69,- Kč Birell Pomelo&Grep čepovaný 59,- Kč…“ (Website, brno)."
+
+- osm_id: node/296533890
+  venue: "Garden Restaurant & Pub"
+  brand: "Kozel"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Garden Restaurant & Pub: „…olba sládků 0,4 l 69,- Kč Birell Pomelo&Grep čepovaný 0,5 l 69,- Kč Birell Pomelo&Grep čepovaný 59,- Kč…“ (Website, brno)."
+
+- osm_id: node/2087141374
+  venue: "Havana Restaurant"
+  brand: "Paulaner"
+  action: add
+  verified: '2026-08-11'
+  note: "Havana Restaurant: „…l 32 Kč Stella Artois nealko 0,33 l 39 Kč Paulaner Weissbier Nealko 0,5 l 80 Kč Corona Extra 0,33 l 90 Kč…“ (Website, brno)."
+
+- osm_id: node/2087141374
+  venue: "Havana Restaurant"
+  brand: "Pilsner Urquell"
+  action: add
+  verified: '2026-08-11'
+  note: "Havana Restaurant: „…Rosée 0,25 l 45 Kč Obsah alkoholu 3% obj. Pilsner Urquell 0,3 l 41 Kč Pilsner Urquell 0,5 l 67 Kč Albert…“ (Website, brno)."
+
+- osm_id: node/2087141374
+  venue: "Havana Restaurant"
+  brand: "Staropramen"
+  action: add
+  verified: '2026-08-11'
+  note: "Havana Restaurant: „…23 Kč Obsah alkoholu 4,9 % obj., IBU: 25 Staropramen NEALKO 0,5l 39 Kč Staropramen NEALKO 0,3l 24 Kč…“ (Website, brno)."
+
+- osm_id: node/296507268
+  venue: "IL Capo"
+  brand: "Lobkowicz"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "IL Capo: „…50 Kč (84) KRABICE NA PIZZU, MENU BOX 11 Kč Výčep (85) RYCHTÁŘ 11° - SVĚTLÉ 500 ml 39 Kč (86) RYCHTÁŘ…“ (Website, brno)."
+
+- osm_id: node/3719872935
+  venue: "Kometa Pub"
+  brand: "Starobrno"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Kometa Pub: „…ké nápoje 1 l Karafa vody s citrusy 45 0,5 l Čepovaná limonáda 55 0,3 l Čepovan…“ (Website, brno)."
+
+- osm_id: node/3719872935
+  venue: "Kometa Pub"
+  brand: "Zlatopramen"
+  action: add
+  verified: '2026-08-11'
+  note: "Kometa Pub: „…medium v době poledního menu 25 Kč 0,3 l Zlatopramen (nealko radler) 25 Kč 0,2 l Cappy v době poledního…“ (Website, brno)."
+
+- osm_id: node/7205553369
+  venue: "Kometa Pub MIKI"
+  brand: "Pilsner Urquell"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Kometa Pub MIKI: „…- Burger box 20,- Nápojový lístek Drink menu Na čepu 0,5 l Starobrno Medium 11° 54 0,3 l Starobrno…“ (Website, brno)."
+
+- osm_id: node/7205553369
+  venue: "Kometa Pub MIKI"
+  brand: "Radegast"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Kometa Pub MIKI: „…- Burger box 20,- Nápojový lístek Drink menu Na čepu 0,5 l Starobrno Medium 11° 54 0,3 l Starobrno…“ (Website, brno)."
+
+- osm_id: node/476315630
+  venue: "Laguna"
+  brand: "Chotěboř"
+  action: add
+  verified: '2026-08-11'
+  note: "Laguna: „…Kč 0,5l /0,3l Bohém 11 49/35Kč 0,5l / 0,3l Chotěboř 12 55 / 41 Kč 0,4l Černá Barbora 13 55 Kč 0,5l / 0,3l…“ (Website, brno)."
+
+- osm_id: node/2805661410
+  venue: "Lužánka"
+  brand: "Heineken"
+  action: add
+  verified: '2026-08-11'
+  note: "Lužánka: „…prestižní certifikát Garance kvality od Heineken ČR. Jsme také hrdými členy Asociace kuchařů a cukrářů…“ (Website, brno)."
+
+- osm_id: node/3505216517
+  venue: "Lōkahi"
+  brand: "Pilsner Urquell"
+  action: add
+  verified: '2026-08-11'
+  note: "Lōkahi: „…Pivo — — Beer — Corona s limetkou 355 ml 85 Pilsner Urquell 330 ml 65 Alergeny na vyžádání u obsluhy.…“ (Website, brno)."
+
+- osm_id: node/2451609620
+  venue: "Malt Worm"
+  brand: "Zichovec"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Malt Worm: „…ě ukážeme a vysvětlíme. Rezervace stolu Dnes na čepu Hauskrecht Špilberk Pale Lager Rotor Rogalo Czech…“ (Website, brno)."
+
+- osm_id: node/9500646057
+  venue: "Mori"
+  brand: "Pilsner Urquell"
+  action: add
+  verified: '2026-08-11'
+  note: "Mori: „…70 Kč Latte macchiato 80 Kč Pivo 0,33 l Pilsner Urquell 49 Kč 0,33 l Radegast Birell nealkoholické pivo…“ (Website, brno)."
+
+- osm_id: node/9500646057
+  venue: "Mori"
+  brand: "Radegast"
+  action: add
+  verified: '2026-08-11'
+  note: "Mori: „…Kč Pivo 0,33 l Pilsner Urquell 49 Kč 0,33 l Radegast Birell nealkoholické pivo 50 Kč 0,33 l Japonské pivo…“ (Website, brno)."
+
+- osm_id: node/2173043957
+  venue: "Na Purkyňce"
+  brand: "Pilsner Urquell"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Na Purkyňce: „…a, Jihlava, ale také českou klasiku z Plzně. Čepovaná piva Matouš 11° třikrát chmelený světlý ležák,…“ (Website, brno)."
+
+- osm_id: node/2173043957
+  venue: "Na Purkyňce"
+  brand: "Černá Hora"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Na Purkyňce: „…a, Jihlava, ale také českou klasiku z Plzně. Čepovaná piva Matouš 11° třikrát chmelený světlý ležák,…“ (Website, brno)."
+
+- osm_id: node/2805580190
+  venue: "Park Lane"
+  brand: "Primátor"
+  action: add
+  verified: '2026-08-11'
+  note: "Park Lane: „…...70,- STUDENÉ NÁPOJE Pivo 0,5 l Tchýně - Primátor ....59,– 0,3 l Tchýně - Primátor ....49,– 0,5 l Shandy…“ (Website, brno)."
+
+- osm_id: node/346564098
+  venue: "Penzion Patron"
+  brand: "Pilsner Urquell"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Penzion Patron: „…čený griliáš, vaječný likér, šlehačka 135 Kč Točená piva 0,5 l 11 Otakar Polička (A 1) 52 Kč 0,3 l 11…“ (Website, brno)."
+
+- osm_id: node/2805580187
+  venue: "Pivnice U Tygra"
+  brand: "Budweiser Budvar"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Pivnice U Tygra: „…tem.href> Úvod Domů Aktuality O pivnici Menu Na čepu Jídelní lístek Salónek Rezervace Kontakt G…“ (Website, brno)."
+
+- osm_id: node/3404968033
+  venue: "Pivnice U Čolka"
+  brand: "Poutník"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Pivnice U Čolka: „…yně  WiFi b Zahrádka Domácí mazlíčci vítáni Točená piva MAZÁK EXTRA HOŘKÝ 11 DOLNÍ BOJANOVICE KAMENICE…“ (Website, brno)."
+
+- osm_id: node/3404968033
+  venue: "Pivnice U Čolka"
+  brand: "Sibeeria"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Pivnice U Čolka: „…yně  WiFi b Zahrádka Domácí mazlíčci vítáni Točená piva MAZÁK EXTRA HOŘKÝ 11 DOLNÍ BOJANOVICE KAMENICE…“ (Website, brno)."
+
+- osm_id: node/12729067935
+  venue: "Pivnice u Šimona"
+  brand: "Pilsner Urquell"
+  action: add
+  verified: '2026-08-11'
+  note: "Pivnice u Šimona: „…u Šimona – Špičková Pilsner Urquell v Brně Domů Nabídka Kontakt Skvěle vychlazená…“ (Website, brno)."
+
+- osm_id: node/12729067935
+  venue: "Pivnice u Šimona"
+  brand: "Radegast"
+  action: add
+  verified: '2026-08-11'
+  note: "Pivnice u Šimona: „…Přijďte ochutnat nejlepší Pilsner Urquell a Radegast v okolí, vychutnat si některé naše rumové speciality…“ (Website, brno)."
+
+- osm_id: node/3384132520
+  venue: "Pivní burza"
+  brand: "Lobkowicz"
+  action: add
+  verified: '2026-08-11'
+  note: "Pivní burza: „…perlivá) 49 Kč 0,3 l Red Bull 89 Kč 0,25 l Lobkowicz nealkoholické pivo Alergeny: 1a 59 Kč 0,33 l Nilio…“ (Website, brno)."
+
+- osm_id: node/376316392
+  venue: "Pivovar Starobrno"
+  brand: "Starobrno"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Pivovar Starobrno: „…a chutě. Svlažte hrdlo některým z výborných čepovaných piv a pokračujte třeba vyhlášenými žebírky, nebo…“ (Website, brno)."
+
+- osm_id: node/1600624317
+  venue: "Pivovarská Brno"
+  brand: "Starobrno"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Pivovarská Brno: „…a chutě. Svlažte hrdlo některým z výborných čepovaných piv a pokračujte třeba vyhlášenými žebírky, nebo…“ (Website, brno)."
+
+- osm_id: node/1202972372
+  venue: "Plzeňský dvůr"
+  brand: "Pilsner Urquell"
+  action: add
+  verified: '2026-08-11'
+  note: "Plzeňský dvůr: „…plzeňský dvůr Více obrázků Ocenění Plzeňský prazdroj Hvězda sládků Jsme velmi rádi, že jsme byli zařazeni…“ (Website, brno)."
+
+- osm_id: node/4231856489
+  venue: "Ponava"
+  brand: "Pilsner Urquell"
+  action: add
+  verified: '2026-08-11'
+  note: "Ponava: „…/ 140,- různé druhy, dle denní nabídky Pilsner Urquell 68,- Bernard 12° bezlepkový 62,- Nealko pivo…“ (Website, brno)."
+
+- osm_id: node/2087588051
+  venue: "Potrefená husa"
+  brand: "Staropramen"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Potrefená husa: „…pečená přes noc na nízkou teplotu, nakládané sudové zelí s křenem, plnotučn…“ (Website, brno)."
+
+- osm_id: node/970710233
+  venue: "Potrefená husa"
+  brand: "Staropramen"
+  action: add
+  verified: '2026-08-11'
+  note: "Potrefená husa: „…zero zero 0,33l za zvýhodněnou cenu 42 Kč, Staropramen NEALKO GREP 0,3l za zvýhodněnou cenu 39 Kč a…“ (Website, brno)."
+
+- osm_id: node/4928178106
+  venue: "Přístav u Vodů"
+  brand: "Pilsner Urquell"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Přístav u Vodů: „…ZERVACE NÁPOJOVÝ LÍSTEK Piva Pilsner Urquell Hladinka 0.48l 69 Kč Pilsner Urquell Šnyt 0.3l 59 Kč…“ (Website, brno)."
+
+- osm_id: node/4928178106
+  venue: "Přístav u Vodů"
+  brand: "Kozel"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Přístav u Vodů: „…ZERVACE NÁPOJOVÝ LÍSTEK Piva Pilsner Urquell Hladinka 0.48l 69 Kč Pilsner Urquell Šnyt 0.3l 59 Kč…“ (Website, brno)."
+
+- osm_id: node/12729067934
+  venue: "Skanzeen"
+  brand: "Krušovice"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Skanzeen: „…ace kontakt +420-602-453-879 Nápojový lístek Točené Pivo 0.30 l Štatl ležák 46 ,- 0.50 l Štatl ležák 58…“ (Website, brno)."
+
+- osm_id: node/13606373003
+  venue: "Slatina Bistro"
+  brand: "Pilsner Urquell"
+  action: add
+  verified: '2026-08-11'
+  note: "Slatina Bistro: „…limonády - různé druhy 0,4l 85,- ,- ,- Pivo Pilsner urquell 0,5l 55,- Birell světlý 0,5l 55,- ,- Káva…“ (Website, brno)."
+
+- osm_id: node/5964833852
+  venue: "Slunečnice Pub"
+  brand: "Pilsner Urquell"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Slunečnice Pub: „…0 l Birell Pomelo a grep 59 Kč 0,50 l Birell čepovaný 59 Kč 0,30 l Řezaný Kozel 48 Kč 0,47 l Řezaný…“ (Website, brno)."
+
+- osm_id: node/5964833852
+  venue: "Slunečnice Pub"
+  brand: "Kozel"
+  action: add
+  verified: '2026-08-11'
+  note: "Slunečnice Pub: „…čokoláda 89 Kč PIVA 0,30 l Velkopopovický Kozel 11 45 Kč 0,47 l Velkopopovický Kozel 11 55 Kč 0,30 l…“ (Website, brno)."
+
+- osm_id: node/5964833852
+  venue: "Slunečnice Pub"
+  brand: "Radegast"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Slunečnice Pub: „…0 l Birell Pomelo a grep 59 Kč 0,50 l Birell čepovaný 59 Kč 0,30 l Řezaný Kozel 48 Kč 0,47 l Řezaný…“ (Website, brno)."
+
+- osm_id: node/2323343838
+  venue: "Terasa"
+  brand: "Radegast"
+  action: add
+  verified: '2026-08-11'
+  note: "Terasa: „…45,- Birell 0.5l 45,- Frisco 0.33l 45,- Radegast 12 0.5l 45,- Destiláty Zelená Božkov 0.04l 40,- Tuzemák…“ (Website, brno)."
+
+- osm_id: node/296445876
+  venue: "Teátr"
+  brand: "Kozel"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Teátr: „…Nápojový lístek Drinks menu in English Pivo čepované Pilsner Urquell ležák – velká hladinka 0,5 l / 69…“ (Website, brno)."
+
+- osm_id: node/2815501777
+  venue: "Thalie"
+  brand: "Pilsner Urquell"
+  action: add
+  verified: '2026-08-11'
+  note: "Thalie: „…55,- Kč 0,2 l GROG 55,- Kč Pivo 0,5 l PILSNER URQUELL 12° 50,- Kč 0,3 l PILSNER URQUELL 12° 40,- Kč…“ (Website, brno)."
+
+- osm_id: node/2815501777
+  venue: "Thalie"
+  brand: "Radegast"
+  action: add
+  verified: '2026-08-11'
+  note: "Thalie: „…Kč 0,3 l POLIČKA 11° 35,- Kč 0,5 l BIRELL RADEGAST 40,- Kč 0,3 l BIRELL RADEGAST 35,- Kč 0,5 l BIRELL…“ (Website, brno)."
+
+- osm_id: node/2838697108
+  venue: "Topas"
+  brand: "Radegast"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Topas: „…58,- Záloha na sklo 3,- Nealkoholické nápoje točené: Poctivá kola 0,3l 39,- Poctivá kola 0,5l 49,-…“ (Website, brno)."
+
+- osm_id: node/2838697108
+  venue: "Topas"
+  brand: "Postřižinské"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Topas: „…ozvoz jídla objednávejte zde Nápojový lístek Točené pivo: objem [l] Cena [Kč] Pelhřimovský Poutník 10°…“ (Website, brno)."
+
+- osm_id: node/4492893732
+  venue: "Tripoli restaurant"
+  brand: "Heineken"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Tripoli restaurant: „…91 Kč 1 l Ledový čaj dle nabídky 189 Kč Pivo čepované 0,4 l Strobrno Bitr 66 Kč 0,4 l Krušovice…“ (Website, brno)."
+
+- osm_id: node/942941201
+  venue: "U Křížů"
+  brand: "Kozel"
+  action: add
+  verified: '2026-08-11'
+  note: "U Křížů: „…U KŘÍŽŮ Denní nabídka Aktuality Vychlazený Kozel černý a (a)klimatizovaní Křížovi Ve víru událostí…“ (Website, brno)."
+
+- osm_id: node/979636631
+  venue: "U Štíra"
+  brand: "Zlatopramen"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "U Štíra: „…arohem a povidly 55,- Pivo 0,50l Starobrno - čepované pivo 32,- 0,30l Starobrno - čepované pivo 25,-…“ (Website, brno)."
+
+- osm_id: node/8124146021
+  venue: "Wild Thing"
+  brand: "Pilsner Urquell"
+  action: add
+  verified: '2026-08-11'
+  note: "Wild Thing: „…Sprite) 0,33 Bernard Free Nealko 60 Kč 0,33 Pilsner Urquell 12° 85 Kč 0,33 Corona Extra 95 Kč VÍNO/WINE Bílé…“ (Website, brno)."
+
+- osm_id: node/8124146021
+  venue: "Wild Thing"
+  brand: "Bernard"
+  action: add
+  verified: '2026-08-11'
+  note: "Wild Thing: „…Absinth Metelka 60% 95 Kč PIVO/BEER 0,40 Bernard světlý ležák 11° 65 Kč 0,50 Bernard Radler 65 Kč (0,3…“ (Website, brno)."
+
+- osm_id: node/3467187412
+  venue: "Zlatá loď"
+  brand: "Starobrno"
+  serving: tank
+  action: add
+  verified: '2026-08-11'
+  note: "Zlatá loď: „…nou nabídku jídel. PIVO 0,3 l Starobrno Bitr tank 54 Kč 0,5 l Starobrno Bitr tank 68 Kč 1 l Starobrno…“ (Website, brno)."
+
+- osm_id: node/3838844268
+  venue: "Šnek bar"
+  brand: "Starobrno"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Šnek bar: „…Šnek Bar Brno Zahrádka Nápojový lístek Pivo Sudové Starobrno 11° 0,5L 38.- KČ Starobrno 11° 0,3L 20.- KČ…“ (Website, brno)."
+
+- osm_id: node/296796219
+  venue: "Aberdeen Angus Steak House"
+  brand: "Pilsner Urquell"
+  action: add
+  verified: '2026-08-11'
+  note: "Aberdeen Angus Steak House: „…4cl 95,- Náš zázvorový čaj 85,- Pivo Prazdroj 12° 0,5l / 0,3l 75,-/59,- Cider – dle nabídky (láhev) 0,33l…“ (Website, plzen)."
+
+- osm_id: node/4156364104
+  venue: "Bolevecká Sokolovna"
+  brand: "Pilsner Urquell"
+  serving: tank
+  action: add
+  verified: '2026-08-11'
+  note: "Bolevecká Sokolovna: „…4 565 4 zážitky ČTYŘI ZÁŽITKY PIVO JAKO KŘEN Tankový Prazdroj, perfektně ošetřená sudová piva. Každý…“ (Website, plzen)."
+
+- osm_id: node/7151078658
+  venue: "Caffe Diem"
+  brand: "Pilsner Urquell"
+  action: add
+  verified: '2026-08-11'
+  note: "Caffe Diem: „…FIERO 140 Kč 0,2 l MIMOSA 98 Kč 0,2 l PILSNER URQUELL 12° 54 Kč 0,33 l sledujte náš INSTAGRAM Facebook…“ (Website, plzen)."
+
+- osm_id: node/4705440994
+  venue: "Klub Malých Pivovarů"
+  brand: "Permon"
+  action: add
+  verified: '2026-08-11'
+  note: "Klub Malých Pivovarů: „…Ale, 11° sv. nef., 4,6% vol. Alc, 46 IBU Permon - Sherpa, India Pale Ale, 16° sv. nef., 7,5% vol. Alc, 62…“ (Website, plzen)."
+
+- osm_id: node/7688040840
+  venue: "Raven"
+  brand: "Raven"
+  action: add
+  verified: '2026-08-11'
+  note: "Raven: „…Raven — řemeslný pivovar z Plzně Přeskočit na obsah Naše hospody…“ (Website, plzen)."
+
+- osm_id: node/296770642
+  venue: "U Matasů"
+  brand: "Pilsner Urquell"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "U Matasů: „…rodní. A protože jsme v Plzni, náš sortiment čepovaného piva tvoří značky z portfolia Pilsner Urquell.…“ (Website, plzen)."
+
+- osm_id: node/12119017337
+  venue: "U Ševců"
+  brand: "Pilsner Urquell"
+  action: add
+  verified: '2026-08-11'
+  note: "U Ševců: „…Plzní, se Škodovkou i Viktorkou, žijeme s pivem Gambrinus a Prazdroj a vaříme poctivě. Říká se, že umíme…“ (Website, plzen)."
+
+- osm_id: node/12119017337
+  venue: "U Ševců"
+  brand: "Gambrinus"
+  serving: tank
+  action: add
+  verified: '2026-08-11'
+  note: "U Ševců: „…e i party, každý den od roku 1990. Nejstarší tankový Gambrinus ve městě. Jsme z Plzně a jsme patrioti.…“ (Website, plzen)."
+
+- osm_id: node/931903771
+  venue: "Agiu Georgiu"
+  brand: "Pilsner Urquell"
+  action: add
+  verified: '2026-08-11'
+  note: "Agiu Georgiu: „…zelený, ovocný čaj 65,- Bira – Pivo 0,5l Pilsner Urquell 60,- 0,3l Pilsner Urquell 50,- 0,5l Radegast…“ (Website, ostrava)."
+
+- osm_id: node/931903771
+  venue: "Agiu Georgiu"
+  brand: "Radegast"
+  action: add
+  verified: '2026-08-11'
+  note: "Agiu Georgiu: „…Urquell 60,- 0,3l Pilsner Urquell 50,- 0,5l Radegast Birell (světlý, polotmavý) 48,- Eliniko Krasí Chíma –…“ (Website, ostrava)."
+
+- osm_id: node/5168577441
+  venue: "Bowling park Ostrava"
+  brand: "Pilsner Urquell"
+  action: add
+  verified: '2026-08-11'
+  note: "Bowling park Ostrava: „…l 45,- Radegast Ryze Hořká 12 0,5 l 55,- Pilsner Urquell 0,3 l 55,- Pilsner Urquell 0,5 l 65,- Morava…“ (Website, ostrava)."
+
+- osm_id: node/5168577441
+  venue: "Bowling park Ostrava"
+  brand: "Radegast"
+  action: add
+  verified: '2026-08-11'
+  note: "Bowling park Ostrava: „…l 45,- Morava nefiltrovaná 10 0,5 l 55,- Radegast Ryze Hořká 12 0,3 l 45,- Radegast Ryze Hořká 12 0,5 l…“ (Website, ostrava)."
+
+- osm_id: node/898947183
+  venue: "Dublin"
+  brand: "Guinness"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Dublin: „…áda 75,- Tatra 7,- Šlehačka 9,- Med 9,- Pivo Čepované Staropramen 12° 0,5 l 69,- Staropramen 12° 0,4 l…“ (Website, ostrava)."
+
+- osm_id: node/12361546365
+  venue: "Futrovna"
+  brand: "Pilsner Urquell"
+  action: add
+  verified: '2026-08-11'
+  note: "Futrovna: „…ryze hořká 12 0,5l 55,- Kč 0,3l 42,- Kč Pilsner Urquell Pilsner Urquell 0,5l 67,- Kč 0,3l 47,- Kč Kozel…“ (Website, ostrava)."
+
+- osm_id: node/12361546365
+  venue: "Futrovna"
+  brand: "Kozel"
+  action: add
+  verified: '2026-08-11'
+  note: "Futrovna: „…Pilsner Urquell 0,5l 67,- Kč 0,3l 47,- Kč Kozel Světlý 10° Kozel Světlý 10° 0,5l 49,- Kč 0,3l 36,- Kč…“ (Website, ostrava)."
+
+- osm_id: node/12361546365
+  venue: "Futrovna"
+  brand: "Radegast"
+  action: add
+  verified: '2026-08-11'
+  note: "Futrovna: „…Caffee Teplé nápoje Hot drinks Pivo Beer Radegast ryze hořká 12 Radegast ryze hořká 12 0,5l 55,- Kč 0,3l…“ (Website, ostrava)."
+
+- osm_id: node/2132338722
+  venue: "Kavárna Jine Kafe"
+  brand: "Radegast"
+  action: add
+  verified: '2026-08-11'
+  note: "Kavárna Jine Kafe: „…také například konopné pivo KONOPEX 11° a Radegast 12° , konopný čaj a spoustu dalších dobrot, které pro…“ (Website, ostrava)."
+
+- osm_id: node/5420799123
+  venue: "Kurnik Šopa Hospoda2"
+  brand: "Maisel's"
+  action: add
+  verified: '2026-08-11'
+  note: "Kurnik Šopa Hospoda2: „…u vchodu 0 Kč Nealkoholická piva 0,5l Maisel's Weisse, pšeničné, Bayreuth - Německo 59 Kč 0,5l Bernard…“ (Website, ostrava)."
+
+- osm_id: node/5420799123
+  venue: "Kurnik Šopa Hospoda2"
+  brand: "Bernard"
+  action: add
+  verified: '2026-08-11'
+  note: "Kurnik Šopa Hospoda2: „…pšeničné, Bayreuth - Německo 59 Kč 0,5l Bernard světlý 49 Kč 0,5l Bernard Grep, Švestka 59 Kč 0,33…“ (Website, ostrava)."
+
+- osm_id: node/5374305492
+  venue: "Kurnik Šopa Hospoda²"
+  brand: "Maisel's"
+  action: add
+  verified: '2026-08-11'
+  note: "Kurnik Šopa Hospoda²: „…u vchodu 0 Kč Nealkoholická piva 0,5l Maisel's Weisse, pšeničné, Bayreuth - Německo 59 Kč 0,5l Bernard…“ (Website, ostrava)."
+
+- osm_id: node/5374305492
+  venue: "Kurnik Šopa Hospoda²"
+  brand: "Bernard"
+  action: add
+  verified: '2026-08-11'
+  note: "Kurnik Šopa Hospoda²: „…pšeničné, Bayreuth - Německo 59 Kč 0,5l Bernard světlý 49 Kč 0,5l Bernard Grep, Švestka 59 Kč 0,33…“ (Website, ostrava)."
+
+- osm_id: node/3504769057
+  venue: "Kurnikšopa"
+  brand: "Maisel's"
+  action: add
+  verified: '2026-08-11'
+  note: "Kurnikšopa: „…u vchodu 0 Kč Nealkoholická piva 0,5l Maisel's Weisse, pšeničné, Bayreuth - Německo 59 Kč 0,5l Bernard…“ (Website, ostrava)."
+
+- osm_id: node/3504769057
+  venue: "Kurnikšopa"
+  brand: "Bernard"
+  action: add
+  verified: '2026-08-11'
+  note: "Kurnikšopa: „…pšeničné, Bayreuth - Německo 59 Kč 0,5l Bernard světlý 49 Kč 0,5l Bernard Grep, Švestka 59 Kč 0,33…“ (Website, ostrava)."
+
+- osm_id: node/370024754
+  venue: "La Corse"
+  brand: "Kozel"
+  action: add
+  verified: '2026-08-11'
+  note: "La Corse: „…hořký ležák) 41,- Kč 0,50 l Velkopopovický Kozel 10° (tmavé pivo) 49,- Kč 0,30 l Velkopopovický Kozel 10°…“ (Website, ostrava)."
+
+- osm_id: node/898947186
+  venue: "Levský"
+  brand: "Ostravar"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Levský: „…širokou nabídku vín. No a jako nealko bonus čepovaná kofola. To vše je pro vás připraveno u nás na v…“ (Website, ostrava)."
+
+- osm_id: node/898947186
+  venue: "Levský"
+  brand: "Staropramen"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Levský: „…širokou nabídku vín. No a jako nealko bonus čepovaná kofola. To vše je pro vás připraveno u nás na v…“ (Website, ostrava)."
+
+- osm_id: node/2440819000
+  venue: "Restaurace Palouk"
+  brand: "Maisel's"
+  action: add
+  verified: '2026-08-11'
+  note: "Restaurace Palouk: „…0,5 l Bernard Free světlý 62,- 0,5 l Maisel´s Weisse free 69,- LIMO 0,5 l Naše limonáda (višeň, grep,…“ (Website, ostrava)."
+
+- osm_id: node/1955340838
+  venue: "Restaurace minigolf"
+  brand: "Kozel"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Restaurace minigolf: „…ní ﻿ Nápoje Pivo 0,5 l Radegast 12° světlé – čep 49 Kč 0,5 l Řezané (12°/Kozel) – čep 49 Kč 0,5 l…“ (Website, ostrava)."
+
+- osm_id: node/1955340838
+  venue: "Restaurace minigolf"
+  brand: "Radegast"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Restaurace minigolf: „…ní ﻿ Nápoje Pivo 0,5 l Radegast 12° světlé – čep 49 Kč 0,5 l Řezané (12°/Kozel) – čep 49 Kč 0,5 l…“ (Website, ostrava)."
+
+- osm_id: node/10610416374
+  venue: "Sbeerka"
+  brand: "Radegast"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Sbeerka: „…58,-, 0,3l 48,-), alc/vol.4,6%, IBU 32 5. Radegast ryze hořká 12%, Ležák, Radegast (0,5l 55,-, 0,3l 45,-),…“ (Website, ostrava)."
+
+- osm_id: node/898988669
+  venue: "Slezská P.U.O.R."
+  brand: "Pilsner Urquell"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Slezská P.U.O.R.: „…31.července 2026 00:00:00 SPECIÁLY Z PRAZDROJE ﻿﻿ zdroj: www.specialyzprazdroje.cz Jídelní lístek strana…“ (Website, ostrava)."
+
+- osm_id: node/6178246884
+  venue: "SportBar Simon"
+  brand: "Radegast"
+  action: add
+  verified: '2026-08-11'
+  note: "SportBar Simon: „…Můžete se u nás těšit na piva z pivovarů Radegast a Koníček. Myslíme také na vinaře, a proto nabízí…“ (Website, ostrava)."
+
+- osm_id: node/12291967734
+  venue: "Stračena Pub"
+  brand: "Pilsner Urquell"
+  action: add
+  verified: '2026-08-11'
+  note: "Stračena Pub: „…Máta, Třtinový cukr, Soda 152,- 0,2l Pivo Pilsner Urquell 12° 58,- 0,27l Bílé víno Stračena Aurelius…“ (Website, ostrava)."
+
+- osm_id: node/1143789291
+  venue: "U Lichny"
+  brand: "Radegast"
+  action: add
+  verified: '2026-08-11'
+  note: "U Lichny: „…- ideální k pivu 42,- Kč NÁPOJE Coca Cola, Radegast 10, Birell (pomelo, malina, světlý) 25,- Kč OSTATNÍ…“ (Website, ostrava)."
+
+- osm_id: node/2428043845
+  venue: "U Rady"
+  brand: "Pilsner Urquell"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "U Rady: „…,- kč 0,04 l Stará myslivecká 56,- kč 0,04 l Čepovaná piva Radegast Birrel světlý 29,- kč 0,3 l Radegast…“ (Website, ostrava)."
+
+- osm_id: node/899056806
+  venue: "U Splavu"
+  brand: "Pilsner Urquell"
+  action: add
+  verified: '2026-08-11'
+  note: "U Splavu: „…10° 42 Kč 0,3 l Radegast 10° 30 Kč 0,5 l Pilsner Urquell 51 Kč 0,3 l Pilsner Urquell 34 Kč Frisco 44 Kč…“ (Website, ostrava)."
+
+- osm_id: node/899056806
+  venue: "U Splavu"
+  brand: "Radegast"
+  action: add
+  verified: '2026-08-11'
+  note: "U Splavu: „…70 Kč 0,5l Birell pomelo-grep 45 Kč 0,5 l Radegast 12° 45 Kč 0,3 l Radegast 12° 33 Kč 0,5 l Radegast 10°…“ (Website, ostrava)."
+
+- osm_id: node/13359498501
+  venue: "WW klub"
+  brand: "Radegast"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "WW klub: „…ky, naložený Camembert, tlačenku i utopence. Na čepu: Radegast Ryze Hořká 12° Radegast Rázná 10° Pilsner…“ (Website, ostrava)."
+
+- osm_id: node/8553280810
+  venue: "Řízkárna u Orla"
+  brand: "Pilsner Urquell"
+  action: add
+  verified: '2026-08-11'
+  note: "Řízkárna u Orla: „…se šlehačkou... 159,- Kč Pivo 0,3l / 0,5l Pilsner Urquell 12°… 50,- / 60,- Kč 0,3l / 0,5l Radegast Ryze…“ (Website, ostrava)."
+
+- osm_id: node/8553280810
+  venue: "Řízkárna u Orla"
+  brand: "Kozel"
+  action: add
+  verified: '2026-08-11'
+  note: "Řízkárna u Orla: „…40,- / 50,- Kč 0,3l / 0,5l Velkopopovický Kozel 11°… 39,- / 49,- Kč 0,3l / 0,5l Velkopopovický Kozel černý…“ (Website, ostrava)."
+
+- osm_id: node/8553280810
+  venue: "Řízkárna u Orla"
+  brand: "Radegast"
+  action: add
+  verified: '2026-08-11'
+  note: "Řízkárna u Orla: „…Urquell 12°… 50,- / 60,- Kč 0,3l / 0,5l Radegast Ryze hořký 12°… 40,- / 50,- Kč 0,3l / 0,5l…“ (Website, ostrava)."
+
+- osm_id: node/9423743954
+  venue: "Alchymista"
+  brand: "Pilsner Urquell"
+  action: add
+  verified: '2026-08-11'
+  note: "Alchymista: „…Prazdroj 12 0,5l 64,- 0,3l 49,- Hulvát 11 světlý ležák z Truskovic 0,5l 58,- – poctivé pivo z jižních…“ (Website, budejovice)."
+
+- osm_id: node/5983058385
+  venue: "Hospůdka Eliška"
+  brand: "Budweiser Budvar"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Hospůdka Eliška: „…pochutnáte i na kvalitním budějovickém pivu. Na čepu naleznete piva…“ (Website, budejovice)."
+
+- osm_id: node/5375687523
+  venue: "Klub Malých Pivovarů"
+  brand: "Schneider Weisse"
+  action: add
+  verified: '2026-08-11'
+  note: "Klub Malých Pivovarů: „…Hákuv pivovar POETA ČERNÁ 13° tmavé nef. 9. Schneider Weisse TAP7 13° pšeničné 10. Cobolis Lucky Brew 7°…“ (Website, budejovice)."
+
+- osm_id: node/5375687523
+  venue: "Klub Malých Pivovarů"
+  brand: "Cobolis"
+  action: add
+  verified: '2026-08-11'
+  note: "Klub Malých Pivovarů: „…9. Schneider Weisse TAP7 13° pšeničné 10. Cobolis Lucky Brew 7° NEIPA 11. HoppyDog Sunny Dog 10° Summer…“ (Website, budejovice)."
+
+- osm_id: node/5375687523
+  venue: "Klub Malých Pivovarů"
+  brand: "Zichovec"
+  action: add
+  verified: '2026-08-11'
+  note: "Klub Malých Pivovarů: „…10° Summer ALE 12. Opice Sun APA 12° 13. Zichovec Juicy Lucy 15° NEIPA 14. Kocour QUARTERBACK 19° IPA 15.…“ (Website, budejovice)."
+
+- osm_id: node/5375687523
+  venue: "Klub Malých Pivovarů"
+  brand: "Permon"
+  action: add
+  verified: '2026-08-11'
+  note: "Klub Malých Pivovarů: „…SOUR 12° (Mango, Maracuja, Ananas) 16. Permon Piňa Colada 13° Pastry SOUR 17. Delirium RED 8%Alc.…“ (Website, budejovice)."
+
+- osm_id: node/629540015
+  venue: "Masné krámy"
+  brand: "Budweiser Budvar"
+  serving: tank
+  action: add
+  verified: '2026-08-11'
+  note: "Masné krámy: „…igartige Atmosphäre schafft. Gut behandelter Tank Budvar und traditionelle tschechische Küche. All dies…“ (Website, budejovice)."
+
+- osm_id: way/1379848767
+  venue: "Pivovarská zahrada - Originál Samson"
+  brand: "Samson"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Pivovarská zahrada - Originál Samson: „…i pivní speciality pivovaru Samson. Nabídka na čepu: Nefiltrovaný ležák 12° - 5,5% alkoholu Samson 10° -…“ (Website, budejovice)."
+
+- osm_id: node/5372962021
+  venue: "Pizza Italiano"
+  brand: "Kozel"
+  action: add
+  verified: '2026-08-11'
+  note: "Pizza Italiano: „…Přidat do oblíbených 0,5l Velkopopovický Kozel 11° – plech 35 ,00 Kč Přidat do košíku Přidat do…“ (Website, budejovice)."
+
+- osm_id: node/12999005297
+  venue: "ALEX"
+  brand: "Ratsherrn"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "ALEX: „…rrn Hamburg Hell 0,33L 4,50 € Ratsherrn Hell vom Fass 0,3 ltr 4,50 € Ratsherrn Hell vom Fass 0,5 ltr…“ (Website)."
+
+- osm_id: node/352819996
+  venue: "ANSTOSS"
+  brand: "Hacker-Pschorr"
+  action: add
+  verified: '2026-08-11'
+  note: "ANSTOSS: „…Treffpunkt für Jung und Alt. Beim süffigen Hacker-Pschorr Bier, bei einer deftigen Brotzeit und bei…“ (Website)."
+
+- osm_id: node/366599287
+  venue: "Alpha"
+  brand: "Löwenbräu"
+  action: add
+  verified: '2026-08-11'
+  note: "Alpha: „…von der Privatbraurei Meckatzer Löwenbräu genießen. Für unsere Weinfreunde haben wir hochwertige…“ (Website)."
+
+- osm_id: node/2702938115
+  venue: "Alt-Enginger Mühle"
+  brand: "Paulaner"
+  action: add
+  verified: '2026-08-11'
+  note: "Alt-Enginger Mühle: „…Buchung --> Buchung Restaurant Speisekarte Paulanergarten Jobs Kontakt Buchung --> Speisekarte --> --> -…“ (Website)."
+
+- osm_id: way/107160702
+  venue: "Alt-Enginger Mühle"
+  brand: "Paulaner"
+  action: add
+  verified: '2026-08-11'
+  note: "Alt-Enginger Mühle: „…Buchung --> Buchung Restaurant Speisekarte Paulanergarten Jobs Kontakt Buchung --> Speisekarte --> --> -…“ (Website)."
+
+- osm_id: node/415677639
+  venue: "Altes Magistrat"
+  brand: "Augustiner"
+  action: add
+  verified: '2026-08-11'
+  note: "Altes Magistrat: „…Wir bieten bayrische Küche, Biere der Augustiner Brauerei München und eine gepflegte Weinauswahl. Von…“ (Website)."
+
+- osm_id: node/322107220
+  venue: "An Sibin Irish Pub"
+  brand: "Dinkelacker"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "An Sibin Irish Pub: „…ubNasen-Team. 8 Biere vom Fass! Guinness – die schwarze Muttermilch der Iren ist natürlich unser Lie…“ (Website)."
+
+- osm_id: node/3997817305
+  venue: "Anny Kilkenny Irish Pub"
+  brand: "Guinness"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Anny Kilkenny Irish Pub: „…ter Kilkenny und Guinness, direkt frisch vom Zapfhahn. Und es gibt immer etwas Neues zu erleben: Wir…“ (Website)."
+
+- osm_id: node/3997817305
+  venue: "Anny Kilkenny Irish Pub"
+  brand: "Kilkenny"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Anny Kilkenny Irish Pub: „…Kilkenny | Irish Pub ☰ Homepage Aktionstage Über uns Di-Do 18:00…“ (Website)."
+
+- osm_id: node/966192103
+  venue: "Augustiner am Wörthsee"
+  brand: "Augustiner"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Augustiner am Wörthsee: „…im Augustiner am Wörthsee Bayerische Küche, frisch gezapftes Augustiner und Seeblick direkt an der…“ (Website)."
+
+- osm_id: node/895818089
+  venue: "Augustiner im Holländischen Viertel"
+  brand: "Augustiner"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Augustiner im Holländischen Viertel: „…Potsdam Zum Inhalt springen Küche durchgehend warm…“ (Website)."
+
+- osm_id: way/56400623
+  venue: "Ayinger Bräustüberl"
+  brand: "Ayinger"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Ayinger Bräustüberl: „…ESCHICHTE Getränke & Speisen Im gemütlichen Gastraum und dem wunderschönen Biergarten genießen Sie die…“ (Website)."
+
+- osm_id: node/1338307234
+  venue: "BRIX"
+  brand: "Jever"
+  action: add
+  verified: '2026-08-11'
+  note: "BRIX: „…Birra Moretti | Schreckenskammer Kölsch | Jever Fun | Wechselndes Gastbier SPIRITUOSEN Tresterbrand |…“ (Website)."
+
+- osm_id: node/3201635310
+  venue: "Batalion U Draků"
+  brand: "Zichovec"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Batalion U Draků: „…ochucený ležák (4,8% alk.) 6# Rodinný piv. Zichovec, Louny Kartel: Session Kveik IPA 11° Kveik IPA,…“ (Website)."
+
+- osm_id: way/1415853355
+  venue: "BiblioTheke"
+  brand: "Schöfferhofer"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "BiblioTheke: „…0,3l 2,90 € 0,2 l € 2,10, 0,5 l € 4,50 Biere vom Fass 0,3l Ur-Krostitzer 0,3l 2,90 € feinherbes Pils…“ (Website)."
+
+- osm_id: way/1498986437
+  venue: "Biergarten Braunfels"
+  brand: "Paulaner"
+  action: add
+  verified: '2026-08-11'
+  note: "Biergarten Braunfels: „…Getränkemarken & Partner --> Hacker-Pschorr Paulaner Aperol Heil Lillet Coca Cola FAQ Häufige Fragen Gibt's…“ (Website)."
+
+- osm_id: way/1498986437
+  venue: "Biergarten Braunfels"
+  brand: "Hacker-Pschorr"
+  action: add
+  verified: '2026-08-11'
+  note: "Biergarten Braunfels: „…Ansehen Unsere Getränkemarken & Partner --> Hacker-Pschorr Paulaner Aperol Heil Lillet Coca Cola FAQ Häufige…“ (Website)."
+
+- osm_id: node/13017160293
+  venue: "Biergarten Restaurant Zur gemütlichen Ecke"
+  brand: "Päffgen"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Biergarten Restaurant Zur gemütlichen Ecke: „…nigen kleinen Tischen, in der sich bei einem frisch gezapften Päffgen-Kölsch der Tag wunderbar…“ (Website)."
+
+- osm_id: way/226078838
+  venue: "Biergarten Schutterhof"
+  brand: "Tegernseer"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Biergarten Schutterhof: „…Nähe der Altstadt von Ingolstadt. Das Bier (Tegernseer) schmeckt super und war immer kalt. Die Bierkrüge…“ (Website)."
+
+- osm_id: node/9005287819
+  venue: "Bistro 53"
+  brand: "Samson"
+  action: add
+  verified: '2026-08-11'
+  note: "Bistro 53: „…ležák MAZEL 0,4l 55,- 0,2l 45,- ležák by Samson HOEGAARDEN 0,5l 105,- 0,25l 59,- pivní lístek rotující…“ (Website)."
+
+- osm_id: node/11878340920
+  venue: "Bistro Le Clou"
+  brand: "Franziskaner"
+  action: add
+  verified: '2026-08-11'
+  note: "Bistro Le Clou: „…clita erat amet dolor justo diam --> --> Franziskaner Weiße Alkoholfrei 4,00 € Ipsum ipsum clita erat…“ (Website)."
+
+- osm_id: way/307177351
+  venue: "Blockhaus"
+  brand: "Erdinger"
+  action: add
+  verified: '2026-08-11'
+  note: "Blockhaus: „…Kristall- Weizenbier 0,5l 4,20€ Erdinger Weißbier, alkoholfrei 0,5l 4,20€ Weine Württ.…“ (Website)."
+
+- osm_id: way/307177351
+  venue: "Blockhaus"
+  brand: "Weihenstephaner"
+  action: add
+  verified: '2026-08-11'
+  note: "Blockhaus: „…Weißbier, naturtrüb 0,5l 4,20€ Weihenstephan Kristall- Weizenbier 0,5l 4,20€ Erdinger Weißbier,…“ (Website)."
+
+- osm_id: node/435081518
+  venue: "Brauberger"
+  brand: "Gambrinus"
+  action: add
+  verified: '2026-08-11'
+  note: "Brauberger: „…mit 50 Plätzen oder im denkmalgeschützten Gambrinus-Keller mit 80 Plätzen, überall ist es urig und…“ (Website)."
+
+- osm_id: node/6738654485
+  venue: "Brauereigasthof Hotel Aying"
+  brand: "Ayinger"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Brauereigasthof Hotel Aying: „…eten wir eine kleine Nachmittagskarte mit warmen Speisen an. Im Ayinger Bräustüberl geht’s urig und…“ (Website)."
+
+- osm_id: node/601117424
+  venue: "Braugasthaus Dolden Mädel"
+  brand: "Ratsherrn"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Braugasthaus Dolden Mädel: „…nd Sortenvielfalt. Unsere zahlreichen Sorten vom Fass und nationale wie internationale Spezialitäten aus…“ (Website)."
+
+- osm_id: node/9932045704
+  venue: "Brauhaus 1516"
+  brand: "Bitburger"
+  action: add
+  verified: '2026-08-11'
+  note: "Brauhaus 1516: „…0,5L HERRNBRÄU ALKOHOLFREIES WEIZEN 0,5L BITBURGER PILS ALKOHOLFREI 0,33L SCHNELLES ESSEN CLASSICBURGER…“ (Website)."
+
+- osm_id: node/2949464234
+  venue: "Bräustüberl Maxlrain"
+  brand: "Lobkowicz"
+  action: add
+  verified: '2026-08-11'
+  note: "Bräustüberl Maxlrain: „…wurde das Bräustüberl renoviert, Prinz von Lobkowicz übergab das Bräustüberl jungen, bayrischen Wirten.…“ (Website)."
+
+- osm_id: node/1901954927
+  venue: "Cafe zum Kohlenschieber"
+  brand: "Erdinger"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Cafe zum Kohlenschieber: „…0,75l --> 0,5l 000,00 € 0,3l 000,00 € Biere vom Fass 4,60 € 000,00 € 3,60 € 000,00 € Meckatzer…“ (Website)."
+
+- osm_id: node/3308367798
+  venue: "Café Mephisto"
+  brand: "Astra"
+  action: add
+  verified: '2026-08-11'
+  note: "Café Mephisto: „…hier gut über die Runden (Beispiel: Knolle Astra 2,--). Die Getränkekarte ist sehr gut sortiert, sowohl was…“ (Website)."
+
+- osm_id: node/225642197
+  venue: "Café Pawlow"
+  brand: "Tegernseer"
+  action: add
+  verified: '2026-08-11'
+  note: "Café Pawlow: „…2,80 € Latte Macchiato 3,50 € Kaltes Tegernseer 3,20 € 0,30 L Tegernseer 5,00 € 0,50 L Peters Kölsch…“ (Website)."
+
+- osm_id: node/225642197
+  venue: "Café Pawlow"
+  brand: "Bitburger"
+  action: add
+  verified: '2026-08-11'
+  note: "Café Pawlow: „…Tegernseer 5,00 € 0,50 L Peters Kölsch oder Bitburger Pils 2,20 € 0,20 L Peters Kölsch oder Bitburger Pils…“ (Website)."
+
+- osm_id: node/225642197
+  venue: "Café Pawlow"
+  brand: "Peters"
+  action: add
+  verified: '2026-08-11'
+  note: "Café Pawlow: „…3,20 € 0,30 L Tegernseer 5,00 € 0,50 L Peters Kölsch oder Bitburger Pils 2,20 € 0,20 L Peters Kölsch…“ (Website)."
+
+- osm_id: node/13970697135
+  venue: "Depo"
+  brand: "Radegast"
+  action: add
+  verified: '2026-08-11'
+  note: "Depo: „…Pomelo Grep nealko 56 / 68 Kč 0,3 l / 0,5 l Radegast Birell 60 Kč láhev 0,5 l Káva V restauraci DEPO si…“ (Website)."
+
+- osm_id: node/267470460
+  venue: "Der Andechser"
+  brand: "Andechser"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Der Andechser: „…Andechser in Göppingen | Andechser Gastlichkeit mit Tradition…“ (Website)."
+
+- osm_id: way/261192975
+  venue: "Die Funzel - Es gibt ein Leben hinterm Bahnhof"
+  brand: "Guinness"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Die Funzel - Es gibt ein Leben hinterm Bahnhof: „…Instagram Menü Karte als pdf Datei DOWNLOAD Vom Fass 0,2l 0,4l 0,5l Karlsberg Urpils 1,90 € 3,40 € 4,40…“ (Website)."
+
+- osm_id: node/30030245
+  venue: "Die Pinte"
+  brand: "Flensburger"
+  action: add
+  verified: '2026-08-11'
+  note: "Die Pinte: „…& Schwarzbier Regionale Favoriten: Flensburger Pils & Licher Pils Bitburger 0,0% herb &…“ (Website)."
+
+- osm_id: node/30030245
+  venue: "Die Pinte"
+  brand: "Bitburger"
+  action: add
+  verified: '2026-08-11'
+  note: "Die Pinte: „…Stout & Murphy's Irish Red Bier Klassiker: Bitburger Pils, Benediktiner Hefe & Helles Köstritzer…“ (Website)."
+
+- osm_id: node/30030245
+  venue: "Die Pinte"
+  brand: "Köstritzer"
+  action: add
+  verified: '2026-08-11'
+  note: "Die Pinte: „…Irish Red, 1 Murphy’s Irish Stout und 1 Köstritzer Kellerbier (je 0,5 l). Dazu gibt es unsere…“ (Website)."
+
+- osm_id: node/30030245
+  venue: "Die Pinte"
+  brand: "Licher"
+  action: add
+  verified: '2026-08-11'
+  note: "Die Pinte: „…Regionale Favoriten: Flensburger Pils & Licher Pils Bitburger 0,0% herb & Benediktiner Hefe…“ (Website)."
+
+- osm_id: node/30030245
+  venue: "Die Pinte"
+  brand: "Murphy's"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Die Pinte: „…lsalat 15,90 € p. P Tischreservierung Frisch vom Fass gezapft & aus der Flasche Wir lieben Bierkultur!…“ (Website)."
+
+- osm_id: node/266550133
+  venue: "Die Wertschaft - Biergarten am Untreusee"
+  brand: "Mönchshof"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Die Wertschaft - Biergarten am Untreusee: „…t Alkohol Glas Milch 1,50 € Bierangebot Bier vom Fass, 0,5l Pils, Meinel Bräu 3,80 € Helles, Scherdel…“ (Website)."
+
+- osm_id: node/654083168
+  venue: "Dreizehn Linden"
+  brand: "Riegele"
+  action: add
+  verified: '2026-08-11'
+  note: "Dreizehn Linden: „…ein Craft Beer-Fan? Neben den Bieren der Riegele-Brauerei haben wir regelmäßig eine reichliche Auswahl…“ (Website)."
+
+- osm_id: node/297232603
+  venue: "Drápal"
+  brand: "Pilsner Urquell"
+  action: add
+  verified: '2026-08-11'
+  note: "Drápal: „…objektu, ve kterém se nyní nachází Pilsner Urquell Original Restaurant Drápal, je spjata s…“ (Website)."
+
+- osm_id: way/217978592
+  venue: "Elbcafé Richter"
+  brand: "Köstritzer"
+  action: add
+  verified: '2026-08-11'
+  note: "Elbcafé Richter: „…Meißen oder einem kühlen Bier aus dem Köstritzer Brauhaus. Unser Haus bietet Ihnen ruhige, idyllische…“ (Website)."
+
+- osm_id: node/1900799564
+  venue: "Enchilada"
+  brand: "Hofbräu"
+  action: add
+  verified: '2026-08-11'
+  note: "Enchilada: „…(...) Salitos 0,33l 4,50€ (...) Würzburger Hofbräu Pils Flasche 0,33l 3,60€ (...) Würzburger Hofbräu Pils…“ (Website)."
+
+- osm_id: node/12308402559
+  venue: "Engelstube"
+  brand: "Paulaner"
+  action: add
+  verified: '2026-08-11'
+  note: "Engelstube: „…begrenzte Zeit gibts im Engel in Lindau das Paulaner Salvator mit 18,3 % Stammwürze und 7,9 % vol Alkohol…“ (Website)."
+
+- osm_id: node/438137879
+  venue: "FRØ"
+  brand: "Maisel's"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "FRØ: „…ene Sorten Arrogant KI 22,90 € Bier Veltins (v. Fass) Frisches Veltins vom Fass 🌾 KI 3,90 € Püllecken…“ (Website)."
+
+- osm_id: node/438137879
+  venue: "FRØ"
+  brand: "Veltins"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "FRØ: „…ene Sorten Arrogant KI 22,90 € Bier Veltins (v. Fass) Frisches Veltins vom Fass 🌾 KI 3,90 € Püllecken…“ (Website)."
+
+- osm_id: node/12219188459
+  venue: "FassBar"
+  brand: "Augustiner"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "FassBar: „…FASSBAR In der FassBar geht es richtig ab – versteckt im stylischen Gewölbekeller des ehemaligen…“ (Website)."
+
+- osm_id: node/1828232562
+  venue: "Fiege's Stammhaus"
+  brand: "Bolten"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Fiege's Stammhaus: „…Glanz. Alkoholgehalt: 4,7 % vol. Bolten ALT Süffig, leicht mild, mit einer subtilen Süße.…“ (Website)."
+
+- osm_id: way/1000063215
+  venue: "Fritzengarten"
+  brand: "Köstritzer"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Fritzengarten: „…Fass Biere aus der Flasche Alkoholfreie Getränke Fruchtsaftgetränke Heißgetränk…“ (Website)."
+
+- osm_id: node/3523499334
+  venue: "Fürstenberg's Irish Pub Schwenningen"
+  brand: "Guinness"
+  action: add
+  verified: '2026-08-11'
+  note: "Fürstenberg's Irish Pub Schwenningen: „…Glas niemals leer und der Schaum auf deinem Guinness immer perfekt sein!“ Fürstenbergs Irish Pub Villingen,…“ (Website)."
+
+- osm_id: node/1843483664
+  venue: "Gasthaus Zieglerbräu"
+  brand: "Augustiner"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Gasthaus Zieglerbräu: „…ele – oder samstags, wenn wir das Augustiner Holzfass anstechen. Jeden Donnerstag Schäufele-Tag…“ (Website)."
+
+- osm_id: node/3465486039
+  venue: "Gasthof Rössle"
+  brand: "Augustiner"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Gasthof Rössle: „…sen kommen die schmackhaften Biersorten der Augustiner Bräu zum Ausschank, sowie Weizenbiere der…“ (Website)."
+
+- osm_id: node/6617402919
+  venue: "Gasthof Terofal"
+  brand: "Tegernseer"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Gasthof Terofal: „…nalität gehört bei uns einfach dazu. Deshalb zapfen wir im Biergarten Biere von den lokalen Braureien…“ (Website)."
+
+- osm_id: node/11901094121
+  venue: "Grantlerwirt"
+  brand: "Augustiner"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Grantlerwirt: „…e // Kids Getränkekarte Augustiner Bier Hell v. Fass 0,5l...3,90 Dunkel v. Fass 0,5l...4,20 Edelstoff…“ (Website)."
+
+- osm_id: node/11901094121
+  venue: "Grantlerwirt"
+  brand: "Paulaner"
+  action: add
+  verified: '2026-08-11'
+  note: "Grantlerwirt: „…Coca Cola 0,5l...4,10 normal & zero Paulaner Spezi zero 0,5l...4,10 Fanta 0,5l...4,10 Cola Mix…“ (Website)."
+
+- osm_id: node/11901094121
+  venue: "Grantlerwirt"
+  brand: "Hacker-Pschorr"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Grantlerwirt: „…ker-Pschorr & Paulaner Hacker-Pschorr Weizen v. Fass 0,5l...4,20 Paulander WB dkl. 0,5l...4,20 Paulaner…“ (Website)."
+
+- osm_id: node/5133770687
+  venue: "Guntermanns Stuben"
+  brand: "Veltins"
+  action: add
+  verified: '2026-08-11'
+  note: "Guntermanns Stuben: „…Restaurant aus. of your page --> Frisches Veltins, Pfälzer Weine Lokale Spezialitäten Catering außer Haus…“ (Website)."
+
+- osm_id: node/935332225
+  venue: "Hacker-Pschorr-Wirtshaus im alten Augustinerkloster"
+  brand: "Hacker-Pschorr"
+  action: add
+  verified: '2026-08-11'
+  note: "Hacker-Pschorr-Wirtshaus im alten Augustinerkloster: „…Getränke Kontakt Reservierung Willkommen im Hacker-Pschorr Biergarten In der historischen Altstadt von…“ (Website)."
+
+- osm_id: way/105781076
+  venue: "Hahnenbalken"
+  brand: "Frankenheim"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Hahnenbalken: „…karamellbetont und nur leicht gehopft. Frankenheim Alt 0,3 l 3,50 € Obergäriges Bier aus Düsseldorf,…“ (Website)."
+
+- osm_id: way/105781076
+  venue: "Hahnenbalken"
+  brand: "Guinness"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Hahnenbalken: „…Erdbeeren, nur in der Biergarten - Saison! Guinness 0,3 l 4,00 € Irish Stout - Bier, malzig - süß,…“ (Website)."
+
+- osm_id: node/2511519322
+  venue: "Hemingway"
+  brand: "Guinness"
+  action: add
+  verified: '2026-08-11'
+  note: "Hemingway: „…pub hieß. Verändert hat sich nichts. Das Guinness war hervorragend, aber die Bedienung war ein wenig…“ (Website)."
+
+- osm_id: node/5691748931
+  venue: "Hofbräustüberl Garmisch"
+  brand: "Löwenbräu"
+  action: add
+  verified: '2026-08-11'
+  note: "Hofbräustüberl Garmisch: „…ansehen Echt Bayerische Schmankerl Echter Löwenbräu Genuss Echt bayerische Atmosphäre Bitte klicken Sie,…“ (Website)."
+
+- osm_id: node/5691748931
+  venue: "Hofbräustüberl Garmisch"
+  brand: "Hofbräu"
+  action: add
+  verified: '2026-08-11'
+  note: "Hofbräustüberl Garmisch: „…- Hofbräustüberl Garmisch-Partenkirchen Navigation überspringen…“ (Website)."
+
+- osm_id: node/1518220598
+  venue: "Hotel Kotyza"
+  brand: "Bernard"
+  action: add
+  verified: '2026-08-11'
+  note: "Hotel Kotyza: „…geboren, braut man in der Familienbrauerei Bernard bitteres Bier, das diese Landschaft charakterisiert.…“ (Website)."
+
+- osm_id: node/1865830120
+  venue: "Irish Pub"
+  brand: "Guinness"
+  action: add
+  verified: '2026-08-11'
+  note: "Irish Pub: „…Award “Most Entertaining Pub Of The Year” (Guinness Pub Awards) Upcoming Events Karaoke!! Today / heute…“ (Website)."
+
+- osm_id: node/12848310887
+  venue: "JessBoss. Restaurant/Cafe/Bar"
+  brand: "Augustiner"
+  action: add
+  verified: '2026-08-11'
+  note: "JessBoss. Restaurant/Cafe/Bar: „…Frühstück – Weißwurstpaar und Brezel, Augustiner Helles 0,25l nur 9,90 € Aperitivo Time Donnerstags,…“ (Website)."
+
+- osm_id: node/10308732652
+  venue: "Jägerhof"
+  brand: "Jever"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Jägerhof: „…Whiskey Wein Speisekarte Unsere Biere frisch vom Fass gezapft. Sion Kölsch Das goldfarbene Kölsch…“ (Website)."
+
+- osm_id: node/10308732652
+  venue: "Jägerhof"
+  brand: "Kilkenny"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Jägerhof: „…r den charakteristischen Geschmack. Guinness Draught Samtschwarz, gekrönt von feinsahnigem Schaum. Mit…“ (Website)."
+
+- osm_id: node/289568127
+  venue: "Klosterschänke"
+  brand: "Franziskaner"
+  action: add
+  verified: '2026-08-11'
+  note: "Klosterschänke: „…- Franziskanerkloster Engelberg 09371 9143914…“ (Website)."
+
+- osm_id: node/12245036191
+  venue: "Kolpinghaus"
+  brand: "Krombacher"
+  action: add
+  verified: '2026-08-11'
+  note: "Kolpinghaus: „…Zigeunersauce € 3.6 Getrankenkarte Biere Krombacher Pils € 2,4 0.2l Krombacher Pils € 3,4 0.3l Krombacher…“ (Website)."
+
+- osm_id: node/27258608
+  venue: "Kommunbräu"
+  brand: "Kulmbacher"
+  action: add
+  verified: '2026-08-11'
+  note: "Kommunbräu: „…Saal anfragen Herzlich Willkommen in der Kulmbacher Kommunbräu Gemütlich, fränkisch, ehrlich! So lässt…“ (Website)."
+
+- osm_id: node/656441824
+  venue: "Krakonoš"
+  brand: "Krakonoš"
+  action: add
+  verified: '2026-08-11'
+  note: "Krakonoš: „…Krakonoš, ubytování v Trutnově Česky | English | Deutsch |…“ (Website)."
+
+- osm_id: node/7110616428
+  venue: "Kramer"
+  brand: "St. Georgen Bräu"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Kramer: „…lten Brotzeiten ein warmes Gericht an. Im Faßausschank haben wir die Bierspezialitäten vom St.…“ (Website)."
+
+- osm_id: way/260361221
+  venue: "Krauler Kroog"
+  brand: "Duckstein"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Krauler Kroog: „…Säfte sind auch als Schorle erhältlich Biere vom Fass König Pilsener (0,3l) € 3,80 König Pilsener (0,4l)…“ (Website)."
+
+- osm_id: node/1364297993
+  venue: "Krčma Šatlava"
+  brand: "Budweiser Budvar"
+  action: add
+  verified: '2026-08-11'
+  note: "Krčma Šatlava: „…vín - archivních i sudových pivo Budvar - světlé i tmavé dobová hudba Speciální nabídka menu pro rok…“ (Website)."
+
+- osm_id: node/5605087176
+  venue: "König Pilsener Wirtshaus"
+  brand: "Bitburger"
+  action: add
+  verified: '2026-08-11'
+  note: "König Pilsener Wirtshaus: „…Biersorten Alkoholfrei Benediktiner Bitburger CREW Republic König Pilsener Schwarzbier Th. König…“ (Website)."
+
+- osm_id: node/5605087176
+  venue: "König Pilsener Wirtshaus"
+  brand: "König Pilsner"
+  action: add
+  verified: '2026-08-11'
+  note: "König Pilsener Wirtshaus: „…Pilsener Wirtshaus Mülheim | Heute ein König! Zum Inhalt…“ (Website)."
+
+- osm_id: node/7294678570
+  venue: "Lebenslang"
+  brand: "Paulaner"
+  action: add
+  verified: '2026-08-11'
+  note: "Lebenslang: „…Hefeweizen (5,5 ‰ Alc.) 0,5 Liter 5,10 EUR Paulaner Ur-Dunkel naturtrüb (5,0 ‰ Alc.) 0,3 Liter 3,50 EUR…“ (Website)."
+
+- osm_id: node/7294678570
+  venue: "Lebenslang"
+  brand: "Fürstenberg"
+  action: add
+  verified: '2026-08-11'
+  note: "Lebenslang: „…Liter 5,10 EUR Puschkin Nuss 2 CL 2,50 EUR Fürstenberg Pilsener Alkoholfrei 0,33 Liter 3,50 EUR Schnäpse…“ (Website)."
+
+- osm_id: way/1068764560
+  venue: "Mamma Clara"
+  brand: "Tegernseer"
+  action: add
+  verified: '2026-08-11'
+  note: "Mamma Clara: „…4,00 € 0,75l San Pellegrino 4,00 € 0,75l Tegernseer Helles 4,00 € 0,5l Tegernseer Alkoholfreies Helles…“ (Website)."
+
+- osm_id: node/4866168921
+  venue: "Mikulda"
+  brand: "Budweiser Budvar"
+  action: add
+  verified: '2026-08-11'
+  note: "Mikulda: „…Denní Menu Jídelní lístek Nápojový lístek Rezervace Naše služby Galerie Kontakt Více zde Use tab to…“ (Website)."
+
+- osm_id: node/1793361254
+  venue: "Mohr!"
+  brand: "Sion"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Mohr!: „…EL 8,90€ mit Vanilleeis und Schlagsahne BIER vom Fass Leffe Blonde 0,3 l/0,5 l 4,90€/7,50€ Rothaus Pils…“ (Website)."
+
+- osm_id: node/1793361254
+  venue: "Mohr!"
+  brand: "Guinness"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Mohr!: „…EL 8,90€ mit Vanilleeis und Schlagsahne BIER vom Fass Leffe Blonde 0,3 l/0,5 l 4,90€/7,50€ Rothaus Pils…“ (Website)."
+
+- osm_id: node/1793361254
+  venue: "Mohr!"
+  brand: "Staropramen"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Mohr!: „…EL 8,90€ mit Vanilleeis und Schlagsahne BIER vom Fass Leffe Blonde 0,3 l/0,5 l 4,90€/7,50€ Rothaus Pils…“ (Website)."
+
+- osm_id: node/10781455909
+  venue: "Moritzbar"
+  brand: "Maisel's"
+  action: add
+  verified: '2026-08-11'
+  note: "Moritzbar: „…Zitrone und Malvenblüten ‎ 7 € ‎ 4 € Maisel & Friends Pale Ale alkoholfrei Kaum zu glauben, dass dieses…“ (Website)."
+
+- osm_id: node/2431172023
+  venue: "Nad Hradem"
+  brand: "Heineken"
+  action: add
+  verified: '2026-08-11'
+  note: "Nad Hradem: „…POLOTMAVÝ LEŽÁK BERÁNEK/ ŘEMESLNÉ PIVO HEINEKEN/ Fologalerie Svatby Prostory Svatební hostina Nabídka…“ (Website)."
+
+- osm_id: node/2431172023
+  venue: "Nad Hradem"
+  brand: "Pilsner Urquell"
+  action: add
+  verified: '2026-08-11'
+  note: "Nad Hradem: „…karty, možnost platby fakturou NABÍDKA PIVA PILSNER URQUELL POLOTMAVÝ LEŽÁK BERÁNEK/ ŘEMESLNÉ PIVO HEINEKEN/…“ (Website)."
+
+- osm_id: node/13736871245
+  venue: "Neue Liebe"
+  brand: "Köstritzer"
+  action: add
+  verified: '2026-08-11'
+  note: "Neue Liebe: „…Geschmack. 0,5L. 4,50€ + Bier & Drinks Köstritzer Schwarzbier Herb-fein mit röstigen Malznoten und…“ (Website)."
+
+- osm_id: node/6086578685
+  venue: "Orient"
+  brand: "Radeberger"
+  action: add
+  verified: '2026-08-11'
+  note: "Orient: „…DESPERADOS - 4,50 € HEINEKEN - 4,50 € RADEBERGER PILS -4,00 € FREIBERGER PILS - 4,00 € PORTER (DUNKEL)…“ (Website)."
+
+- osm_id: node/6086578685
+  venue: "Orient"
+  brand: "Hasseröder"
+  action: add
+  verified: '2026-08-11'
+  note: "Orient: „…PILS - 4,00 € PORTER (DUNKEL) - 4,00 € HASSERÖDER - 4,00 € WEINE 0,7 L Flasche WEISSWEIN TROCKEN -…“ (Website)."
+
+- osm_id: node/6086578685
+  venue: "Orient"
+  brand: "Freiberger"
+  action: add
+  verified: '2026-08-11'
+  note: "Orient: „…€ HEINEKEN - 4,50 € RADEBERGER PILS -4,00 € FREIBERGER PILS - 4,00 € PORTER (DUNKEL) - 4,00 € HASSERÖDER -…“ (Website)."
+
+- osm_id: node/6086578685
+  venue: "Orient"
+  brand: "Heineken"
+  action: add
+  verified: '2026-08-11'
+  note: "Orient: „…€ BIER 0,33 L Flasche DESPERADOS - 4,50 € HEINEKEN - 4,50 € RADEBERGER PILS -4,00 € FREIBERGER PILS - 4,00…“ (Website)."
+
+- osm_id: node/30023712
+  venue: "Panorama"
+  brand: "Radeberger"
+  action: add
+  verified: '2026-08-11'
+  note: "Panorama: „…aus Deutschland und Griechenland. Unsere Radeberger Bierspezialitäten die nach einem Rezept alter…“ (Website)."
+
+- osm_id: node/7619568886
+  venue: "Pivní ambasada"
+  brand: "Bernard"
+  action: add
+  verified: '2026-08-11'
+  note: "Pivní ambasada: „…piva Světlý Ležák 47.00 Světlý Ležák , 0,5l Bernard Švestka 57.00 piv. Bernard, švestkové, 0,5l Maisels…“ (Website)."
+
+- osm_id: node/7619568886
+  venue: "Pivní ambasada"
+  brand: "Sibeeria"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Pivní ambasada: „…u Pardubic, kde kromě čepovaných piv máme i širokou nabídku piv lahvových. NÁPOJOVÝ LÍSTEK PIVA ČEPOVA…“ (Website)."
+
+- osm_id: node/13970692994
+  venue: "Pivovar Ossegg"
+  brand: "Bernard"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Pivovar Ossegg: „…. Živé pivo bez úpravy míří přímou cestou na výčep do sudů, lahví nebo plechovek. Heslo starých sládků…“ (Website)."
+
+- osm_id: node/2513667786
+  venue: "Pizzeria 2000"
+  brand: "Veltins"
+  action: add
+  verified: '2026-08-11'
+  note: "Pizzeria 2000: „…↑ Bier Jetzt anrufen: 036922/37573 0,3 l Veltins 2,50 € 0,5 l Veltins 3,00 € 0,33 l Veltins Energy oder…“ (Website)."
+
+- osm_id: node/1100024382
+  venue: "Quartier"
+  brand: "Jever"
+  action: add
+  verified: '2026-08-11'
+  note: "Quartier: „…hefe, hefe alkoholfrei 0.5 l 5.5 jever fun alkoholfrei 0.33 l 3.6 havanna anejo 3 anos 4 cl 5…“ (Website)."
+
+- osm_id: node/1100024382
+  venue: "Quartier"
+  brand: "Radeberger"
+  action: add
+  verified: '2026-08-11'
+  note: "Quartier: „…0.25 l 2.5 0.75 l 5.9 aperol spritz 6.9 radeberger pils 0.25 l 3.3 0.5 l 5.8 peters kölsch 0.2 l 2.8 0.4…“ (Website)."
+
+- osm_id: node/1100024382
+  venue: "Quartier"
+  brand: "Schöfferhofer"
+  action: add
+  verified: '2026-08-11'
+  note: "Quartier: „…l 4.9 oberdorfer hell 0.3 l 3.9 0.5 l 6.4 schöfferhofer hefe, hefe alkoholfrei 0.5 l 5.5 jever fun…“ (Website)."
+
+- osm_id: node/1100024382
+  venue: "Quartier"
+  brand: "Peters"
+  action: add
+  verified: '2026-08-11'
+  note: "Quartier: „…6.9 radeberger pils 0.25 l 3.3 0.5 l 5.8 peters kölsch 0.2 l 2.8 0.4 l 4.9 oberdorfer hell 0.3 l 3.9 0.5…“ (Website)."
+
+- osm_id: node/13970695537
+  venue: "Radegastovna Za Vodou"
+  brand: "Radegast"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Radegastovna Za Vodou: „…0 Kč BUDVAR ORIGINAL 12 30l 1800 Kč Sanitace výčepu od 400 Kč Škola ČEPOVÁNÍ a Sanitace výčepního…“ (Website)."
+
+- osm_id: node/4422661486
+  venue: "Ratsch'n"
+  brand: "Paulaner"
+  action: add
+  verified: '2026-08-11'
+  note: "Ratsch'n: „…Getränke: Bier von den Brauereien Hopf und Paulaner Weine von österreichischen Winzern Spirituosen von der…“ (Website)."
+
+- osm_id: node/1551524360
+  venue: "Residenzcafé"
+  brand: "Augustiner"
+  action: add
+  verified: '2026-08-11'
+  note: "Residenzcafé: „…l Saftschorle 3,00 EUR 0,2 l Auswahl Biere Augustiner Hell 4,50 EUR 0,5 l Erdinger Weißbier Alkoholfrei…“ (Website)."
+
+- osm_id: node/1551524360
+  venue: "Residenzcafé"
+  brand: "Erdinger"
+  action: add
+  verified: '2026-08-11'
+  note: "Residenzcafé: „…Biere Augustiner Hell 4,50 EUR 0,5 l Erdinger Weißbier Alkoholfrei 3,00 EUR 0,5 l Radler 4,50 EUR…“ (Website)."
+
+- osm_id: node/5746414692
+  venue: "Restaurace Motorest Na Šustně"
+  brand: "Krušovice"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Restaurace Motorest Na Šustně: „…posezení a dobrou chuť. NEALKOHOLICKÉ NÁPOJE TOČENÁ LIMONÁDA 0,3 l 49 Kč malina, bezinka, cola, pomeranč…“ (Website)."
+
+- osm_id: node/5746414692
+  venue: "Restaurace Motorest Na Šustně"
+  brand: "Zlatopramen"
+  action: add
+  verified: '2026-08-11'
+  note: "Restaurace Motorest Na Šustně: „…l 49 Kč KRUŠOVICKÉ HOŘKÉ NEALKO 0,5 l 59 Kč ZLATOPRAMEN RADLER CITRON 0,3 l 45 Kč ZLATOPRAMEN RADLER CITRON…“ (Website)."
+
+- osm_id: node/4397492156
+  venue: "Restaurace Stodola"
+  brand: "Pilsner Urquell"
+  serving: tank
+  action: add
+  verified: '2026-08-11'
+  note: "Restaurace Stodola: „…u smetanou 165,– Nápoje Pivo Pilsner Urquell tanková „HLADINKA“ 79,– 0,5 l Pilsner Urquell tanková 69,–…“ (Website)."
+
+- osm_id: node/4397492156
+  venue: "Restaurace Stodola"
+  brand: "Kozel"
+  action: add
+  verified: '2026-08-11'
+  note: "Restaurace Stodola: „…Pilsner Urquell tanková „ŠNYT“ 69,– 0,25 l Kozel 11° černý, nefiltrovaný 69,– 0,3 l Kozel 11° černý,…“ (Website)."
+
+- osm_id: node/8464056447
+  venue: "Restaurace U Petra"
+  brand: "Pernštejn"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Restaurace U Petra: „…ýt obsazeno. Rezervace / Kontakt Na čepu Aktuální výběr – stačí říct a doporučíme skvělé párování s jídlem. Če…“ (Website)."
+
+- osm_id: node/1999206189
+  venue: "Riedwirtschaft"
+  brand: "Erdinger"
+  action: add
+  verified: '2026-08-11'
+  note: "Riedwirtschaft: „…Farny Kristallweizen leicht gl 0,5 L 2,90 € Erdinger Hefeweizen Alkoholfrei gl 0,5 L 2,90 € Meckatzer…“ (Website)."
+
+- osm_id: node/4903511251
+  venue: "Riegeler Biergarten"
+  brand: "Riegele"
+  action: add
+  verified: '2026-08-11'
+  note: "Riegeler Biergarten: „…Biergarten - Riegeler Biergarten Home Speisen Getränke…“ (Website)."
+
+- osm_id: way/285561965
+  venue: "Rothaus Freiburg"
+  brand: "Rothaus"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Rothaus Freiburg: „…gion anbieten. KLASSISCHE BADISCHE KÜCHE UND FRISCH GEZAPFTES ROTHAUS BIER TRIFFT AUF MODERNES…“ (Website)."
+
+- osm_id: node/559891082
+  venue: "S im Carré"
+  brand: "Sion"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "S im Carré: „…hrung zu bieten. Bei uns dreht sich alles um frisch gezapftes Sion Kölsch. Unser Bier wird nach höchsten…“ (Website)."
+
+- osm_id: node/4769122350
+  venue: "SaMaLuBar"
+  brand: "Bitburger"
+  action: add
+  verified: '2026-08-11'
+  note: "SaMaLuBar: „…6,50 € Virgin Colada 6,50 € Bier & Wein Bitburger Pils 0,3l 3,80 € 0,5l 4,30 € Bitburger Alkfrei 0,3l…“ (Website)."
+
+- osm_id: node/3268517025
+  venue: "Sale e Pepe"
+  brand: "Bitburger"
+  action: add
+  verified: '2026-08-11'
+  note: "Sale e Pepe: „…Instagram Kontakt WM Aktion Gratis Bitburger 0,0 Sixpack Vesper Boxen zum Teilen mit Freunden…“ (Website)."
+
+- osm_id: node/806236954
+  venue: "Slezská Krčma"
+  brand: "Bernard"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Slezská Krčma: „…° a 12° 0,3l Bernard free nealkoholické pivo čepované 0,5l Bernard free nealkoholické pivo čepované 0,3l Rad…“ (Website)."
+
+- osm_id: way/112396011
+  venue: "Speck-Alm"
+  brand: "Hofbräu"
+  action: add
+  verified: '2026-08-11'
+  note: "Speck-Alm: „…und die gepflegten Biere vom Hofbräu Traunstein. An den Hüttenabenden (Donnerstags im Juli…“ (Website)."
+
+- osm_id: node/1261486464
+  venue: "Spice of India"
+  brand: "Warsteiner"
+  action: add
+  verified: '2026-08-11'
+  note: "Spice of India: „…vol, inkl. Pfand (0,08 €), 10,44 €/l, 0,33l Warsteiner Pils 0,33l inkl. Pfand 0,08 2,90 € inkl. Pfand (0,00…“ (Website)."
+
+- osm_id: node/10577514452
+  venue: "Stadtpark Restaurant Mücke"
+  brand: "Paulaner"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Stadtpark Restaurant Mücke: „…zialitäten von Regional bis Ü berregional im Ausschank. Kloster Andechs Hell | Fass Paulaner Weißbier |…“ (Website)."
+
+- osm_id: node/308723517
+  venue: "Straßenmühle"
+  brand: "Hacker-Pschorr"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Straßenmühle: „…Pils frisch vom Fass. Der klare Glanz, die strohgelbe Farbe und sein feinporiger Schaum ma…“ (Website)."
+
+- osm_id: way/120135441
+  venue: "Taatjem Deel"
+  brand: "Schneider Weisse"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Taatjem Deel: „…r EUR 18,50 Bier EUR 4,90 Ratsherrn Pilsener vom Fass 0,3l EUR 4,90 EUR 6,50 Ratsherrn Pilsener 0,5l EUR…“ (Website)."
+
+- osm_id: way/120135441
+  venue: "Taatjem Deel"
+  brand: "Jever"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Taatjem Deel: „…r EUR 18,50 Bier EUR 4,90 Ratsherrn Pilsener vom Fass 0,3l EUR 4,90 EUR 6,50 Ratsherrn Pilsener 0,5l EUR…“ (Website)."
+
+- osm_id: way/120135441
+  venue: "Taatjem Deel"
+  brand: "Pilsner Urquell"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Taatjem Deel: „…r EUR 18,50 Bier EUR 4,90 Ratsherrn Pilsener vom Fass 0,3l EUR 4,90 EUR 6,50 Ratsherrn Pilsener 0,5l EUR…“ (Website)."
+
+- osm_id: node/9101918080
+  venue: "Tegernseer Wirtshaus"
+  brand: "Tegernseer"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Tegernseer Wirtshaus: „…mosphäre. Hier duftet es nach rescher Hax’n, frisch gezapftem Tegernseer Hell und frischer Ostseebrise.…“ (Website)."
+
+- osm_id: node/12442361340
+  venue: "Teráska U Packy"
+  brand: "Bernard"
+  action: add
+  verified: '2026-08-11'
+  note: "Teráska U Packy: „…humpoleckým pivem z místního pivovaru Bernard. Nejste-li vyznavači zlatavého moku, určitě si vyberete…“ (Website)."
+
+- osm_id: node/612799585
+  venue: "The Bernstein"
+  brand: "Frankenheim"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "The Bernstein: „…o 2 cl 5,00 Likör 43 Espresso 4cl 4,00 Biere vom Fass Herforder Pils 3,90 0,25 l 0,4 l 5,90 Alster 3,90…“ (Website)."
+
+- osm_id: node/266850449
+  venue: "The Shamrock - Irish Pub"
+  brand: "Guinness"
+  action: add
+  verified: '2026-08-11'
+  note: "The Shamrock - Irish Pub: „…Mail: reservation@irishpubkassel.com GUINNESS Original Irish Beer 4,2 % Vol. HOP HOUSE 13 Irish Beer…“ (Website)."
+
+- osm_id: node/266850449
+  venue: "The Shamrock - Irish Pub"
+  brand: "Heineken"
+  action: add
+  verified: '2026-08-11'
+  note: "The Shamrock - Irish Pub: „…4,2 % Vol. HOP HOUSE 13 Irish Beer 5 % Vol. HEINEKEN EXTRA COLD GUINNESS Original Irish Beer 4,2 % Vol. HOP…“ (Website)."
+
+- osm_id: node/7016858645
+  venue: "U Krumloše"
+  brand: "Pilsner Urquell"
+  action: add
+  verified: '2026-08-11'
+  note: "U Krumloše: „…mexikanisch Bier - Mark Eggenberg Gambrinus Pilsner Urquell Kaffee - Marke Lavazza Dienst Live-Musik…“ (Website)."
+
+- osm_id: node/7016858645
+  venue: "U Krumloše"
+  brand: "Gambrinus"
+  action: add
+  verified: '2026-08-11'
+  note: "U Krumloše: „…mexikanisch Bier - Mark Eggenberg Gambrinus Pilsner Urquell Kaffee - Marke Lavazza Dienst…“ (Website)."
+
+- osm_id: node/4938966558
+  venue: "U Lípy"
+  brand: "Zlatopramen"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "U Lípy: „…skev TOČENÁ LIMONÁDA 0,5 l 55 Kč malina, bezinka, hrozno, cola, multivitamín, led…“ (Website)."
+
+- osm_id: node/296806635
+  venue: "Vero Colore"
+  brand: "Pilsner Urquell"
+  action: add
+  verified: '2026-08-11'
+  note: "Vero Colore: „…45 Kč 0.5 l Štosovaný speciál 65 Kč 0.3 l Pilsner Urquell 42 Kč 0.5 l Pilsner Urquell 62 Kč Nealkoholická…“ (Website)."
+
+- osm_id: node/296806635
+  venue: "Vero Colore"
+  brand: "Budweiser Budvar"
+  action: add
+  verified: '2026-08-11'
+  note: "Vero Colore: „…55 Kč Schweppes Ginger Ale 55 Kč Piva 0.3 l Budweiser Budvar Original 39 Kč 0.5 l Budweiser Budvar Original…“ (Website)."
+
+- osm_id: node/963497452
+  venue: "Waldmeisterei"
+  brand: "Bitburger"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Waldmeisterei: „…nach Wunsch Biere und Bier-Mixgetränke Biere vom Fass Apoldaer Pils Domi / Apoldaer Helles / Apoldaer…“ (Website)."
+
+- osm_id: node/9148526086
+  venue: "Wirtshaus Herne"
+  brand: "Jever"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Wirtshaus Herne: „…3.95 || 0,5l 5.95 Brinkhoff’s Pils frisch gezapft 0,3l 3.75 || 0,5l 5.75 Franziskaner Weizen Naturtrüb…“ (Website)."
+
+- osm_id: node/3298853158
+  venue: "Wirtshaus Im Bendix"
+  brand: "Paulaner"
+  action: add
+  verified: '2026-08-11'
+  note: "Wirtshaus Im Bendix: „…mit Pommes frites, Coleslaw & inkl. 0,5 l Paulaner hell 29,50 je Person alle Infos Frühstück Mit unserem…“ (Website)."
+
+- osm_id: node/1363468077
+  venue: "Wirtshaus Zum faulen Pelz"
+  brand: "Fürstenberg"
+  action: add
+  verified: '2026-08-11'
+  note: "Wirtshaus Zum faulen Pelz: „…und dennoch erfrischend mild und leicht. Fürstenberg Premium Pilsener Der hopfenherbe Charakter. Unser…“ (Website)."
+
+- osm_id: node/771492112
+  venue: "Wubbke"
+  brand: "Augustiner"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Wubbke: „…Stiegel °Kapuziner °Schneider Tap. 7, 5, 6 °Augustiner °Alpirsbacher °Simon °Unertl °Weihenstephan vitus…“ (Website)."
+
+- osm_id: node/771492112
+  venue: "Wubbke"
+  brand: "Tegernseer"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Wubbke: „…50 Mooser Liesl Helles der Arco Brauerei. Tegernseer Spezial als ' Bayerisches Helles ' Ayinger ' Helles '…“ (Website)."
+
+- osm_id: node/771492112
+  venue: "Wubbke"
+  brand: "Unertl"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Wubbke: „…7, 5, 6 °Augustiner °Alpirsbacher °Simon °Unertl °Weihenstephan vitus u.korbinian auch °Ayinger °Andechser…“ (Website)."
+
+- osm_id: node/771492112
+  venue: "Wubbke"
+  brand: "Alpirsbacher"
+  action: add
+  verified: '2026-08-11'
+  note: "Wubbke: „…°Schneider Tap. 7, 5, 6 °Augustiner °Alpirsbacher °Simon °Unertl °Weihenstephan vitus u.korbinian…“ (Website)."
+
+- osm_id: node/771492112
+  venue: "Wubbke"
+  brand: "Pilsner Urquell"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Wubbke: „…das Jahr 1840 gebraut. Rothaus Tannenzäpfle vom Faß, nur bei uns im wubbke, seit 48 Jahren in Kiel ein…“ (Website)."
+
+- osm_id: way/65334639
+  venue: "Würzburger Hofbräukeller"
+  brand: "Hofbräu"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Würzburger Hofbräukeller: „…nd nach unten scrollen. Entdecke den Würzburger Hofbräukeller Neben unseren Fränkischen Spezialitäten…“ (Website)."
+
+- osm_id: way/65334640
+  venue: "Würzburger Hofbräukeller Biergarten"
+  brand: "Hofbräu"
+  action: add
+  verified: '2026-08-11'
+  note: "Würzburger Hofbräukeller Biergarten: „…in Würzburg – Der Hofbräukeller lädt ein! Biergarten Speisekarte Reservieren…“ (Website)."
+
+- osm_id: node/310535817
+  venue: "Zum Alten Wirt"
+  brand: "Paulaner"
+  action: add
+  verified: '2026-08-11'
+  note: "Zum Alten Wirt: „…– 4,30€ Dunkelbier Bajuwaren 0,5l – 4,30€ Paulaner Alkoholfreies Helles 0,5l – 4,30€ Paulaner…“ (Website)."
+
+- osm_id: node/415907324
+  venue: "Zum Anker"
+  brand: "Franziskaner"
+  action: add
+  verified: '2026-08-11'
+  note: "Zum Anker: „…0.4 l Flaschenbiere Kategorietitel 6,20 € Franziskaner Weizenbier 0.5 l (Naturtrüb / Dunkel / Alkoholfrei)…“ (Website)."
+
+- osm_id: way/126382073
+  venue: "Zur Brückenwirtin"
+  brand: "Paulaner"
+  action: add
+  verified: '2026-08-11'
+  note: "Zur Brückenwirtin: „…Wirtshaus erwarten Sie bayrische PAULANER-Biere, ausgesuchte Schnäpse, Spezialitäten aus der süd-…“ (Website)."
+
+- osm_id: node/650157411
+  venue: "Zur Post"
+  brand: "Augustiner"
+  action: add
+  verified: '2026-08-11'
+  note: "Zur Post: „…bayerische Küche, süffige Biere vom Augustiner und eine urige Atmosphäre erwartet Sie. Mein Team und…“ (Website)."
+
+- osm_id: node/760280460
+  venue: "Zur Schleuse"
+  brand: "Augustiner"
+  action: add
+  verified: '2026-08-11'
+  note: "Zur Schleuse: „…- Biergarten - Augustiner - Zur Schleuse Essen bestellen oder Tisch…“ (Website)."
+
+- osm_id: way/61327836
+  venue: "Zur Schranne"
+  brand: "Augustiner"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Zur Schranne: „…ünchen , die uns auch gerne mit Bier aus dem Holzfass beliefern. Bierkenner kommen hier auf jeden Fall…“ (Website)."
+
+- osm_id: node/7890756072
+  venue: "Zur gemütlichen Ecke"
+  brand: "Päffgen"
+  serving: fass
+  action: add
+  verified: '2026-08-11'
+  note: "Zur gemütlichen Ecke: „…nigen kleinen Tischen, in der sich bei einem frisch gezapften Päffgen-Kölsch der Tag wunderbar…“ (Website)."
+
+- osm_id: node/276018547
+  venue: "Zur runden Sache"
+  brand: "Krombacher"
+  action: add
+  verified: '2026-08-11'
+  note: "Zur runden Sache: „…Getränke Veltins Bier (0,33l) 2,50 € Krombacher Radler (0,33l) 2,50 € Direkt aus der Region - bei uns…“ (Website)."
+
+- osm_id: node/276018547
+  venue: "Zur runden Sache"
+  brand: "Veltins"
+  action: add
+  verified: '2026-08-11'
+  note: "Zur runden Sache: „…Capri Sonne 1,00 € Alkohlische Getränke Veltins Bier (0,33l) 2,50 € Krombacher Radler (0,33l) 2,50 €…“ (Website)."
