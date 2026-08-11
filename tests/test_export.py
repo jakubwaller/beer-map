@@ -27,7 +27,7 @@ def test_export_writes_geojson_with_brand_provenance(tmp_path):
     ]
 
 
-def test_export_splits_brandless_venues_into_gray_file(tmp_path):
+def test_export_writes_branded_venues_only(tmp_path):
     conn = get_connection(":memory:")
     init_db(conn)
     vid = upsert_venue(conn, Venue("manual/pampa", "Pampa", 53.5556, 9.9636,
@@ -38,11 +38,9 @@ def test_export_splits_brandless_venues_into_gray_file(tmp_path):
                              address="Hamburg"), "2026-06-24")
 
     out = tmp_path / "venues.json"
-    assert export_geojson(conn, str(out)) == 2  # count spans both files
+    assert export_geojson(conn, str(out)) == 1  # the gray venue is not exported
 
     branded = json.loads(out.read_text(encoding="utf-8"))["features"]
     assert [f["properties"]["name"] for f in branded] == ["Pampa"]
-
-    gray = json.loads((tmp_path / "venues-gray.json").read_text(encoding="utf-8"))["features"]
-    assert [f["properties"]["name"] for f in gray] == ["Graue Eule"]
-    assert "brands" not in gray[0]["properties"]  # omitted, frontend defaults it
+    # Brandless venues are served per viewport by /api/gray — no gray file.
+    assert not (tmp_path / "venues-gray.json").exists()

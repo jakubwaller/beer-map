@@ -83,6 +83,36 @@ export function venuesByServing(venues, serving) {
   return venues.filter((v) => v.brands.some((b) => servingMatch(b, serving)));
 }
 
+// ---- Gray-dot tiles ----
+// Brandless venues load per viewport from /api/gray/{z}/{x}/{y} (slippy tile
+// scheme); the math lives here so it stays unit-testable without a map.
+export function lonToTile(lon, z) {
+  return Math.floor(((lon + 180) / 360) * 2 ** z);
+}
+
+export function latToTile(lat, z) {
+  const r = (lat * Math.PI) / 180;
+  return Math.floor(
+    ((1 - Math.log(Math.tan(r) + 1 / Math.cos(r)) / Math.PI) / 2) * 2 ** z);
+}
+
+/** Tiles covering `b` = {west, south, east, north} at zoom `z`. Capped: a
+ *  mis-gated zoom must degrade into partial coverage, never into hundreds of
+ *  tile requests. */
+export function tilesForBounds(b, z, cap = 64) {
+  const max = 2 ** z - 1;
+  const clamp = (v) => Math.max(0, Math.min(max, v));
+  const x0 = clamp(lonToTile(b.west, z)), x1 = clamp(lonToTile(b.east, z));
+  const y0 = clamp(latToTile(b.north, z)), y1 = clamp(latToTile(b.south, z));
+  const tiles = [];
+  for (let y = y0; y <= y1; y++)
+    for (let x = x0; x <= x1; x++) {
+      if (tiles.length >= cap) return tiles;
+      tiles.push({ z, x, y, key: `${z}/${x}/${y}` });
+    }
+  return tiles;
+}
+
 // ---- Search ----
 // Everything is compared in a folded form: lowercased, ß -> ss, diacritics
 // stripped (so "Kuche" finds "Küche" and "Cafe" finds "Café"), and every run of

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import html
+import math
 import os
 import re
 import secrets
@@ -8,7 +9,8 @@ from datetime import date, datetime
 from pathlib import Path
 from typing import Optional
 
-from fastapi import Depends, FastAPI, HTTPException, Request, status
+from fastapi import Depends, FastAPI, HTTPException, Request, Response, status
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import HTMLResponse
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from fastapi.staticfiles import StaticFiles
@@ -16,7 +18,9 @@ from pydantic import BaseModel
 from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
 
 from pipeline import config, submissions
-from pipeline.db import get_connection, init_db, insert_submission, list_submissions
+from pipeline.db import (fetch_gray_in_bbox, get_connection, init_db,
+                         insert_submission, list_submissions, search_venues_db)
+from pipeline.export import _feature
 
 from . import notify
 
@@ -194,6 +198,14 @@ def _assert_db_not_served(db_path: str, web_dir: str) -> None:
         )
 
 
+def _tile_bounds(z: int, x: int, y: int):
+    """(south, west, north, east) of a slippy-map tile."""
+    n = 2 ** z
+    lon = lambda x_: x_ / n * 360.0 - 180.0                       # noqa: E731
+    lat = lambda y_: math.degrees(math.atan(math.sinh(math.pi * (1 - 2 * y_ / n))))  # noqa: E731
+    return lat(y + 1), lon(x), lat(y), lon(x + 1)
+
+
 def _require_admin(creds: HTTPBasicCredentials = Depends(_basic)):
     ok = bool(config.ADMIN_PW) and \
         secrets.compare_digest(creds.username, config.ADMIN_USER) and \
@@ -210,6 +222,34 @@ def create_app() -> FastAPI:
     # is safe because the container is only reachable via Caddy on the web_proxy
     # network (no public host port), so the immediate peer is always the proxy.
     app.add_middleware(ProxyHeadersMiddleware, trusted_hosts="*")
+    # A dense /api/gray tile is a few hundred KB of JSON; gzip at the origin
+    # spares the Pi's home uplink (Cloudflare passes origin encoding through).
+    app.add_middleware(GZipMiddleware, minimum_size=1024)
+
+    @app.get("/api/gray/{z}/{x}/{y}")
+    def gray_tile(z: int, x: int, y: int, response: Response, conn=Depends(_db)):
+        # Brandless venues for one slippy tile, straight off the DB — the
+        # frontend fetches these per viewport (GRAY_TILE_Z in web/app.js)
+        # instead of downloading a country-wide gray file it can never afford.
+        if not (8 <= z <= 14 and 0 <= x < 2 ** z and 0 <= y < 2 ** z):
+            raise HTTPException(404, "tile out of range")
+        south, west, north, east = _tile_bounds(z, x, y)
+        rows = fetch_gray_in_bbox(conn, south, west, north, east)
+        # An hour of browser caching: the data changes at most nightly, and a
+        # pan back over a visited area should not re-hit the Pi.
+        response.headers["Cache-Control"] = "public, max-age=3600"
+        return {"type": "FeatureCollection",
+                "features": [_feature(r, with_brands=False) for r in rows]}
+
+    @app.get("/api/search")
+    def search_endpoint(q: str = "", conn=Depends(_db)):
+        # Nationwide venue search over the folded search_key column. The
+        # client merges these into its locally loaded pool and re-ranks, so
+        # the response is the same FeatureCollection shape as the exports —
+        # brands included, because a hit may not be loaded client-side yet.
+        rows = search_venues_db(conn, q, limit=30)
+        return {"type": "FeatureCollection",
+                "features": [_feature(r, with_brands=True) for r in rows]}
 
     @app.get("/api/brands")
     def brands(conn=Depends(_db)):

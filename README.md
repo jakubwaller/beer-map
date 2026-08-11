@@ -4,12 +4,12 @@
 the repo, Docker service and env files stay `beermap`.
 
 A map of German and Czech drinking venues, filterable by draft beer brand and
-serving type (Fassbier/Tankbier). Eighteen major cities — Berlin, Bremen,
-Dresden, Düsseldorf, Frankfurt am Main, Hamburg, Hannover, Köln, Leipzig,
-München, Nürnberg and Stuttgart, plus Praha, Brno, Plzeň, Ostrava, České
-Budějovice and Mladá Boleslav — are swept in full (every pub/bar/restaurant becomes at least a
-clickable gray dot); the rest of both countries shows every venue with a known
-brand (OSM `brewery=` tag). The famous Czech tankovnas (the Lokál chain,
+serving type (Fassbier/Tankbier). Every pub, bar, restaurant, café and
+Biergarten in both countries appears as at least a clickable gray dot — the
+nationwide sweep (`pipeline/country.py`) ingests them all, and the frontend
+loads the brandless majority per viewport from `/api/gray` instead of shipping
+a country-sized file. Venues with a known brand (OSM `brewery=` tag, curation,
+finders) load up front nationwide. The famous Czech tankovnas (the Lokál chain,
 U Pinkasů, Na Parkánu, Budvarka …) are seeded as curated tank entries — OSM has
 no tag for tank beer. Built on a human-curated core (`curation.yaml`,
 highest trust), seeded by OpenStreetMap and brand "where to drink" finders. Every
@@ -42,7 +42,12 @@ type hints working on the system Python.)
 ## Build the dataset
 ```bash
 python -m pipeline.run        # OSM -> finders -> curation -> web/data/venues.json
+python -m pipeline.country    # nationwide venue sweep, tile by tile (~130 requests)
 ```
+The nightly `pipeline.run` refreshes the sweep cities, brewery-tagged venues,
+finders and curation; `pipeline.country` fills the DB with every venue in DE+CZ
+(the gray-dot substrate served by `/api/gray`) and is meant to run weekly —
+`--resume` continues an interrupted sweep.
 
 ## Curate (this is the real work)
 Edit `curation.yaml` to add/remove venue↔brand links — the highest-trust layer.
@@ -63,6 +68,7 @@ node --test web/*.test.js  # frontend pure functions (needs Node.js)
 ## Cron (Raspberry Pi)
 ```cron
 0 4 * * * cd /home/pi/beer-map && /home/pi/beer-map/.venv/bin/python -m pipeline.run >> pipeline.log 2>&1
+0 2 * * 0 cd /home/pi/beer-map && /home/pi/beer-map/.venv/bin/python -m pipeline.country >> country.log 2>&1
 ```
 
 ## Status / roadmap
@@ -73,14 +79,19 @@ node --test web/*.test.js  # frontend pure functions (needs Node.js)
   of the next phase.
 - **Post-launch:** venue-menu LLM scraping as a coverage booster (a new low-trust
   source under curation).
-- **Scaling beyond the sweep cities:** partially done — brewery-tagged venues
-  show across Germany and Czechia (`COUNTRY_CODES` in `pipeline/config.py`), and
-  adding a fully swept city is one line in `SWEEP_AREAS`. Sweeping *all* venues
-  country-wide (~250k in Germany alone) still needs the bbox/brand API from
-  `web/datasource.js`'s roadmap; a country-wide Overpass sweep times out.
+- **Scaling beyond the sweep cities: done.** A single country-wide Overpass
+  query times out (~250k elements in Germany alone), so `pipeline/country.py`
+  sweeps a grid of bbox tiles instead and the frontend fetches the brandless
+  venues per viewport from `/api/gray/{z}/{x}/{y}` (gray dots render from
+  zoom 10). `/api/search` extends the search box to the whole database, so a
+  village pub is findable before its area was ever panned over. The
+  `SWEEP_AREAS` city list still controls what the *nightly* refresh re-imports.
 
 ## API & live curation (on the Pi)
 - `uvicorn api.app:app` serves the static site **and** the API on one origin.
+- `GET /api/gray/{z}/{x}/{y}` — brandless venues of one slippy tile (z 8–14),
+  straight off the DB; `GET /api/search?q=` — nationwide folded name/address
+  search.
 - `POST /api/submit` — anonymous add/correct (rate-limited + honeypot).
 - `/admin` — HTTP Basic (`BEERMAP_ADMIN_PW`) moderation queue; approve = instant re-export.
 - Approved edits are `source="community"`, ranked just below your `manual` curation.yaml.

@@ -14,8 +14,7 @@ from pipeline.submissions import (
 
 
 # A throwaway export target: these tests exercise the submission logic, not
-# the export, but approve_submission always re-exports (now two files, so a
-# bare /dev/null no longer works as a sink).
+# the export, but approve_submission always re-exports.
 _OUT = os.path.join(tempfile.mkdtemp(), "venues.json")
 
 

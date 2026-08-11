@@ -143,6 +143,44 @@ def test_brands_endpoint_only_lists_brands_with_venues(client):
     assert c.get("/api/brands").json() == ["Astra"]
 
 
+def test_gray_tile_serves_brandless_venues_with_cache_header(client):
+    c, _ = client
+    # Bar X (53.5, 10.0) is brandless; its z10 slippy tile is 10/540/331.
+    r = c.get("/api/gray/10/540/331")
+    assert r.status_code == 200
+    assert r.headers["cache-control"] == "public, max-age=3600"
+    names = [f["properties"]["name"] for f in r.json()["features"]]
+    assert names == ["Bar X"]
+    assert "brands" not in r.json()["features"][0]["properties"]
+    assert c.get("/api/gray/10/550/331").json()["features"] == []  # elsewhere: empty
+    assert c.get("/api/gray/2/1/1").status_code == 404   # zoomed-out z: no DB dump
+    assert c.get("/api/gray/10/9999/331").status_code == 404
+
+
+def test_gray_tile_excludes_venues_that_gained_a_brand(client):
+    from pipeline.db import upsert_brand, upsert_edge
+    c, _ = client
+    conn = get_connection(config.DB_PATH)
+    vid = conn.execute("SELECT id FROM venues WHERE osm_id='node/1'").fetchone()["id"]
+    upsert_edge(conn, vid, upsert_brand(conn, "Astra"), "osm", "2026-08-11")
+    conn.commit()
+    assert c.get("/api/gray/10/540/331").json()["features"] == []
+
+
+def test_search_endpoint_folds_and_includes_brands(client):
+    from pipeline.db import upsert_brand, upsert_edge
+    c, _ = client
+    conn = get_connection(config.DB_PATH)
+    vid = upsert_venue(conn, Venue("node/7", "Zum Goldenen Handwerk", 51.0, 13.7,
+                                   address="Dresden"), "2026-08-11")
+    upsert_edge(conn, vid, upsert_brand(conn, "Radeberger"), "osm", "2026-08-11")
+    conn.commit()
+    feats = c.get("/api/search", params={"q": "göldenen handwerk"}).json()["features"]
+    assert [f["properties"]["name"] for f in feats] == ["Zum Goldenen Handwerk"]
+    assert feats[0]["properties"]["brands"][0]["brand"] == "Radeberger"
+    assert c.get("/api/search", params={"q": ""}).json()["features"] == []
+
+
 def test_notify_telegram_is_best_effort(monkeypatch):
     from api import notify
     monkeypatch.setattr(config, "TELEGRAM_BOT_TOKEN", "")  # unconfigured -> no-op
@@ -187,10 +225,12 @@ def test_add_venue_submission_and_approval(client, monkeypatch):
                         lambda address, near=None: (53.57, 9.96))
     sid = pending[0]["id"]
     assert c.post(f"/api/admin/{sid}/approve", auth=("admin", "secret")).json() == {"ok": True}
-    # Brandless, so it exports as a gray dot — into the gray file, without brands.
-    gray_out = out.replace("venues.json", "venues-gray.json")
-    fc = json.loads(open(gray_out, encoding="utf-8").read())
-    craft = [f for f in fc["features"] if f["properties"]["name"] == "Craft Eck"][0]
+    # Brandless, so it stays out of the branded export and surfaces as a gray
+    # dot through the tile API instead.
+    fc = json.loads(open(out, encoding="utf-8").read())
+    assert all(f["properties"]["name"] != "Craft Eck" for f in fc["features"])
+    tile = c.get("/api/gray/10/540/330").json()   # the z10 tile holding (53.57, 9.96)
+    craft = [f for f in tile["features"] if f["properties"]["name"] == "Craft Eck"][0]
     assert "brands" not in craft["properties"]
     assert craft["geometry"]["coordinates"] == [9.96, 53.57]
 

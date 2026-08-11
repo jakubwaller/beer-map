@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import re
 import sqlite3
+import unicodedata
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS venues (
@@ -50,6 +51,16 @@ CREATE TABLE IF NOT EXISTS submissions (
     created_at TEXT NOT NULL,
     decided_at TEXT
 );
+-- One row per fetched tile of the nationwide sweep (pipeline/country.py), so
+-- an interrupted run can resume without refetching what it already has.
+CREATE TABLE IF NOT EXISTS country_tiles (
+    tile TEXT PRIMARY KEY,
+    fetched_at TEXT NOT NULL,
+    venues INTEGER NOT NULL
+);
+-- The /api/gray tile endpoint answers viewport queries straight from this
+-- table; the composite index turns them into a narrow lon-range scan.
+CREATE INDEX IF NOT EXISTS idx_venues_lon_lat ON venues(lon, lat);
 """
 
 # Columns added after the initial schema shipped. Existing databases were created
@@ -57,10 +68,26 @@ CREATE TABLE IF NOT EXISTS submissions (
 _MIGRATIONS = (
     ("venues", "hidden", "INTEGER NOT NULL DEFAULT 0"),
     ("venues", "opening_hours", "TEXT"),
+    ("venues", "search_key", "TEXT"),
     ("venue_brand", "beer", "TEXT"),
     ("submissions", "address", "TEXT"),
     ("submissions", "beer", "TEXT"),
 )
+
+
+def fold(s: str | None) -> str:
+    """Search-folded form of a name/address: lowercase, ß -> ss, diacritics
+    stripped, punctuation runs collapsed to single spaces. MUST mirror `fold`
+    in web/datasource.js — the /api/search endpoint and the client-side search
+    compare against the same folded strings."""
+    s = (s or "").lower().replace("ß", "ss")
+    s = "".join(c for c in unicodedata.normalize("NFD", s)
+                if not unicodedata.combining(c))
+    return re.sub(r"[^a-z0-9]+", " ", s).strip()
+
+
+def _search_key(name: str | None, address: str | None) -> str:
+    return fold(f"{name or ''} {address or ''}")
 
 
 def get_connection(path: str) -> sqlite3.Connection:
@@ -79,7 +106,22 @@ def init_db(conn) -> None:
             conn.execute(f"ALTER TABLE {table} ADD COLUMN {column} {decl}")
     _migrate_venue_brand_pk(conn)
     scrub_plaintext_ips(conn)
+    _backfill_search_keys(conn)
     conn.commit()
+
+
+def _backfill_search_keys(conn) -> int:
+    """Fill `search_key` on rows written before the column existed. Guarded by
+    a cheap probe so the common (already-filled) case costs one SELECT."""
+    if conn.execute(
+            "SELECT 1 FROM venues WHERE search_key IS NULL LIMIT 1").fetchone() is None:
+        return 0
+    rows = conn.execute(
+        "SELECT id, name, address FROM venues WHERE search_key IS NULL").fetchall()
+    conn.executemany(
+        "UPDATE venues SET search_key=? WHERE id=?",
+        [(_search_key(r["name"], r["address"]), r["id"]) for r in rows])
+    return len(rows)
 
 
 def scrub_plaintext_ips(conn) -> int:
@@ -119,15 +161,17 @@ def _migrate_venue_brand_pk(conn) -> None:
 def upsert_venue(conn, venue, seen: str) -> int:
     conn.execute(
         """
-        INSERT INTO venues (osm_id, name, lat, lon, address, website, opening_hours, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO venues (osm_id, name, lat, lon, address, website, opening_hours,
+                            search_key, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(osm_id) DO UPDATE SET
             name=excluded.name, lat=excluded.lat, lon=excluded.lon,
             address=excluded.address, website=excluded.website,
-            opening_hours=excluded.opening_hours, updated_at=excluded.updated_at
+            opening_hours=excluded.opening_hours, search_key=excluded.search_key,
+            updated_at=excluded.updated_at
         """,
         (venue.osm_id, venue.name, venue.lat, venue.lon, venue.address, venue.website,
-         venue.opening_hours, seen),
+         venue.opening_hours, _search_key(venue.name, venue.address), seen),
     )
     return conn.execute("SELECT id FROM venues WHERE osm_id=?", (venue.osm_id,)).fetchone()["id"]
 
@@ -207,12 +251,15 @@ def delete_edges(conn, venue_id, brand_id, beer=None) -> int:
 
 def update_venue_address(conn, osm_id: str, address: str,
                           lat: float | None = None, lon: float | None = None) -> int:
+    row = conn.execute("SELECT name FROM venues WHERE osm_id=?", (osm_id,)).fetchone()
+    key = _search_key(row["name"] if row else None, address)
     if lat is not None and lon is not None:
         cur = conn.execute(
-            "UPDATE venues SET address=?, lat=?, lon=? WHERE osm_id=?",
-            (address, lat, lon, osm_id))
+            "UPDATE venues SET address=?, lat=?, lon=?, search_key=? WHERE osm_id=?",
+            (address, lat, lon, key, osm_id))
     else:
-        cur = conn.execute("UPDATE venues SET address=? WHERE osm_id=?", (address, osm_id))
+        cur = conn.execute("UPDATE venues SET address=?, search_key=? WHERE osm_id=?",
+                           (address, key, osm_id))
     return cur.rowcount
 
 
@@ -221,41 +268,84 @@ def set_venue_hidden(conn, osm_id: str, hidden: bool) -> int:
     return cur.rowcount
 
 
-def fetch_venues_with_brands(conn) -> list[dict]:
+def _venue_brands(conn, venue_id: int) -> list[dict]:
+    edges = conn.execute(
+        """
+        SELECT b.name AS brand, vb.source AS source, vb.serving AS serving,
+               vb.beer AS beer, vb.last_seen AS last_seen
+        FROM venue_brand vb JOIN brands b ON b.id = vb.brand_id
+        WHERE vb.venue_id = ?
+        ORDER BY
+            CASE vb.source
+                 WHEN 'manual' THEN 0
+                 WHEN 'community' THEN 1
+                 ELSE CASE WHEN vb.source LIKE 'finder:%' THEN 2 ELSE 3 END END,
+            b.name, vb.beer
+        """,
+        (venue_id,),
+    ).fetchall()
+    brands = []
+    for e in edges:
+        d = dict(e)
+        d["beer"] = d["beer"] or None  # '' (brand-only) -> null in the export
+        brands.append(d)
+    return brands
+
+
+def _venue_dict(conn, v, with_brands: bool = True) -> dict:
+    return {
+        "osm_id": v["osm_id"], "name": v["name"], "lat": v["lat"], "lon": v["lon"],
+        "address": v["address"], "website": v["website"],
+        "opening_hours": v["opening_hours"],
+        "brands": _venue_brands(conn, v["id"]) if with_brands else [],
+    }
+
+
+_HAS_EDGE = "EXISTS (SELECT 1 FROM venue_brand vb WHERE vb.venue_id = venues.id)"
+
+
+def fetch_venues_with_brands(conn, branded_only: bool = False) -> list[dict]:
     # Hidden venues (reported closed and approved) are kept in the DB so the flag
     # survives OSM re-imports, but they are excluded from the exported map.
+    # branded_only skips venues without a single brand edge — since the country
+    # sweep the brandless majority (~250k rows) is served per-viewport by
+    # /api/gray instead of being exported.
+    where = "COALESCE(hidden, 0) = 0" + (f" AND {_HAS_EDGE}" if branded_only else "")
     venues = conn.execute(
         "SELECT id, osm_id, name, lat, lon, address, website, opening_hours FROM venues "
-        "WHERE COALESCE(hidden, 0) = 0 ORDER BY id"
+        f"WHERE {where} ORDER BY id"
     ).fetchall()
-    out = []
-    for v in venues:
-        edges = conn.execute(
-            """
-            SELECT b.name AS brand, vb.source AS source, vb.serving AS serving,
-                   vb.beer AS beer, vb.last_seen AS last_seen
-            FROM venue_brand vb JOIN brands b ON b.id = vb.brand_id
-            WHERE vb.venue_id = ?
-            ORDER BY
-                CASE vb.source
-                     WHEN 'manual' THEN 0
-                     WHEN 'community' THEN 1
-                     ELSE CASE WHEN vb.source LIKE 'finder:%' THEN 2 ELSE 3 END END,
-                b.name, vb.beer
-            """,
-            (v["id"],),
-        ).fetchall()
-        brands = []
-        for e in edges:
-            d = dict(e)
-            d["beer"] = d["beer"] or None  # '' (brand-only) -> null in the export
-            brands.append(d)
-        out.append({
-            "osm_id": v["osm_id"], "name": v["name"], "lat": v["lat"], "lon": v["lon"],
-            "address": v["address"], "website": v["website"],
-            "opening_hours": v["opening_hours"], "brands": brands,
-        })
-    return out
+    return [_venue_dict(conn, v) for v in venues]
+
+
+def fetch_gray_in_bbox(conn, south: float, west: float, north: float, east: float) -> list[dict]:
+    """Brandless, visible venues inside the bbox — the /api/gray tile payload."""
+    venues = conn.execute(
+        "SELECT id, osm_id, name, lat, lon, address, website, opening_hours FROM venues "
+        "WHERE lon >= ? AND lon < ? AND lat >= ? AND lat < ? "
+        f"AND COALESCE(hidden, 0) = 0 AND NOT {_HAS_EDGE} ORDER BY id",
+        (west, east, south, north),
+    ).fetchall()
+    return [_venue_dict(conn, v, with_brands=False) for v in venues]
+
+
+def search_venues_db(conn, query: str, limit: int = 30) -> list[dict]:
+    """Nationwide name/address search over the folded `search_key` column.
+
+    Every folded query token must appear as a substring; ranking beyond
+    "name-prefix matches first, shorter names first" is left to the client,
+    which rescores merged results with its own field-weighted scorer."""
+    tokens = fold(query).split()
+    if not tokens:
+        return []
+    where = " AND ".join("search_key LIKE ?" for _ in tokens)
+    venues = conn.execute(
+        "SELECT id, osm_id, name, lat, lon, address, website, opening_hours FROM venues "
+        f"WHERE COALESCE(hidden, 0) = 0 AND search_key IS NOT NULL AND {where} "
+        "ORDER BY (search_key LIKE ?) DESC, length(name), id LIMIT ?",
+        [f"%{t}%" for t in tokens] + [f"{tokens[0]}%", limit],
+    ).fetchall()
+    return [_venue_dict(conn, v) for v in venues]
 
 
 _SUB_COLS = ("kind", "venue_osm_id", "venue_name", "lat", "lon",
