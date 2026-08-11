@@ -14,6 +14,7 @@ def test_overpass_ql_sweeps_cities_and_national_brewery_layer():
     assert '["name"="Praha"]["admin_level"="4"]' in ql
     assert '["name"="Brno"]["admin_level"="8"]' in ql
     assert '["name"="Plzeň"]["admin_level"="8"]' in ql
+    assert '["name"="Mladá Boleslav"]["admin_level"="8"]' in ql
     # Nationwide only brewery-tagged venues — a full-country amenity sweep
     # would be ~250k elements and times out on Overpass.
     assert '"brewery"](area.countries)' in ql

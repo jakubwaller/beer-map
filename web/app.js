@@ -49,6 +49,7 @@ const CITY_VIEWS = {
   plzen: { center: [13.3776, 49.7475], zoom: 11.5 },
   ostrava: { center: [18.2820, 49.8209], zoom: 11.5 },
   budejovice: { center: [14.4747, 48.9745], zoom: 12 },
+  boleslav: { center: [14.9058, 50.4114], zoom: 12.5 },
 };
 const dePadding = () => ({
   top: document.getElementById("topbar").offsetHeight + 16,
