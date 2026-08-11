@@ -2,6 +2,7 @@ from pipeline.config import SKIP_BRANDS, normalize_brand
 from pipeline.db import (
     get_connection, init_db, upsert_venue, upsert_brand,
     upsert_edge, delete_edges, fetch_venues_with_brands,
+    fetch_gray_in_bbox, fold, search_venues_db,
     insert_submission, list_submissions, get_submission,
     set_submission_status, count_submissions_since,
     update_venue_address, set_venue_hidden, renormalize_brands,
@@ -218,6 +219,66 @@ def test_migration_moves_beer_into_pk_preserving_rows():
     assert "beer" in pk_cols
     upsert_edge(conn, 1, 1, "manual", "2026-06-27", serving="fass", beer="Hell")  # now allowed
     assert {b["beer"] for b in fetch_venues_with_brands(conn)[0]["brands"]} == {"Edelstoff", "Hell"}
+
+
+def test_fold_matches_the_frontend_folding():
+    # MUST agree with fold() in web/datasource.js — server and client search
+    # the same folded strings.
+    assert fold("Küche & Café „St.Pauli“") == "kuche cafe st pauli"
+    assert fold("Straßenbräu") == "strassenbrau"
+    assert fold(None) == ""
+
+
+def test_search_venues_db_folds_ranks_and_spans_fields():
+    conn = _conn()
+    upsert_venue(conn, Venue("node/1", "Zum Goldenen Handwerk", 51.0, 13.7,
+                             address="Dresden"), "2026-08-11")
+    upsert_venue(conn, Venue("node/2", "Handwerkerhof", 49.4, 11.0,
+                             address="Nürnberg"), "2026-08-11")
+    upsert_venue(conn, Venue("node/3", "Café Küche", 53.5, 10.0,
+                             address="Hamburg"), "2026-08-11")
+    names = [v["name"] for v in search_venues_db(conn, "handwerk")]
+    assert set(names) == {"Zum Goldenen Handwerk", "Handwerkerhof"}
+    assert names[0] == "Handwerkerhof"          # name-prefix hit ranks first
+    assert [v["name"] for v in search_venues_db(conn, "kuche")] == ["Café Küche"]
+    # tokens may land in different fields (name + address)
+    assert [v["name"] for v in search_venues_db(conn, "goldenen dresden")] == \
+        ["Zum Goldenen Handwerk"]
+    assert search_venues_db(conn, "") == []
+    assert search_venues_db(conn, "…") == []    # folds to nothing
+
+
+def test_search_key_backfilled_for_legacy_rows():
+    conn = _conn()
+    upsert_venue(conn, Venue("node/1", "Bar X", 53.5, 10.0, address="Beim Grünen Jäger 1"),
+                 "2026-08-11")
+    conn.execute("UPDATE venues SET search_key=NULL")  # row from before the column
+    init_db(conn)
+    assert conn.execute("SELECT search_key FROM venues").fetchone()["search_key"] == \
+        "bar x beim grunen jager 1"
+
+
+def test_fetch_gray_in_bbox_excludes_branded_hidden_and_outside():
+    conn = _conn()
+    upsert_venue(conn, Venue("node/1", "Gray In", 50.1, 14.1), "2026-08-11")
+    upsert_venue(conn, Venue("node/2", "Gray Outside", 52.0, 13.0), "2026-08-11")
+    vid = upsert_venue(conn, Venue("node/3", "Branded In", 50.15, 14.15), "2026-08-11")
+    upsert_edge(conn, vid, upsert_brand(conn, "Astra"), "osm", "2026-08-11")
+    upsert_venue(conn, Venue("node/4", "Hidden In", 50.12, 14.12), "2026-08-11")
+    set_venue_hidden(conn, "node/4", True)
+    rows = fetch_gray_in_bbox(conn, 50.0, 14.0, 50.5, 14.5)
+    assert [r["name"] for r in rows] == ["Gray In"]
+    assert rows[0]["brands"] == []
+
+
+def test_fetch_venues_with_brands_branded_only():
+    conn = _conn()
+    vid = upsert_venue(conn, Venue("node/1", "Branded", 50.0, 14.0), "2026-08-11")
+    upsert_edge(conn, vid, upsert_brand(conn, "Astra"), "osm", "2026-08-11")
+    upsert_venue(conn, Venue("node/2", "Gray", 50.1, 14.1), "2026-08-11")
+    assert len(fetch_venues_with_brands(conn)) == 2
+    assert [v["name"] for v in fetch_venues_with_brands(conn, branded_only=True)] == \
+        ["Branded"]
 
 
 def test_scrub_plaintext_ips_clears_legacy_rows():

@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { loadVenues, buildBrandList, venuesByBrand, venuesByServing, searchVenues, scoreVenue, fold, topBrands } from "./datasource.js";
+import { loadVenues, buildBrandList, venuesByBrand, venuesByServing, searchVenues, scoreVenue, fold, topBrands, lonToTile, latToTile, tilesForBounds } from "./datasource.js";
 
 const FC = {
   type: "FeatureCollection",
@@ -185,6 +185,19 @@ test("topBrands puts Pilsner Urquell first even when it misses the cut", () => {
 test("topBrands moves a pinned brand from mid-list to the front", () => {
   const freq = [["Astra", 50], ["Pilsner Urquell", 40], ["Jever", 10]];
   assert.deepEqual(topBrands(freq, 2), [["Pilsner Urquell", 40], ["Astra", 50]]);
+});
+
+test("lonToTile/latToTile follow the slippy scheme (Hamburg at z10)", () => {
+  assert.equal(lonToTile(9.99, 10), 540);
+  assert.equal(latToTile(53.55, 10), 330);
+});
+
+test("tilesForBounds covers the viewport and caps the fan-out", () => {
+  const tiles = tilesForBounds({ west: 9.9, south: 53.5, east: 10.1, north: 53.6 }, 10);
+  assert.deepEqual(tiles.map((t) => t.key), ["10/540/330", "10/540/331"]);
+  // a country-sized box hits the cap instead of exploding into requests
+  const country = tilesForBounds({ west: 5.8, south: 47.2, east: 19.0, north: 55.1 }, 10);
+  assert.equal(country.length, 64);
 });
 
 test("topBrands does not invent a chip for a pinned brand absent from the data", () => {

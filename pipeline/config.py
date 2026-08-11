@@ -23,6 +23,11 @@ _AMENITY = '"amenity"~"^(pub|bar|biergarten|restaurant|cafe)$"'
 # Countries the map covers: the city sweep and the brewery-tagged layer are
 # both clipped to these ISO codes.
 COUNTRY_CODES = ("DE", "CZ")
+# One bbox (south, west, north, east) covering Germany and Czechia. The
+# nationwide sweep (pipeline/country.py) tiles it; each tile query is clipped
+# to COUNTRY_CODES, so the foreign slivers inside the box only cost near-empty
+# tiles, never foreign venues.
+COUNTRY_BBOX = (47.2, 5.8, 55.1, 19.0)
 # Cities swept in full: every pub/bar/restaurant/cafe there becomes at least a
 # gray dot (the substrate community submissions turn into data). Overpass area
 # filters; Germany: admin_level 4 = Stadtstaat, 6 = kreisfreie Stadt, 8 = Stadt

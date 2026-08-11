@@ -1,5 +1,5 @@
 import { loadVenues, buildBrandList, venuesByBrand, venuesByServing, searchVenues, fold,
-         topBrands }
+         topBrands, tilesForBounds }
   from "./datasource.js?v=__ASSET_VERSION__";
 import { parseOpeningHours, openState, statusText, formatWeek }
   from "./hours.js?v=__ASSET_VERSION__";
@@ -284,11 +284,21 @@ function placeLabels(singles, dotBoxes) {
 }
 
 // ---- Gray dots: venues without beer data ----
-// Unlike the (few) beer venues above, these are ~30k points, so they render as
-// a WebGL circle layer instead of DOM markers. Clicking one opens the normal
-// venue modal, whose "Marke hinzufügen" form turns the gray dot into data.
+// Unlike the (few) beer venues above, these are the brandless rest of the
+// dataset — since the nationwide sweep ~250k venues across DE+CZ — so they
+// render as a WebGL circle layer instead of DOM markers, and they are not
+// shipped as a file at all: the viewport's slippy tiles load on demand from
+// /api/gray. Clicking a dot opens the normal venue modal, whose "Marke
+// hinzufügen" form turns the gray dot into data — anywhere, not just in the
+// sweep cities.
 const GRAY_SOURCE = "gray-venues";
 const GRAY_LAYER = "gray-venues";
+// Below this zoom the gray layer neither renders nor loads: a country-wide
+// gray blanket would be noise, and the tile fan-out unbounded.
+const GRAY_MIN_ZOOM = 10;
+const GRAY_TILE_Z = 10;
+const grayTilesLoaded = new Set();  // fetched or in-flight tile keys
+let graySourceStale = true;         // venue set / filters changed since last setData
 
 function grayFC(venues) {
   return { type: "FeatureCollection", features: venues.map((v) => ({
@@ -320,11 +330,56 @@ function addGrayLayer() {
   map.on("mouseleave", GRAY_LAYER, () => { map.getCanvas().style.cursor = ""; });
 }
 
+const grayLayerVisible = () => grayVisible() && map.getZoom() >= GRAY_MIN_ZOOM;
+
+// Called when the venue set or the filters changed — marks the source dirty.
 function refreshGrayLayer() {
   if (!dataReady || !styleReady) return;
-  const visible = grayVisible();
+  graySourceStale = true;
+  updateGrayLayer();
+}
+
+// Called on every moveend too; cheap unless the source is actually stale
+// (setData on tens of thousands of points is what would jank a pan).
+function updateGrayLayer() {
+  if (!dataReady || !styleReady) return;
+  const visible = grayLayerVisible();
   map.setLayoutProperty(GRAY_LAYER, "visibility", visible ? "visible" : "none");
-  if (visible) map.getSource(GRAY_SOURCE).setData(grayFC(currentGrayVenues()));
+  if (!visible) return;
+  if (graySourceStale) {
+    map.getSource(GRAY_SOURCE).setData(grayFC(currentGrayVenues()));
+    graySourceStale = false;
+  }
+  loadGrayTiles();
+}
+
+// Fetch the viewport's not-yet-loaded gray tiles and merge them in. A failed
+// tile is forgotten so a later pan retries it; a failure only ever means
+// "no gray dots there yet" — the branded map is untouched.
+async function loadGrayTiles() {
+  const b = map.getBounds();
+  const tiles = tilesForBounds(
+    { west: b.getWest(), south: b.getSouth(), east: b.getEast(), north: b.getNorth() },
+    GRAY_TILE_Z).filter((t) => !grayTilesLoaded.has(t.key));
+  if (!tiles.length) return;
+  for (const t of tiles) grayTilesLoaded.add(t.key);
+  const batches = await Promise.all(tiles.map(async (t) => {
+    try {
+      const r = await fetch(`/api/gray/${t.key}`);
+      if (!r.ok) throw new Error(String(r.status));
+      return loadVenues(await r.json());
+    } catch {
+      grayTilesLoaded.delete(t.key);
+      return [];
+    }
+  }));
+  const fresh = batches.flat().filter((v) => v.osm_id && !knownIds.has(v.osm_id));
+  if (!fresh.length) return;
+  for (const v of fresh) { knownIds.add(v.osm_id); remoteHits.delete(v.osm_id); }
+  setGrayVenues(grayVenues.concat(fresh));
+  rebuildSearchPool();
+  graySourceStale = true;
+  applyFilters();          // count + gray layer now include the new arrivals
 }
 
 // ---- Zoom controls ----
@@ -530,9 +585,51 @@ document.getElementById("cta-add").addEventListener("click", openAddInfo);
 // "12 Treffer" and then appeared nowhere. The dropdown makes every match
 // reachable — pick one to fly to it, or put the whole result set on the map.
 const MAX_SUGGESTIONS = 8;
-let searchPool = [];   // every venue, gray dots included
+let searchPool = [];   // every loaded venue, gray dots and remote hits included
 let matches = [];      // current ranked matches
 let suggestIdx = -1;   // keyboard-highlighted row, -1 = none
+const knownIds = new Set();   // osm_ids of everything in allVenues + grayVenues
+const remoteHits = new Map(); // osm_id -> venue known only via /api/search
+
+function rebuildSearchPool() {
+  searchPool = allVenues.concat(grayVenues, [...remoteHits.values()]);
+}
+
+// ---- Remote search (nationwide) ----
+// The local pool only holds the branded venues plus whatever gray tiles the
+// visitor has panned over; /api/search covers the entire database. Hits merge
+// into the pool, so the dropdown, Enter and "show all" treat them like any
+// other venue — and flying to one loads its area's gray tiles around it.
+const SEARCH_DEBOUNCE_MS = 250;
+let remoteTimer = null;
+let remoteSeq = 0;
+
+function scheduleRemoteSearch() {
+  clearTimeout(remoteTimer);
+  const q = search.trim();
+  if (fold(q).length < 2) return;
+  remoteTimer = setTimeout(() => remoteSearch(q), SEARCH_DEBOUNCE_MS);
+}
+
+async function remoteSearch(q) {
+  const seq = ++remoteSeq;
+  let fc;
+  try {
+    const r = await fetch("/api/search?q=" + encodeURIComponent(q));
+    if (!r.ok) return;
+    fc = await r.json();
+  } catch { return; }   // offline/error: local results stand
+  if (seq !== remoteSeq || search.trim() !== q) return;  // stale answer
+  let added = false;
+  for (const v of loadVenues(fc)) {
+    if (!v.osm_id || knownIds.has(v.osm_id) || remoteHits.has(v.osm_id)) continue;
+    remoteHits.set(v.osm_id, v);
+    added = true;
+  }
+  if (!added) return;
+  rebuildSearchPool();
+  renderSuggestions();  // the open dropdown picks up the new hits
+}
 
 function suggestRow(v, i) {
   const state = openState(venueSchedule(v));
@@ -616,6 +713,7 @@ function clearSearch() {
 searchEl.addEventListener("input", () => {
   search = searchEl.value;
   renderSuggestions();
+  scheduleRemoteSearch();
   applyFilters();
 });
 searchEl.addEventListener("focus", () => { if (search.trim()) renderSuggestions(); });
@@ -820,8 +918,9 @@ modalBody.addEventListener("submit", async (ev) => {
 // are ready — refreshMarkers() no-ops until then.
 let dataReady = false, styleReady = false;
 
-// Re-cluster after every pan/zoom (grid buckets are in screen space).
-map.on("moveend", refreshMarkers);
+// Re-cluster after every pan/zoom (grid buckets are in screen space); the
+// gray layer re-gates on zoom and fetches any tiles the view newly covers.
+map.on("moveend", () => { refreshMarkers(); updateGrayLayer(); });
 map.on("load", () => {
   styleReady = true;
   addGrayLayer();
@@ -833,13 +932,16 @@ async function boot() {
   const fc = await (await fetch("data/venues.json")).json();
   const venues = loadVenues(fc);
   allVenues = venues.filter((v) => v.brands.length > 0);
-  // Normally empty — the export splits brandless venues into venues-gray.json.
-  // Kept as a filter so a pre-split venues.json (old data volume right after a
-  // code deploy) still renders its gray dots instead of dropping them.
+  // Normally empty — the export is branded-only, gray venues come per
+  // viewport from /api/gray. Kept as a filter so an old pre-split
+  // venues.json (stale data volume right after a code deploy) still renders
+  // its gray dots instead of dropping them.
   setGrayVenues(venues.filter((v) => v.brands.length === 0));
-  // The search dropdown reaches the whole dataset, chips or no chips: someone
-  // typing a pub name wants that pub, not "no results, because Tankbier".
-  searchPool = venues;
+  for (const v of venues) if (v.osm_id) knownIds.add(v.osm_id);
+  // The search dropdown reaches every loaded venue, chips or no chips:
+  // someone typing a pub name wants that pub, not "no results, because
+  // Tankbier" — and /api/search extends the reach to the whole country.
+  rebuildSearchPool();
 
   // Brand frequency = number of venues serving each brand, desc.
   const freq = new Map();
@@ -863,29 +965,12 @@ async function boot() {
   positionZoomCtrl();
   dataReady = true;
   applyFilters();          // updates the count and plots markers (if the map is ready)
-  loadGrayVenues();
 }
 
 function setGrayVenues(venues) {
   grayVenues = venues;
   // The gray map layer round-trips venues through feature properties by index.
   grayVenues.forEach((v, i) => { v.grayIdx = i; });
-}
-
-// The ~38k venues without beer data are ~12x the branded payload; they stream
-// in after the first paint so chips and amber markers never wait for gray dots.
-// Any failure just means no gray dots — the branded map stays up.
-async function loadGrayVenues() {
-  let r;
-  try { r = await fetch("data/venues-gray.json"); } catch { return; }
-  if (!r.ok) return;       // pre-split dataset on the volume — no gray file yet
-  let fc;
-  try { fc = await r.json(); } catch { return; }
-  const gray = loadVenues(fc);
-  if (!gray.length) return;
-  setGrayVenues(grayVenues.concat(gray));
-  searchPool = allVenues.concat(grayVenues);
-  applyFilters();          // count + gray layer now include the late arrivals
 }
 
 boot();
