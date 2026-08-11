@@ -2,8 +2,10 @@ from __future__ import annotations
 
 import html
 import os
+import re
 import secrets
 from datetime import date, datetime
+from pathlib import Path
 from typing import Optional
 
 from fastapi import Depends, FastAPI, HTTPException, Request, status
@@ -19,6 +21,52 @@ from pipeline.db import get_connection, init_db, insert_submission, list_submiss
 from . import notify
 
 _basic = HTTPBasic()
+
+# Link-preview crawlers (WhatsApp, LinkedIn, Slack) read the static head tags
+# and run no JS, so a shared ?lang= link gets its title/description localized
+# server-side. "title" mirrors web/i18n.js MESSAGES["<lang>"]["title"] — keep
+# them in sync; the og/description strings exist only here. German (or any
+# junk value) serves index.html untouched.
+_INDEX_META = {
+    "cs": {
+        "html_lang": "cs",
+        "title": "Zapfkompass – pivo ze sudu a z tanku",
+        "og:title": "Zapfkompass — pivo ze sudu a z tanku na mapě",
+        "description": "Kde točí pivo ze sudu a kde z tanku? Mapa ukazuje hospodu po hospodě, jaká značka se čepuje — se zdrojem a datem ověření. Sedmnáct velkých měst v Německu a Česku, od Hamburku po Prahu, kompletně zmapovaných.",
+        "twitter:description": "Hospoda po hospodě: jaká značka se čepuje, sud nebo tank, a odkud údaj pochází.",
+        "og:image:alt": "Mapa Německa a Česka se zmapovanými výčepy",
+        "og:locale": "cs_CZ",
+        "og:url": "https://zapfkompass.de/?lang=cs",
+    },
+    "en": {
+        "html_lang": "en",
+        "title": "Zapfkompass – keg & tank beer",
+        "og:title": "Zapfkompass — keg & tank beer on the map",
+        "description": "Where do they pour keg beer, and where tank beer? The map shows pub by pub which brand is on tap — with source and verification date. Seventeen major cities in Germany and Czechia, from Hamburg to Prague, fully mapped.",
+        "twitter:description": "Pub by pub: which brand is on tap, keg or tank, and where the claim comes from.",
+        "og:image:alt": "Map of Germany and Czechia with the mapped taps",
+        "og:locale": "en_US",
+        "og:url": "https://zapfkompass.de/?lang=en",
+    },
+}
+
+
+def _localized_index(page: str, lang: Optional[str]) -> str:
+    meta = _INDEX_META.get((lang or "").lower())
+    if not meta:
+        return page
+    page = page.replace('<html lang="de">', f'<html lang="{meta["html_lang"]}">', 1)
+    page = re.sub(r"<title>[^<]*</title>",
+                  f"<title>{html.escape(meta['title'])}</title>", page, count=1)
+    values = dict(meta, **{"og:description": meta["description"],
+                           "twitter:title": meta["og:title"]})
+    for attr in ("description", "og:title", "og:description", "og:locale", "og:url",
+                 "og:image:alt", "twitter:title", "twitter:description"):
+        page = re.sub(
+            rf'((?:property|name)="{re.escape(attr)}" content=")[^"]*(")',
+            lambda m, v=html.escape(values[attr]): m.group(1) + v + m.group(2),
+            page, count=1)
+    return page
 
 _KIND_LABELS = {
     "add": "Neues Bier",
@@ -311,6 +359,11 @@ async function approveAll(n) {{
         if not submissions.reject_submission(conn, sub_id, date.today().isoformat()):
             raise HTTPException(404, "not pending")
         return {"ok": True}
+
+    @app.get("/", response_class=HTMLResponse)
+    def index(lang: Optional[str] = None):
+        page = (Path(config.WEB_DIR) / "index.html").read_text(encoding="utf-8")
+        return HTMLResponse(_localized_index(page, lang))
 
     app.mount("/", StaticFiles(directory=config.WEB_DIR, html=True), name="static")
     return app

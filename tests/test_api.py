@@ -213,6 +213,24 @@ def test_add_venue_ungecodable_approval_stays_pending(client, monkeypatch):
     assert list_submissions(get_connection(config.DB_PATH), "pending")[0]["id"] == sid
 
 
+def test_index_localizes_social_meta_for_lang_param(client):
+    c, _ = client
+    de = c.get("/").text
+    assert 'og:locale" content="de_DE"' in de and '<html lang="de">' in de
+
+    cs = c.get("/?lang=cs").text
+    assert '<html lang="cs">' in cs
+    assert "<title>Zapfkompass – pivo ze sudu a z tanku</title>" in cs
+    assert 'og:locale" content="cs_CZ"' in cs
+    assert 'og:url" content="https://zapfkompass.de/?lang=cs"' in cs
+    assert "hospodu po hospodě" in cs
+    # The shared image and its dimensions stay: they are language-neutral.
+    assert 'og:image" content="https://zapfkompass.de/og-image.jpg"' in cs
+
+    # Junk (or German) serves the file untouched.
+    assert c.get("/?lang=xx").text == de
+
+
 def test_refuses_to_start_with_db_inside_served_dir(tmp_path, monkeypatch):
     """The DB under web/ was downloadable at /data/beer-map.sqlite — never again."""
     from api.app import _assert_db_not_served, create_app
