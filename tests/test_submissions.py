@@ -1,3 +1,5 @@
+import os
+import tempfile
 from datetime import datetime
 
 from pipeline.db import (
@@ -9,6 +11,12 @@ from pipeline.submissions import (
     validate_submission, within_rate_limit, apply_approved,
     approve_submission, reject_submission,
 )
+
+
+# A throwaway export target: these tests exercise the submission logic, not
+# the export, but approve_submission always re-exports (now two files, so a
+# bare /dev/null no longer works as a sink).
+_OUT = os.path.join(tempfile.mkdtemp(), "venues.json")
 
 
 def _venue_row(conn, osm_id):
@@ -58,7 +66,7 @@ def test_approve_edit_venue_updates_address():
     conn = _seed()
     sid = insert_submission(conn, _row(kind="edit_venue", brand="",
                                        address="Neue Allee 7"), "2026-06-24T10:00:00")
-    assert approve_submission(conn, sid, "2026-06-24", "/dev/null") is True
+    assert approve_submission(conn, sid, "2026-06-24", _OUT) is True
     assert _venue_row(conn, "node/1")["address"] == "Neue Allee 7"
 
 
@@ -73,7 +81,7 @@ def test_approve_edit_venue_geocodes_near_existing_pin(monkeypatch):
     monkeypatch.setattr("pipeline.submissions.geocode_address", fake_geocode)
     sid = insert_submission(conn, _row(kind="edit_venue", brand="",
                                        address="Neue Allee 7"), "2026-06-24T10:00:00")
-    assert approve_submission(conn, sid, "2026-06-24", "/dev/null") is True
+    assert approve_submission(conn, sid, "2026-06-24", _OUT) is True
     # bounded to the venue's current coordinates, and the pin moved to the hit
     assert calls["args"] == ("Neue Allee 7", (53.5, 10.0))
     row = conn.execute("SELECT lat, lon FROM venues WHERE osm_id='node/1'").fetchone()
@@ -83,7 +91,7 @@ def test_approve_edit_venue_geocodes_near_existing_pin(monkeypatch):
 def test_approve_close_venue_hides_it_from_export():
     conn = _seed()
     sid = insert_submission(conn, _row(kind="close_venue", brand=""), "2026-06-24T10:00:00")
-    assert approve_submission(conn, sid, "2026-06-24", "/dev/null") is True
+    assert approve_submission(conn, sid, "2026-06-24", _OUT) is True
     assert _venue_row(conn, "node/1")["hidden"] == 1
     assert fetch_venues_with_brands(conn) == []
 
@@ -113,7 +121,7 @@ def test_approve_applies_community_edge_and_reject_does_not():
     conn = _seed()
     sid = insert_submission(conn, _row(brand="pilsner urquell", serving="tank"),
                             "2026-06-24T10:00:00")
-    assert approve_submission(conn, sid, "2026-06-24", "/dev/null") is True
+    assert approve_submission(conn, sid, "2026-06-24", _OUT) is True
     assert fetch_venues_with_brands(conn)[0]["brands"] == [
         {"brand": "Pilsner Urquell", "source": "community",
          "serving": "tank", "beer": None, "last_seen": "2026-06-24"}]
@@ -153,7 +161,7 @@ def test_approve_add_venue_creates_venue_and_edge(monkeypatch):
                                        venue_name="Craft Eck", brand="Astra", serving="fass",
                                        address="Musterstraße 5, 20357 Hamburg"),
                             "2026-07-30T10:00:00")
-    assert approve_submission(conn, sid, "2026-07-30", "/dev/null") is True
+    assert approve_submission(conn, sid, "2026-07-30", _OUT) is True
     row = conn.execute(
         "SELECT lat, lon, address FROM venues WHERE osm_id='community/craft-eck'").fetchone()
     assert (row["lat"], row["lon"]) == (53.5678, 9.9643)
@@ -172,7 +180,7 @@ def test_approve_add_venue_stays_pending_when_geocode_fails(monkeypatch):
     sid = insert_submission(conn, _row(kind="add_venue", venue_osm_id="",
                                        venue_name="Nirgendwo", brand="", address="???"),
                             "2026-07-30T10:00:00")
-    assert approve_submission(conn, sid, "2026-07-30", "/dev/null") is False
+    assert approve_submission(conn, sid, "2026-07-30", _OUT) is False
     assert get_submission(conn, sid)["status"] == "pending"
     assert conn.execute(
         "SELECT 1 FROM venues WHERE osm_id LIKE 'community/%'").fetchone() is None
@@ -190,7 +198,7 @@ def test_apply_approved_add_venue_reuses_stored_coords(monkeypatch):
     sid = insert_submission(conn, _row(kind="add_venue", venue_osm_id="",
                                        venue_name="Craft Eck", brand="",
                                        address="Musterstraße 5"), "2026-07-30T10:00:00")
-    assert approve_submission(conn, sid, "2026-07-30", "/dev/null") is True
+    assert approve_submission(conn, sid, "2026-07-30", _OUT) is True
     # Nightly re-apply recreates the venue from the stored coordinates without
     # asking Nominatim again — even after the venue row disappeared.
     conn.execute("DELETE FROM venues WHERE osm_id='community/craft-eck'")
@@ -211,16 +219,16 @@ def test_add_and_remove_specific_beer():
     for beer in ("Edelstoff", "Hell"):
         sid = insert_submission(conn, _row(kind="add", brand="Augustiner",
                                            serving="fass", beer=beer), "2026-06-27T10:00:00")
-        approve_submission(conn, sid, "2026-06-27", "/dev/null")
+        approve_submission(conn, sid, "2026-06-27", _OUT)
     assert {b["beer"] for b in fetch_venues_with_brands(conn)[0]["brands"]} == {"Edelstoff", "Hell"}
 
     # remove only "Hell" — the other beer of the same brand stays
     sid = insert_submission(conn, _row(kind="remove", brand="Augustiner", beer="Hell"),
                             "2026-06-27T10:05:00")
-    approve_submission(conn, sid, "2026-06-27", "/dev/null")
+    approve_submission(conn, sid, "2026-06-27", _OUT)
     assert {b["beer"] for b in fetch_venues_with_brands(conn)[0]["brands"]} == {"Edelstoff"}
 
     # remove with no beer drops the whole brand
     sid = insert_submission(conn, _row(kind="remove", brand="Augustiner"), "2026-06-27T10:06:00")
-    approve_submission(conn, sid, "2026-06-27", "/dev/null")
+    approve_submission(conn, sid, "2026-06-27", _OUT)
     assert fetch_venues_with_brands(conn)[0]["brands"] == []

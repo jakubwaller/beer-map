@@ -187,9 +187,11 @@ def test_add_venue_submission_and_approval(client, monkeypatch):
                         lambda address, near=None: (53.57, 9.96))
     sid = pending[0]["id"]
     assert c.post(f"/api/admin/{sid}/approve", auth=("admin", "secret")).json() == {"ok": True}
-    fc = json.loads(open(out, encoding="utf-8").read())
+    # Brandless, so it exports as a gray dot — into the gray file, without brands.
+    gray_out = out.replace("venues.json", "venues-gray.json")
+    fc = json.loads(open(gray_out, encoding="utf-8").read())
     craft = [f for f in fc["features"] if f["properties"]["name"] == "Craft Eck"][0]
-    assert craft["properties"]["brands"] == []  # gray dot until beers get reported
+    assert "brands" not in craft["properties"]
     assert craft["geometry"]["coordinates"] == [9.96, 53.57]
 
 

@@ -825,8 +825,10 @@ async function boot() {
   const fc = await (await fetch("data/venues.json")).json();
   const venues = loadVenues(fc);
   allVenues = venues.filter((v) => v.brands.length > 0);
-  grayVenues = venues.filter((v) => v.brands.length === 0);
-  grayVenues.forEach((v, i) => { v.grayIdx = i; });
+  // Normally empty — the export splits brandless venues into venues-gray.json.
+  // Kept as a filter so a pre-split venues.json (old data volume right after a
+  // code deploy) still renders its gray dots instead of dropping them.
+  setGrayVenues(venues.filter((v) => v.brands.length === 0));
   // The search dropdown reaches the whole dataset, chips or no chips: someone
   // typing a pub name wants that pub, not "no results, because Tankbier".
   searchPool = venues;
@@ -853,6 +855,29 @@ async function boot() {
   positionZoomCtrl();
   dataReady = true;
   applyFilters();          // updates the count and plots markers (if the map is ready)
+  loadGrayVenues();
+}
+
+function setGrayVenues(venues) {
+  grayVenues = venues;
+  // The gray map layer round-trips venues through feature properties by index.
+  grayVenues.forEach((v, i) => { v.grayIdx = i; });
+}
+
+// The ~38k venues without beer data are ~12x the branded payload; they stream
+// in after the first paint so chips and amber markers never wait for gray dots.
+// Any failure just means no gray dots — the branded map stays up.
+async function loadGrayVenues() {
+  let r;
+  try { r = await fetch("data/venues-gray.json"); } catch { return; }
+  if (!r.ok) return;       // pre-split dataset on the volume — no gray file yet
+  let fc;
+  try { fc = await r.json(); } catch { return; }
+  const gray = loadVenues(fc);
+  if (!gray.length) return;
+  setGrayVenues(grayVenues.concat(gray));
+  searchPool = allVenues.concat(grayVenues);
+  applyFilters();          // count + gray layer now include the late arrivals
 }
 
 boot();
