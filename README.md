@@ -4,10 +4,10 @@
 the repo, Docker service and env files stay `beermap`.
 
 A map of German and Czech drinking venues, filterable by draft beer brand and
-serving type (Fassbier/Tankbier). Seventeen major cities — Berlin, Bremen,
+serving type (Fassbier/Tankbier). Eighteen major cities — Berlin, Bremen,
 Dresden, Düsseldorf, Frankfurt am Main, Hamburg, Hannover, Köln, Leipzig,
-München, Nürnberg and Stuttgart, plus Praha, Brno, Plzeň, Ostrava and České
-Budějovice — are swept in full (every pub/bar/restaurant becomes at least a
+München, Nürnberg and Stuttgart, plus Praha, Brno, Plzeň, Ostrava, České
+Budějovice and Mladá Boleslav — are swept in full (every pub/bar/restaurant becomes at least a
 clickable gray dot); the rest of both countries shows every venue with a known
 brand (OSM `brewery=` tag). The famous Czech tankovnas (the Lokál chain,
 U Pinkasů, Na Parkánu, Budvarka …) are seeded as curated tank entries — OSM has

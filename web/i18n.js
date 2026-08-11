@@ -45,6 +45,7 @@ export const MESSAGES = {
     "city.stuttgart": "Stuttgart",
     "city.brno": "Brünn (Brno)",
     "city.budejovice": "Budweis (České Budějovice)",
+    "city.boleslav": "Mladá Boleslav",
     "city.ostrava": "Ostrava",
     "city.plzen": "Pilsen (Plzeň)",
     "city.praha": "Prag (Praha)",
@@ -88,7 +89,7 @@ export const MESSAGES = {
     "modal.add": "Bier melden",
     "stats.empty": "Noch keine Daten.",
 
-    "about.body": "Zapfkompass zeigt, wo es in Deutschland und Tschechien Bier vom Fass oder Tank gibt — Marke für Marke. Siebzehn Großstädte — Berlin, Bremen, Dresden, Düsseldorf, Frankfurt am Main, Hamburg, Hannover, Köln, Leipzig, München, Nürnberg und Stuttgart sowie Prag, Brünn, Pilsen, Ostrava und Budweis — sind vollständig erfasst (dort ist jede Kneipe anklickbar), im Rest beider Länder alle Orte mit bekannter Biermarke. Die Basis bilden von Hand geprüfte Einträge, ergänzt um OpenStreetMap-Daten und die „Wo gibt's das?“-Seiten der Brauereien — darunter die bekannten Prager Tankovnas mit Tankbier von Pilsner Urquell und Budvar. Jede Verknüpfung trägt eine Quelle und ein Prüfdatum.",
+    "about.body": "Zapfkompass zeigt, wo es in Deutschland und Tschechien Bier vom Fass oder Tank gibt — Marke für Marke. Achtzehn Großstädte — Berlin, Bremen, Dresden, Düsseldorf, Frankfurt am Main, Hamburg, Hannover, Köln, Leipzig, München, Nürnberg und Stuttgart sowie Prag, Brünn, Pilsen, Ostrava, Budweis und Mladá Boleslav — sind vollständig erfasst (dort ist jede Kneipe anklickbar), im Rest beider Länder alle Orte mit bekannter Biermarke. Die Basis bilden von Hand geprüfte Einträge, ergänzt um OpenStreetMap-Daten und die „Wo gibt's das?“-Seiten der Brauereien — darunter die bekannten Prager Tankovnas mit Tankbier von Pilsner Urquell und Budvar. Jede Verknüpfung trägt eine Quelle und ein Prüfdatum.",
 
     "contact.intro": "Fehler entdeckt oder eine Kneipe fehlt? Schreib uns:",
     "contact.legal": "Rechtliches",
@@ -158,6 +159,7 @@ export const MESSAGES = {
     "city.stuttgart": "Stuttgart",
     "city.brno": "Brno",
     "city.budejovice": "České Budějovice",
+    "city.boleslav": "Mladá Boleslav",
     "city.ostrava": "Ostrava",
     "city.plzen": "Plzeň",
     "city.praha": "Praha",
@@ -203,7 +205,7 @@ export const MESSAGES = {
     "modal.add": "Nahlásit pivo",
     "stats.empty": "Zatím žádná data.",
 
-    "about.body": "Zapfkompass ukazuje, kde v Německu a Česku najdete pivo ze sudu nebo z tanku — značku po značce. Sedmnáct velkých měst — Berlín, Brémy, Drážďany, Düsseldorf, Frankfurt nad Mohanem, Hamburk, Hannover, Kolín nad Rýnem, Lipsko, Mnichov, Norimberk a Stuttgart spolu s Prahou, Brnem, Plzní, Ostravou a Českými Budějovicemi — je zmapováno kompletně (každá hospoda je tam klikací), ve zbytku obou zemí najdete všechna místa se známou pivní značkou. Základem jsou ručně ověřené záznamy, doplněné o data z OpenStreetMap a stránky pivovarů „kde načepují“ — včetně známých pražských tankoven s tankovým pivem Pilsner Urquell a Budvar. Každý záznam nese zdroj a datum ověření.",
+    "about.body": "Zapfkompass ukazuje, kde v Německu a Česku najdete pivo ze sudu nebo z tanku — značku po značce. Osmnáct velkých měst — Berlín, Brémy, Drážďany, Düsseldorf, Frankfurt nad Mohanem, Hamburk, Hannover, Kolín nad Rýnem, Lipsko, Mnichov, Norimberk a Stuttgart spolu s Prahou, Brnem, Plzní, Ostravou, Českými Budějovicemi a Mladou Boleslaví — je zmapováno kompletně (každá hospoda je tam klikací), ve zbytku obou zemí najdete všechna místa se známou pivní značkou. Základem jsou ručně ověřené záznamy, doplněné o data z OpenStreetMap a stránky pivovarů „kde načepují“ — včetně známých pražských tankoven s tankovým pivem Pilsner Urquell a Budvar. Každý záznam nese zdroj a datum ověření.",
 
     "contact.intro": "Našli jste chybu, nebo chybí hospoda? Napište nám:",
     "contact.legal": "Právní informace",
@@ -274,6 +276,7 @@ export const MESSAGES = {
     "city.stuttgart": "Stuttgart",
     "city.brno": "Brno",
     "city.budejovice": "České Budějovice (Budweis)",
+    "city.boleslav": "Mladá Boleslav",
     "city.ostrava": "Ostrava",
     "city.plzen": "Pilsen (Plzeň)",
     "city.praha": "Prague",
@@ -317,7 +320,7 @@ export const MESSAGES = {
     "modal.add": "Report beer",
     "stats.empty": "No data yet.",
 
-    "about.body": "Zapfkompass shows where to find keg or tank beer in Germany and Czechia — brand by brand. Seventeen major cities — Berlin, Bremen, Dresden, Düsseldorf, Frankfurt am Main, Hamburg, Hanover, Cologne, Leipzig, Munich, Nuremberg and Stuttgart, plus Prague, Brno, Pilsen, Ostrava and České Budějovice — are covered in full (every pub there is clickable); across the rest of both countries you'll find every place with a known beer brand. The base is hand-checked entries, extended with OpenStreetMap data and the breweries' own “where to drink” pages — including Prague's famous tankovnas serving tank beer from Pilsner Urquell and Budvar. Every link carries a source and a verification date.",
+    "about.body": "Zapfkompass shows where to find keg or tank beer in Germany and Czechia — brand by brand. Eighteen major cities — Berlin, Bremen, Dresden, Düsseldorf, Frankfurt am Main, Hamburg, Hanover, Cologne, Leipzig, Munich, Nuremberg and Stuttgart, plus Prague, Brno, Pilsen, Ostrava, České Budějovice and Mladá Boleslav — are covered in full (every pub there is clickable); across the rest of both countries you'll find every place with a known beer brand. The base is hand-checked entries, extended with OpenStreetMap data and the breweries' own “where to drink” pages — including Prague's famous tankovnas serving tank beer from Pilsner Urquell and Budvar. Every link carries a source and a verification date.",
 
     "contact.intro": "Spotted an error, or is a pub missing? Write to us:",
     "contact.legal": "Legal",

@@ -29,7 +29,7 @@ COUNTRY_CODES = ("DE", "CZ")
 # inside a Kommunalverband (Hannover sits in the level-6 "Region Hannover").
 # Czechia: 8 = statutární město (obec), except Praha, which is its own kraj and
 # mapped at level 4. Levels verified against the OSM boundary relations
-# 2026-08-07.
+# 2026-08-07 (Mladá Boleslav 2026-08-11).
 SWEEP_AREAS = (
     '["name"="Hamburg"]["admin_level"="4"]',
     '["name"="Leipzig"]["admin_level"="6"]',
@@ -48,6 +48,7 @@ SWEEP_AREAS = (
     '["name"="Plzeň"]["admin_level"="8"]',
     '["name"="Ostrava"]["admin_level"="8"]',
     '["name"="České Budějovice"]["admin_level"="8"]',
+    '["name"="Mladá Boleslav"]["admin_level"="8"]',
 )
 
 
