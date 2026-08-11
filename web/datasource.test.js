@@ -22,6 +22,13 @@ test("loadVenues flattens and sorts brands by trust (manual first)", () => {
   assert.equal(v[0].brands[0].source, "manual");  // Ratsherrn before Astra
 });
 
+test("loadVenues defaults a missing brands property (gray export omits it)", () => {
+  const v = loadVenues({ type: "FeatureCollection", features: [
+    { type: "Feature", geometry: { type: "Point", coordinates: [9.99, 53.55] },
+      properties: { name: "Gray Pub", address: "HH", website: null } } ] });
+  assert.deepEqual(v[0].brands, []);
+});
+
 test("buildBrandList is unique + sorted", () => {
   assert.deepEqual(buildBrandList(loadVenues(FC)), ["Astra", "Budweiser Budvar", "Ratsherrn"]);
 });
