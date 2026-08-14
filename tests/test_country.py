@@ -13,7 +13,7 @@ def test_grid_covers_bbox_and_clamps_edge_tiles():
 def test_tile_ql_clips_to_countries():
     ql = build_tile_ql(50.0, 14.0, 51.0, 15.0)
     assert "(50.0,14.0,51.0,15.0)" in ql
-    assert 'ISO3166-1' in ql and "(DE|CZ)" in ql
+    assert 'ISO3166-1' in ql and "(DE|CZ|AT)" in ql
     assert "amenity" in ql and "out center tags" in ql
 
 

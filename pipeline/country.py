@@ -12,9 +12,9 @@ so `--resume` continues an interrupted run instead of starting over.
 
 Venues gathered here are never exported to GeoJSON — they are the brandless
 substrate the frontend fetches per viewport from /api/gray (and the reason a
-village pub anywhere in DE/CZ can now receive community submissions).
+village pub anywhere in DE/CZ/AT can now receive community submissions).
 
-    python -m pipeline.country            # full sweep (~130 requests)
+    python -m pipeline.country            # full sweep (~145 requests)
     python -m pipeline.country --resume   # continue an interrupted run
 """
 from __future__ import annotations
@@ -143,7 +143,7 @@ if __name__ == "__main__":
     ap.add_argument("--tile-deg", type=float, default=1.0,
                     help="edge length of the starting tiles (default 1.0)")
     ap.add_argument("--bbox", metavar="S,W,N,E",
-                    help="sweep only this bbox (default: all of DE+CZ)")
+                    help="sweep only this bbox (default: all of DE+CZ+AT)")
     args = ap.parse_args()
     box = (tuple(float(p) for p in args.bbox.split(","))
            if args.bbox else COUNTRY_BBOX)

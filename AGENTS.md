@@ -4,7 +4,7 @@ Guidance for coding agents working in this repository.
 
 ## What this is
 
-A map of German and Czech drinking venues filterable by draft beer brand and serving type (Fassbier/Tankbier); every venue in both countries is in the DB (`pipeline/country.py` sweeps nationwide, tile by tile), branded venues are exported to GeoJSON, and the brandless majority is served per viewport via `/api/gray`. A Python pipeline builds a SQLite DB + GeoJSON export; a static vanilla-JS frontend renders it; a FastAPI app adds tile/search endpoints and anonymous submissions with a moderation queue. Deployed on a Raspberry Pi behind Caddy.
+A map of German, Austrian and Czech drinking venues filterable by draft beer brand and serving type (Fassbier/Tankbier); every venue in all three countries is in the DB (`pipeline/country.py` sweeps nationwide, tile by tile), branded venues are exported to GeoJSON, and the brandless majority is served per viewport via `/api/gray`. A Python pipeline builds a SQLite DB + GeoJSON export; a static vanilla-JS frontend renders it; a FastAPI app adds tile/search endpoints and anonymous submissions with a moderation queue. Deployed on a Raspberry Pi behind Caddy.
 
 ## Commands
 
@@ -43,7 +43,7 @@ One idempotent build, run nightly via cron and by `docker-run.sh`:
 4. **Community**: all approved submissions re-applied (`submissions.apply_approved`) — this is why approved venue edits/closures survive the OSM re-import each build.
 5. **Export**: GeoJSON to `web/data/venues.json` (`export.py`) — **branded venues only**. Hidden (closed) venues stay in the DB but are excluded. Brandless venues are never exported; `/api/gray/{z}/{x}/{y}` serves them per slippy tile straight off the DB.
 
-Separately, `pipeline/country.py` sweeps every venue in DE+CZ into the same `venues` table: a grid of 1° bbox tiles (a single country-wide Overpass query times out), each clipped to the country areas, quartered on failure, recorded in `country_tiles` for `--resume`. It runs weekly; the nightly run never deletes its venues (everything is upserts).
+Separately, `pipeline/country.py` sweeps every venue in DE+CZ+AT into the same `venues` table: a grid of 1° bbox tiles (a single country-wide Overpass query times out), each clipped to the country areas, quartered on failure, recorded in `country_tiles` for `--resume`. It runs weekly; the nightly run never deletes its venues (everything is upserts).
 
 Everything is upserts keyed on `(venue_id, brand_id, source, beer)` — `beer` (specific product, `''` = brand-only) is part of the PK so one venue can list several beers of a brand. Schema migrations are hand-rolled in `pipeline/db.py` (`_MIGRATIONS` + `_migrate_venue_brand_pk`); the DB was created with `CREATE TABLE IF NOT EXISTS`, so new columns must be added there too.
 
