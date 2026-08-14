@@ -298,3 +298,98 @@ def test_submitter_ip_is_stored_hashed(client):
     stored = list_submissions(get_connection(config.DB_PATH), "pending")[0]["submitter_ip"]
     assert ip not in stored
     assert stored == submissions.hash_ip(ip)  # stable, so rate limiting still works
+
+def test_admin_login_link_sets_cookie_and_authenticates(client):
+    from datetime import datetime
+
+    from api import admin_links
+    c, _ = client
+    token = admin_links.make_token(datetime.now())
+    r = c.get(f"/admin/login?key={token}", follow_redirects=False)
+    assert r.status_code == 302
+    assert r.headers["location"] == "/admin"
+    assert "beermap_admin" in r.headers["set-cookie"]
+    assert "HttpOnly" in r.headers["set-cookie"]
+    # The cookie is Secure, so the TestClient's http:// jar won't replay it —
+    # send it by hand.
+    assert c.get("/admin",
+                 headers={"Cookie": f"beermap_admin={token}"}).status_code == 200
+    assert c.post("/api/admin/approve-all",
+                  headers={"Cookie": f"beermap_admin={token}"}).status_code == 200
+
+
+def test_admin_login_rejects_garbage_expired_and_tampered(client):
+    from datetime import datetime, timedelta
+
+    from api import admin_links
+    c, _ = client
+    assert c.get("/admin/login?key=garbage",
+                 follow_redirects=False).status_code == 403
+    old = datetime.now() - timedelta(seconds=config.ADMIN_LINK_TTL_S + 60)
+    assert c.get(f"/admin/login?key={admin_links.make_token(old)}",
+                 follow_redirects=False).status_code == 403
+    expiry, _, sig = admin_links.make_token(datetime.now()).partition(".")
+    forged = f"{int(expiry) + 9999}.{sig}"  # extend expiry without re-signing
+    assert c.get(f"/admin/login?key={forged}",
+                 follow_redirects=False).status_code == 403
+    # A bad cookie falls back to the basic-auth challenge, not a 403.
+    assert c.get("/admin",
+                 headers={"Cookie": "beermap_admin=garbage"}).status_code == 401
+
+
+def test_admin_links_disabled_without_password(monkeypatch):
+    from datetime import datetime
+
+    from api import admin_links
+    monkeypatch.setattr(config, "ADMIN_PW", "")
+    assert admin_links.make_token(datetime.now()) is None
+    assert admin_links.verify_token("123.abc", datetime.now()) is False
+
+
+def test_notification_carries_fresh_login_link(monkeypatch):
+    from api import notify
+    monkeypatch.setattr(config, "ADMIN_PW", "secret")
+    monkeypatch.setattr(config, "TELEGRAM_BOT_TOKEN", "123:abc")
+    monkeypatch.setattr(config, "TELEGRAM_CHAT_ID", "-100123456789")
+    sent = {}
+    monkeypatch.setattr(notify.httpx, "post",
+                        lambda url, json, timeout: sent.update(json))
+    notify.notify_new_submission("Astra", "node/1")
+    assert "/admin/login?key=" in sent["text"]
+    assert sent["disable_web_page_preview"] is True
+
+
+def test_notification_email_channel(monkeypatch):
+    from api import notify
+    monkeypatch.setattr(config, "ADMIN_PW", "secret")
+    monkeypatch.setattr(config, "TELEGRAM_BOT_TOKEN", "")
+    for k, v in dict(SMTP_HOST="smtp.example.com", SMTP_USER="beer@example.com",
+                     SMTP_PASS="tok", SMTP_TO="mod@example.com").items():
+        monkeypatch.setattr(config, k, v)
+    sent = {}
+
+    class FakeSMTP:
+        def __init__(self, host, port, timeout=None):
+            sent["host"] = host
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *a):
+            return False
+
+        def starttls(self):
+            pass
+
+        def login(self, user, pw):
+            pass
+
+        def send_message(self, msg):
+            sent["msg"] = msg
+
+    monkeypatch.setattr(notify.smtplib, "SMTP", FakeSMTP)
+    notify.notify_new_submission("Astra", "node/1")
+    assert sent["host"] == "smtp.example.com"
+    assert "/admin/login?key=" in sent["msg"].get_content()
+    # The token stays out of the subject: subject lines are not E2E-encrypted.
+    assert "key=" not in sent["msg"]["Subject"]

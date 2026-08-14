@@ -11,7 +11,7 @@ from typing import Optional
 
 from fastapi import Depends, FastAPI, HTTPException, Request, Response, status
 from fastapi.middleware.gzip import GZipMiddleware
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
@@ -22,9 +22,10 @@ from pipeline.db import (fetch_gray_in_bbox, get_connection, init_db,
                          insert_submission, list_submissions, search_venues_db)
 from pipeline.export import _feature
 
-from . import notify
+from . import admin_links, notify
 
-_basic = HTTPBasic()
+_basic = HTTPBasic(auto_error=False)
+_ADMIN_COOKIE = "beermap_admin"
 
 # Link-preview crawlers (WhatsApp, LinkedIn, Slack) read the static head tags
 # and run no JS, so a shared ?lang= link gets its title/description localized
@@ -206,8 +207,14 @@ def _tile_bounds(z: int, x: int, y: int):
     return lat(y + 1), lon(x), lat(y), lon(x + 1)
 
 
-def _require_admin(creds: HTTPBasicCredentials = Depends(_basic)):
-    ok = bool(config.ADMIN_PW) and \
+def _require_admin(request: Request,
+                   creds: Optional[HTTPBasicCredentials] = Depends(_basic)):
+    # Two ways in: the signed-link cookie set by /admin/login (SameSite=Lax,
+    # so a cross-site POST never carries it) or classic basic auth.
+    tok = request.cookies.get(_ADMIN_COOKIE)
+    if tok and admin_links.verify_token(tok, datetime.now()):
+        return
+    ok = creds is not None and bool(config.ADMIN_PW) and \
         secrets.compare_digest(creds.username, config.ADMIN_USER) and \
         secrets.compare_digest(creds.password, config.ADMIN_PW)
     if not ok:
@@ -294,6 +301,22 @@ def create_app() -> FastAPI:
         notify.notify_new_submission(sub.brand or sub.kind,
                                      sub.venue_osm_id or payload["venue_name"])
         return {"ok": True}
+
+    @app.get("/admin/login")
+    def admin_login(key: str = ""):
+        # One-tap login from the submission notification. The GET only
+        # authenticates — link-preview crawlers may fetch it, so every
+        # mutation stays behind a POST on the /admin page.
+        now = datetime.now()
+        if not admin_links.verify_token(key, now):
+            raise HTTPException(status.HTTP_403_FORBIDDEN,
+                                "Link ungültig oder abgelaufen — /admin geht weiter per Basic Auth")
+        resp = RedirectResponse("/admin", status_code=302)
+        resp.set_cookie(
+            _ADMIN_COOKIE, key,
+            max_age=max(0, admin_links.token_expiry(key) - int(now.timestamp())),
+            httponly=True, secure=True, samesite="lax")
+        return resp
 
     @app.get("/admin", response_class=HTMLResponse)
     def admin(conn=Depends(_db), _=Depends(_require_admin)):

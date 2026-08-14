@@ -151,4 +151,13 @@ IP_SALT = os.environ.get("BEERMAP_IP_SALT") or secrets.token_hex(16)
 WEB_DIR = os.environ.get("BEERMAP_WEB_DIR", "web")
 TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
 TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID", "")
-PUBLIC_URL = os.environ.get("BEERMAP_PUBLIC_URL", "https://beermap.jakubwaller.eu")
+PUBLIC_URL = os.environ.get("BEERMAP_PUBLIC_URL", "https://zapfkompass.de")
+# Validity window of the signed one-tap admin links in notifications.
+ADMIN_LINK_TTL_S = int(os.environ.get("BEERMAP_ADMIN_LINK_TTL_S", "172800"))
+# Optional SMTP notification channel (a dedicated submission token, e.g. a
+# Proton SMTP token); host, user, pass and to must all be set or it stays off.
+SMTP_HOST = os.environ.get("BEERMAP_SMTP_HOST", "")
+SMTP_PORT = int(os.environ.get("BEERMAP_SMTP_PORT", "587"))
+SMTP_USER = os.environ.get("BEERMAP_SMTP_USER", "")
+SMTP_PASS = os.environ.get("BEERMAP_SMTP_PASS", "")
+SMTP_TO = os.environ.get("BEERMAP_SMTP_TO", "")
