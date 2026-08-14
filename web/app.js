@@ -26,11 +26,11 @@ const OSM_STYLE = {
   layers: [{ id: "osm", type: "raster", source: "osm" }],
 };
 
-// Whole-map view (Germany + Czechia); `bounds` at init adapts the zoom to the
-// viewport (a phone gets a wider zoom than a desktop for the same box). The
-// topbar overlays the map, so the fit needs extra top padding or Hamburg hides
-// under the chips.
-const MAP_BOUNDS = [[5.5, 47.2], [19.2, 55.1]];
+// Whole-map view (Germany + Czechia + Austria); `bounds` at init adapts the
+// zoom to the viewport (a phone gets a wider zoom than a desktop for the same
+// box). The topbar overlays the map, so the fit needs extra top padding or
+// Hamburg hides under the chips.
+const MAP_BOUNDS = [[5.5, 46.2], [19.2, 55.1]];
 const CITY_VIEWS = {
   berlin: { center: [13.4050, 52.5200], zoom: 11 },
   bremen: { center: [8.8017, 53.0793], zoom: 11.5 },
@@ -50,6 +50,12 @@ const CITY_VIEWS = {
   ostrava: { center: [18.2820, 49.8209], zoom: 11.5 },
   budejovice: { center: [14.4747, 48.9745], zoom: 12 },
   boleslav: { center: [14.9058, 50.4114], zoom: 12.5 },
+  wien: { center: [16.3721, 48.2082], zoom: 11 },
+  graz: { center: [15.4395, 47.0707], zoom: 11.5 },
+  linz: { center: [14.2858, 48.3059], zoom: 12 },
+  salzburg: { center: [13.0430, 47.8022], zoom: 12 },
+  innsbruck: { center: [11.3928, 47.2654], zoom: 12 },
+  klagenfurt: { center: [14.3053, 46.6247], zoom: 12 },
 };
 const dePadding = () => ({
   top: document.getElementById("topbar").offsetHeight + 16,
@@ -285,7 +291,7 @@ function placeLabels(singles, dotBoxes) {
 
 // ---- Gray dots: venues without beer data ----
 // Unlike the (few) beer venues above, these are the brandless rest of the
-// dataset — since the nationwide sweep ~250k venues across DE+CZ — so they
+// dataset — since the nationwide sweep ~250k venues across DE+CZ+AT — so they
 // render as a WebGL circle layer instead of DOM markers, and they are not
 // shipped as a file at all: the viewport's slippy tiles load on demand from
 // /api/gray. Clicking a dot opens the normal venue modal, whose "Marke

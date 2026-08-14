@@ -22,19 +22,24 @@ OVERPASS_BACKOFF_S = float(os.environ.get("BEERMAP_OVERPASS_BACKOFF_S", "2"))
 _AMENITY = '"amenity"~"^(pub|bar|biergarten|restaurant|cafe)$"'
 # Countries the map covers: the city sweep and the brewery-tagged layer are
 # both clipped to these ISO codes.
-COUNTRY_CODES = ("DE", "CZ")
-# One bbox (south, west, north, east) covering Germany and Czechia. The
-# nationwide sweep (pipeline/country.py) tiles it; each tile query is clipped
-# to COUNTRY_CODES, so the foreign slivers inside the box only cost near-empty
-# tiles, never foreign venues.
-COUNTRY_BBOX = (47.2, 5.8, 55.1, 19.0)
+COUNTRY_CODES = ("DE", "CZ", "AT")
+# One bbox (south, west, north, east) covering Germany, Czechia and Austria.
+# The nationwide sweep (pipeline/country.py) tiles it; each tile query is
+# clipped to COUNTRY_CODES, so the foreign slivers inside the box only cost
+# near-empty tiles, never foreign venues. The south edge sits exactly 1.0°
+# (one tile row) below the pre-Austria 47.2, so the existing tile keys in
+# country_tiles stay aligned.
+COUNTRY_BBOX = (46.2, 5.8, 55.1, 19.0)
 # Cities swept in full: every pub/bar/restaurant/cafe there becomes at least a
 # gray dot (the substrate community submissions turn into data). Overpass area
 # filters; Germany: admin_level 4 = Stadtstaat, 6 = kreisfreie Stadt, 8 = Stadt
 # inside a Kommunalverband (Hannover sits in the level-6 "Region Hannover").
 # Czechia: 8 = statutární město (obec), except Praha, which is its own kraj and
-# mapped at level 4. Levels verified against the OSM boundary relations
-# 2026-08-07 (Mladá Boleslav 2026-08-11).
+# mapped at level 4. Austria: 6 = Statutarstadt (the city doubles as its
+# Bezirk), except Wien, which is its own Bundesland at level 4 — and "Salzburg"
+# at level 4 is the Land, so the level filter is what picks the city. Levels
+# verified against the OSM boundary relations 2026-08-07 (Mladá Boleslav
+# 2026-08-11, Austria 2026-08-14).
 SWEEP_AREAS = (
     '["name"="Hamburg"]["admin_level"="4"]',
     '["name"="Leipzig"]["admin_level"="6"]',
@@ -54,13 +59,19 @@ SWEEP_AREAS = (
     '["name"="Ostrava"]["admin_level"="8"]',
     '["name"="České Budějovice"]["admin_level"="8"]',
     '["name"="Mladá Boleslav"]["admin_level"="8"]',
+    '["name"="Wien"]["admin_level"="4"]',
+    '["name"="Graz"]["admin_level"="6"]',
+    '["name"="Linz"]["admin_level"="6"]',
+    '["name"="Salzburg"]["admin_level"="6"]',
+    '["name"="Innsbruck"]["admin_level"="6"]',
+    '["name"="Klagenfurt am Wörthersee"]["admin_level"="6"]',
 )
 
 
 def build_overpass_ql(sweep_areas=SWEEP_AREAS, country_codes=COUNTRY_CODES) -> str:
     """One query for the whole map: the sweep cities in full, plus every
-    brewery-tagged venue in the covered countries (~3.9k in DE plus ~1k in CZ
-    as of 2026-08) so venues with a known brand show up nationwide. A
+    brewery-tagged venue in the covered countries (~3.9k in DE, ~1k in CZ and
+    ~0.5k in AT as of 2026-08) so venues with a known brand show up nationwide. A
     country-wide sweep of *all* venue types is off the table — even counting
     them times out at 300s — until venues are served per-viewport by an API.
     The union dedupes elements both sets catch. The city sweep is additionally
@@ -117,8 +128,15 @@ BRAND_ALIASES = {
     "königpilsner": "König Pilsner",
     "könig pilsener": "König Pilsner",
     "könig pilsner": "König Pilsner",
+    # Salzburg's Augustiner Bräu Kloster Mülln folds into the same chip as the
+    # Munich Augustiner — the tags don't distinguish them, so neither do we.
     "augustiner bräu": "Augustiner",
     "augustiner bräu münchen": "Augustiner",
+    # Austrian OSM tags the Brau-Union brand both bare and with the suffix.
+    "kaiser bier": "Kaiser",
+    "zillertaler": "Zillertal Bier",
+    "zillertal": "Zillertal Bier",
+    "guiness": "Guinness",
 }
 
 
