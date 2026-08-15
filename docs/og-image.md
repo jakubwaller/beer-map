@@ -18,9 +18,11 @@ Refresh it when the look of the map changes or the numbers on it get stale.
    Wait for the tiles, screenshot at device pixel ratio 2 → a 2400×1260 plate.
 3. Drop the plate next to `docs/og-card.html` as `_og-plate.png`, serve that
    directory, and screenshot the card at 1200×630 (again at DPR 2). Adjust the
-   `.plate` transform if the country sits under the type, and update the numbers
-   in `.stats` — they come from the export:
-   `jq '[.features[]] | length, ([.features[] | select(.properties.brands | length > 0)] | length)' web/data/venues.json`
+   `.plate` transform if the countries sit under the type, and update the numbers
+   in `.stats` — total venues from the DB on the deploy host (the export is
+   branded-only, so the big number lives in SQLite), branded from the export:
+   `sqlite3 data/beer-map.sqlite "SELECT COUNT(*) FROM venues"`
+   `jq '.features | length' web/data/venues.json`
 4. Downscale and convert:
    `sips -s format jpeg -s formatOptions 84 -z 630 1200 card.png --out web/og-image.jpg`
 
