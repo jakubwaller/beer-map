@@ -19,6 +19,16 @@ OVERPASS_URLS = [u.strip() for u in os.environ.get(
 ).split(",") if u.strip()]
 OVERPASS_RETRIES = int(os.environ.get("BEERMAP_OVERPASS_RETRIES", "3"))
 OVERPASS_BACKOFF_S = float(os.environ.get("BEERMAP_OVERPASS_BACKOFF_S", "2"))
+# Hosts that publish /api/status. The main instance grants an IP two slots and
+# holds a used one for ~40 s no matter how briefly the query ran, so a sweep
+# firing back to back collects 429s; asking first costs one cheap request.
+OVERPASS_STATUS_HOSTS = {h.strip() for h in os.environ.get(
+    "BEERMAP_OVERPASS_STATUS_HOSTS", "overpass-api.de").split(",") if h.strip()}
+OVERPASS_SLOT_WAIT_MAX_S = float(os.environ.get("BEERMAP_OVERPASS_SLOT_WAIT_MAX_S", "120"))
+# A mirror whose database is older than this is skipped. In August 2026 both
+# fallback mirrors served months-old data with HTTP 200 and no warning; venues
+# mapped since then simply weren't in the answer.
+OVERPASS_MAX_DATA_AGE_H = float(os.environ.get("BEERMAP_OVERPASS_MAX_DATA_AGE_H", "24"))
 _AMENITY = '"amenity"~"^(pub|bar|biergarten|restaurant|cafe)$"'
 # Countries the map covers: the city sweep and the brewery-tagged layer are
 # both clipped to these ISO codes.
