@@ -98,6 +98,8 @@ def sweep_country(db_path=DB_PATH, bbox=COUNTRY_BBOX, tile_deg=1.0, resume=False
             # An exceeded timeout during output can come back as HTTP 200 with
             # a partial element list and only a "remark" admitting it —
             # treating that as success would silently hole the coverage.
+            # osm.fetch_overpass catches this too (and tries the other mirrors
+            # first); the check stays because `fetch` is injectable.
             remark = data.get("remark") or ""
             if "timed out" in remark or "error" in remark.lower():
                 raise RuntimeError(f"overpass remark: {remark[:160]}")
