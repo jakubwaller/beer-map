@@ -1,6 +1,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { loadVenues, buildBrandList, venuesByBrand, venuesByServing, searchVenues, scoreVenue, fold, topBrands, lonToTile, latToTile, tilesForBounds } from "./datasource.js";
+import { loadVenues, buildBrandList, venuesByBrand, venuesByServing, searchVenues, scoreVenue,
+         fold, topBrands, brandChips, searchBrands, lonToTile, latToTile, tilesForBounds }
+  from "./datasource.js";
 
 const FC = {
   type: "FeatureCollection",
@@ -185,6 +187,46 @@ test("topBrands puts Pilsner Urquell first even when it misses the cut", () => {
 test("topBrands moves a pinned brand from mid-list to the front", () => {
   const freq = [["Astra", 50], ["Pilsner Urquell", 40], ["Jever", 10]];
   assert.deepEqual(topBrands(freq, 2), [["Pilsner Urquell", 40], ["Astra", 50]]);
+});
+
+test("brandChips keeps the top row when the selection is already on it", () => {
+  const freq = [["Augustiner", 208], ["Bitburger", 152], ["Krombacher", 138]];
+  assert.deepEqual(brandChips(freq, 2, "Augustiner", []),
+                   [["Augustiner", 208], ["Bitburger", 152]]);
+});
+
+test("brandChips puts a brand picked from the full list in front, with its count", () => {
+  const freq = [["Augustiner", 208], ["Bitburger", 152], ["Zipfer", 3]];
+  assert.deepEqual(brandChips(freq, 2, "Zipfer", []),
+                   [["Zipfer", 3], ["Augustiner", 208], ["Bitburger", 152]]);
+});
+
+test("brandChips survives a selection that has left the data", () => {
+  assert.deepEqual(brandChips([["Augustiner", 208]], 1, "Gone", []),
+                   [["Gone", 0], ["Augustiner", 208]]);
+});
+
+test("searchBrands ranks whole match, prefix, word start, then substring", () => {
+  const freq = [["Radeberger", 110], ["Pilsner Urquell", 393], ["Pils", 4],
+                ["Murauer", 8], ["Ur-Krostitzer", 20]];
+  assert.deepEqual(searchBrands(freq, "pils").map(([n]) => n),
+                   ["Pils", "Pilsner Urquell"]);
+  // prefix ("Ur-…") beats word start ("… Urquell") beats mid-word ("M-ur-auer"),
+  // and Radeberger — which has no "ur" at all — stays out.
+  assert.deepEqual(searchBrands(freq, "ur").map(([n]) => n),
+                   ["Ur-Krostitzer", "Pilsner Urquell", "Murauer"]);
+});
+
+test("searchBrands folds the query like the venue search does", () => {
+  const freq = [["Gösser", 90], ["Köstritzer", 40]];
+  assert.deepEqual(searchBrands(freq, "goss").map(([n]) => n), ["Gösser"]);
+  assert.deepEqual(searchBrands(freq, "KÖSTRITZER").map(([n]) => n), ["Köstritzer"]);
+});
+
+test("searchBrands returns every brand, in frequency order, for an empty query", () => {
+  const freq = [["Augustiner", 208], ["Bitburger", 152]];
+  assert.deepEqual(searchBrands(freq, "  "), freq);
+  assert.notEqual(searchBrands(freq, ""), freq);   // a copy, not the caller's array
 });
 
 test("lonToTile/latToTile follow the slippy scheme (Hamburg at z10)", () => {

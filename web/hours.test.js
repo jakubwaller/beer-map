@@ -1,6 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { parseOpeningHours, openState, statusText, formatWeek } from "./hours.js";
+import { parseOpeningHours, openState, statusText, formatWeek, venueSchedule, venuesOpenNow }
+  from "./hours.js";
 
 // Monday 2026-08-03 18:30 local, unless a test says otherwise.
 const at = (iso) => new Date(iso);
@@ -141,4 +142,34 @@ test("statusText and formatWeek speak Czech and English on request", () => {
   // An unknown language falls back to German rather than crashing.
   assert.equal(statusText(openState(s, at("2026-08-03T18:30")), "fr"),
                "Jetzt geöffnet · bis 01:00");
+});
+
+test("venuesOpenNow keeps the open venues and drops unknown hours", () => {
+  const venues = [
+    { name: "Open", opening_hours: "Mo-Su 17:00-01:00" },
+    { name: "Closed today", opening_hours: "Tu-Su 17:00-01:00" },
+    { name: "Untagged", opening_hours: null },
+    { name: "Unparseable", opening_hours: "nach Absprache" },
+    { name: "Always", opening_hours: "24/7" },
+  ];
+  assert.deepEqual(
+    venuesOpenNow(venues, at("2026-08-03T18:30")).map((v) => v.name),
+    ["Open", "Always"]);
+});
+
+test("venuesOpenNow counts yesterday's after-midnight tail as open", () => {
+  const venues = [{ name: "Late", opening_hours: "Mo 17:00-03:00" }];
+  // Tuesday 01:30 — still inside Monday's run.
+  assert.equal(venuesOpenNow(venues, at("2026-08-04T01:30")).length, 1);
+  assert.equal(venuesOpenNow(venues, at("2026-08-04T04:00")).length, 0);
+});
+
+test("venueSchedule memoizes the parse on the venue object", () => {
+  const v = { opening_hours: "Mo-Su 10:00-22:00" };
+  const first = venueSchedule(v);
+  assert.equal(venueSchedule(v), first);   // same object, not a re-parse
+  assert.equal(v._schedule, first);
+  const bad = { opening_hours: "on request" };
+  assert.equal(venueSchedule(bad), null);
+  assert.equal(bad._schedule, null);       // null is cached, undefined is "not tried yet"
 });

@@ -379,6 +379,93 @@ header {
 .chip .cnt { opacity: .65; font-weight: 500; margin-left: 2px; }
 .chip.active .cnt { opacity: .85; }
 
+/* The open-now switch combines with the serving group rather than belonging to
+   it, so it sits behind a divider and turns green — not amber — when on. */
+.chip.toggle {
+  margin-right: 6px;
+  position: relative;
+}
+.chip.toggle::after {
+  content: "";
+  position: absolute;
+  right: -9px; top: 50%;
+  width: 1px; height: 20px;
+  transform: translateY(-50%);
+  background: var(--line);
+}
+.chip.toggle.active {
+  border-color: var(--good);
+  background: var(--good);
+  color: #fff;
+}
+/* Dashed outline: the picker opens a dialog, it does not filter by itself. */
+.chip.more { border-style: dashed; }
+
+/* ---------- Brand picker (all brands, searchable) ---------- */
+.brand-picker { display: flex; flex-direction: column; gap: 10px; }
+#brand-filter {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  font-family: inherit;
+  font-size: 14px;
+  color: var(--ink);
+  background: #fff;
+}
+#brand-filter:focus {
+  outline: none; border-color: var(--accent);
+  box-shadow: 0 0 0 3px oklch(62% 0.16 45 / .2);
+}
+.brand-list {
+  max-height: min(52vh, 420px);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: #fff;
+}
+.brand-pick {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  padding: 9px 12px;
+  border: 0;
+  border-top: 1px solid var(--line-soft);
+  background: none;
+  font-family: inherit;
+  font-size: 14px;
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+}
+.brand-pick:first-child { border-top: 0; }
+.brand-pick:hover, .brand-pick.active { background: oklch(96% 0.02 70); }
+.brand-pick.active { font-weight: 600; color: var(--accent); }
+.brand-pick .cnt { flex: 0 0 auto; font-size: 12px; color: var(--muted); }
+.brand-more {
+  padding: 9px 12px;
+  border-top: 1px solid var(--line-soft);
+  font-size: 12px;
+  color: var(--muted);
+}
+.brand-reset {
+  align-self: flex-start;
+  padding: 8px 14px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: #fff;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted-2);
+  cursor: pointer;
+}
+.brand-reset:hover { border-color: var(--accent); color: var(--accent); }
+
 /* ---------- Zoom controls ---------- */
 #zoom-ctrl {
   position: absolute;
@@ -749,8 +836,9 @@ button:disabled { opacity: .55; cursor: default; }
   /* 16px keeps iOS Safari from zooming the page when a field takes focus —
      that zoom is what made the "Bier melden" form jump around on a phone. */
   .addbeer input:not([type="radio"]), .venueadd input:not([type="radio"]),
-  .venueform input, .beerform select { font-size: 16px; }
-  .combo-opt, .suggest-name { font-size: 15px; }
+  .venueform input, .beerform select, #brand-filter { font-size: 16px; }
+  .combo-opt, .suggest-name, .brand-pick { font-size: 15px; }
+  .brand-pick { padding: 11px 14px; }
   .suggest-row { padding: 11px 14px; }
 }
 
