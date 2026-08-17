@@ -65,10 +65,11 @@ pytest -v                  # pipeline (Python)
 node --test web/*.test.js  # frontend pure functions (needs Node.js)
 ```
 
-## Cron (Raspberry Pi)
+## Cron (deploy host)
+Both jobs run inside the container, so they need no venv on the host:
 ```cron
-0 4 * * * cd /home/pi/beer-map && /home/pi/beer-map/.venv/bin/python -m pipeline.run >> pipeline.log 2>&1
-0 2 * * 0 cd /home/pi/beer-map && /home/pi/beer-map/.venv/bin/python -m pipeline.country >> country.log 2>&1
+0 4 * * * cd ~/beer-map && docker compose exec -T beermap python -m pipeline.run >> ~/beer-map/pipeline.log 2>&1
+0 2 * * 0 cd ~/beer-map && docker compose exec -T beermap python -m pipeline.country >> ~/beer-map/country.log 2>&1
 ```
 
 ## Status / roadmap
@@ -87,7 +88,7 @@ node --test web/*.test.js  # frontend pure functions (needs Node.js)
   village pub is findable before its area was ever panned over. The
   `SWEEP_AREAS` city list still controls what the *nightly* refresh re-imports.
 
-## API & live curation (on the Pi)
+## API & live curation (on the deploy host)
 - `uvicorn api.app:app` serves the static site **and** the API on one origin.
 - `GET /api/gray/{z}/{x}/{y}` — brandless venues of one slippy tile (z 8–14),
   straight off the DB; `GET /api/search?q=` — nationwide folded name/address

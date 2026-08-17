@@ -1,4 +1,4 @@
-# Deploying beermap to the Pi (Docker)
+# Deploying beermap (Docker)
 
 DNS is already set: `zapfkompass.de` (apex A to the host, Cloudflare-proxied, plus a
 `www` CNAME), kept current by the host's dynamic-DNS updater. The old
