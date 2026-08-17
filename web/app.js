@@ -1,7 +1,7 @@
 import { loadVenues, buildBrandList, venuesByBrand, venuesByServing, searchVenues, fold,
-         topBrands, tilesForBounds }
+         brandChips, searchBrands, tilesForBounds }
   from "./datasource.js?v=__ASSET_VERSION__";
-import { parseOpeningHours, openState, statusText, formatWeek }
+import { openState, statusText, formatWeek, venueSchedule, venuesOpenNow }
   from "./hours.js?v=__ASSET_VERSION__";
 import { initLang, getLang, setLang, t, tn }
   from "./i18n.js?v=__ASSET_VERSION__";
@@ -79,6 +79,7 @@ let brand = null;         // selected brand filter, or null
 // Default "all" so the gray no-data venues show too; "draught" narrows to
 // venues with at least one known brand (fass/tank verified or not).
 let serving = "all";      // all | draught | fass | tank
+let openNow = false;      // "Jetzt geöffnet" toggle — orthogonal to the above
 let search = "";
 let brandFreq = [];       // [ [brand, venueCount], ... ] desc
 
@@ -98,6 +99,9 @@ const SERVING_DEFS = [
   { value: "tank", key: "serving.tank" },
 ];
 
+// Brand chips that fit the bar before the "all brands" picker takes over.
+const TOP_BRAND_CHIPS = 9;
+
 // ---- Filtering ----
 // Venues with beer data get the amber DOM markers; the rest of the dataset
 // (~30k OSM pubs/bars without beer data, from the fully swept cities) shows
@@ -108,11 +112,13 @@ function currentVenues() {
   const servingArg = serving === "all" ? null : serving;
   if (brand) r = venuesByBrand(r, brand, servingArg);
   else if (servingArg) r = venuesByServing(r, servingArg);
+  if (openNow) r = venuesOpenNow(r);
   return searchVenues(r, search);
 }
 
 const grayVisible = () => serving === "all" && !brand;
-const currentGrayVenues = () => (grayVisible() ? searchVenues(grayVenues, search) : []);
+const currentGrayVenues = () =>
+  (grayVisible() ? searchVenues(openNow ? venuesOpenNow(grayVenues) : grayVenues, search) : []);
 
 function applyFilters() {
   const n = currentVenues().length + currentGrayVenues().length;
@@ -121,14 +127,58 @@ function applyFilters() {
   refreshGrayLayer();
 }
 
+// "Open now" is the one filter that goes stale on its own: a map left open on
+// the counter must not still show a pub that shut at 23:00. Re-check every
+// minute while the toggle is on, and redraw only when the answer moved —
+// setData on tens of thousands of gray dots is not something to do for nothing.
+const OPEN_NOW_TICK_MS = 60000;
+let openNowTimer = null;
+let openNowSig = "";
+
+const openNowSignature = () => `${currentVenues().length}/${currentGrayVenues().length}`;
+
+function watchOpenNow() {
+  clearInterval(openNowTimer);
+  openNowTimer = null;
+  if (!openNow) return;
+  openNowSig = openNowSignature();
+  openNowTimer = setInterval(() => {
+    const sig = openNowSignature();
+    if (sig === openNowSig) return;
+    openNowSig = sig;
+    applyFilters();
+  }, OPEN_NOW_TICK_MS);
+}
+
 // ---- Chip bars ----
 function renderServingChips() {
   servingBar.querySelectorAll(".chip").forEach((el) => el.remove());
   const frag = document.createDocumentFragment();
+  // The open-now toggle rides in the same bar but is not part of the group: it
+  // combines with whichever serving (and brand) is selected, so it is a
+  // pressed/unpressed switch rather than a fifth mutually exclusive option.
+  // It leads the bar because on a phone that bar scrolls — anything after the
+  // four serving chips starts off-screen, which for a new filter means
+  // undiscovered.
+  const now = document.createElement("button");
+  now.type = "button";
+  now.id = "chip-open-now";
+  now.className = "chip toggle" + (openNow ? " active" : "");
+  now.setAttribute("aria-pressed", String(openNow));
+  now.title = t("serving.openNowHint");
+  now.innerHTML = `<span aria-hidden="true">🕒</span> ${esc(t("serving.openNow"))}`;
+  now.addEventListener("click", () => {
+    openNow = !openNow;
+    refreshChips();
+    applyFilters();
+    watchOpenNow();
+  });
+  frag.appendChild(now);
   for (const d of SERVING_DEFS) {
     const b = document.createElement("button");
     b.type = "button";
     b.className = "chip" + (serving === d.value ? " active" : "");
+    b.dataset.serving = d.value;
     b.textContent = t(d.key);
     b.addEventListener("click", () => { serving = d.value; refreshChips(); applyFilters(); });
     frag.appendChild(b);
@@ -138,10 +188,10 @@ function renderServingChips() {
 
 function renderBrandChips() {
   brandBar.textContent = "";
-  const top = topBrands(brandFreq, 9);
-  if (!top.length) { brandBar.hidden = true; return; }
+  const chips = brandChips(brandFreq, TOP_BRAND_CHIPS, brand);
+  if (!chips.length) { brandBar.hidden = true; return; }
   brandBar.hidden = false;
-  for (const [name, cnt] of top) {
+  for (const [name, cnt] of chips) {
     const b = document.createElement("button");
     b.type = "button";
     b.className = "chip" + (brand === name ? " active" : "");
@@ -152,16 +202,100 @@ function renderBrandChips() {
     });
     brandBar.appendChild(b);
   }
+  // Nine chips out of ~1500 brands: everything else is one tap away here.
+  const more = document.createElement("button");
+  more.type = "button";
+  more.className = "chip more";
+  more.innerHTML = `${esc(t("brands.all"))} <span class="cnt">${brandFreq.length}</span>`;
+  more.addEventListener("click", openBrandPicker);
+  brandBar.appendChild(more);
+  scrollChipIntoView(brandBar.querySelector(".chip.active"));
 }
 
-// Re-mark active states without rebuilding the whole bar.
+// The bar scrolls horizontally, and the picker that selects a brand sits at its
+// far right end — so the chip for the brand just chosen lands off-screen to the
+// left unless the bar is nudged back to it.
+function scrollChipIntoView(chip) {
+  if (!chip) return;
+  const bar = brandBar.getBoundingClientRect();
+  const box = chip.getBoundingClientRect();
+  if (!box.width) return;   // not laid out yet (boot)
+  if (box.left < bar.left) brandBar.scrollLeft -= bar.left - box.left + 12;
+  else if (box.right > bar.right) brandBar.scrollLeft += box.right - bar.right + 12;
+}
+
+// Re-mark active states. The serving chips only change class; the brand bar is
+// rebuilt because its contents depend on the selection (a brand picked from the
+// full list joins the bar, and leaves it again when switched off).
 function refreshChips() {
-  const servingButtons = servingBar.querySelectorAll(".chip");
+  const servingButtons = servingBar.querySelectorAll(".chip[data-serving]");
   SERVING_DEFS.forEach((d, i) =>
     servingButtons[i]?.classList.toggle("active", serving === d.value));
-  const brandButtons = brandBar.querySelectorAll(".chip");
-  topBrands(brandFreq, 9).forEach(([name], i) =>
-    brandButtons[i]?.classList.toggle("active", brand === name));
+  const nowChip = document.getElementById("chip-open-now");
+  if (nowChip) {
+    nowChip.classList.toggle("active", openNow);
+    nowChip.setAttribute("aria-pressed", String(openNow));
+  }
+  renderBrandChips();
+}
+
+// ---- Brand picker (every brand, searchable) ----
+// Rendering ~1500 buttons at once is what would make the list stutter on a
+// phone, so the view is capped and the rest is reachable by typing.
+const BRAND_PICKER_MAX = 200;
+
+function brandListHTML(query) {
+  const matches = searchBrands(brandFreq, query);
+  if (!matches.length)
+    return `<div class="suggest-empty">${esc(t("brands.none", { q: query.trim() }))}</div>`;
+  const rows = matches.slice(0, BRAND_PICKER_MAX).map(([name, cnt]) =>
+    `<button type="button" class="brand-pick${brand === name ? " active" : ""}" data-value="${esc(name)}">
+       <span class="brand-pick-name">${esc(name)}</span><span class="cnt">${cnt}</span>
+     </button>`).join("");
+  const rest = matches.length - BRAND_PICKER_MAX;
+  return rows + (rest > 0 ? `<div class="brand-more">${esc(tn("brands.more", rest))}</div>` : "");
+}
+
+function pickBrand(name) {
+  brand = brand === name ? null : name;
+  closeModal();
+  refreshChips();
+  applyFilters();
+}
+
+function openBrandPicker() {
+  openModal(t("brands.title"), `
+    <div class="brand-picker">
+      <input id="brand-filter" type="search" placeholder="${esc(t("brands.search"))}"
+             autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
+             aria-label="${esc(t("brands.search"))}">
+      <div id="brand-list" class="brand-list" role="listbox" aria-label="${esc(t("brands.title"))}"></div>
+      ${brand ? `<button type="button" id="brand-reset" class="brand-reset">${esc(t("brands.reset"))}</button>` : ""}
+    </div>`);
+  const input = document.getElementById("brand-filter");
+  const list = document.getElementById("brand-list");
+  const render = () => { list.innerHTML = brandListHTML(input.value); };
+  render();
+  input.addEventListener("input", render);
+  input.addEventListener("keydown", (e) => {
+    if (e.key !== "Enter") return;
+    e.preventDefault();          // pick the top match instead of submitting
+    const first = list.querySelector(".brand-pick");
+    if (first) pickBrand(first.dataset.value);
+  });
+  list.addEventListener("click", (e) => {
+    const row = e.target.closest(".brand-pick");
+    if (row) pickBrand(row.dataset.value);
+  });
+  document.getElementById("brand-reset")?.addEventListener("click", () => {
+    brand = null;
+    closeModal();
+    refreshChips();
+    applyFilters();
+  });
+  // Only on a pointer device: autofocusing on a phone raises the keyboard over
+  // the very list the visitor came to browse.
+  if (!matchMedia("(pointer: coarse)").matches) input.focus();
 }
 
 // ---- Markers with grid-bucket clustering ----
@@ -480,11 +614,6 @@ function beerRow(osm, b) {
 
 // Opening hours come from the OSM `opening_hours` tag. Anything the parser
 // can't read is printed verbatim rather than guessed at — see web/hours.js.
-function venueSchedule(v) {
-  if (v._schedule === undefined) v._schedule = parseOpeningHours(v.opening_hours);
-  return v._schedule;
-}
-
 function hoursBlock(v) {
   if (!v.opening_hours) return "";
   const schedule = venueSchedule(v);
@@ -868,6 +997,7 @@ langSelect.addEventListener("change", () => {
   closeModal();
   closeSuggestions();
   renderServingChips();
+  renderBrandChips();
   applyFilters();
 });
 applyStaticI18n();

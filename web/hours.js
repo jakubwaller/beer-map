@@ -165,6 +165,25 @@ export function openState(schedule, now = new Date()) {
   return { open: false };  // never open on any day
 }
 
+/** Parsed schedule for a venue, memoized on the venue object. The open-now
+ *  filter re-runs on every pan and once a minute over the whole loaded set, so
+ *  the tag must be parsed once per venue, not once per pass. */
+export function venueSchedule(v) {
+  if (v._schedule === undefined) v._schedule = parseOpeningHours(v.opening_hours);
+  return v._schedule;
+}
+
+/** The venues open at `now`. A venue whose tag is missing or out of the
+ *  parser's scope drops out: the filter answers "open now", and "we don't
+ *  know" is not a yes — same reason the popup prints an unreadable tag
+ *  verbatim instead of guessing. */
+export function venuesOpenNow(venues, now = new Date()) {
+  return venues.filter((v) => {
+    const state = openState(venueSchedule(v), now);
+    return !!(state && state.open);
+  });
+}
+
 export function statusText(state, lang = "de") {
   if (!state) return "";
   const L = locale(lang);

@@ -55,7 +55,9 @@ Everything is upserts keyed on `(venue_id, brand_id, source, beer)` — `beer` (
 
 ### Frontend (`web/`)
 
-No build step, no npm deps: vanilla ES modules + vendored MapLibre (`web/vendor/`). The pure functions live in `datasource.js` (load/dedupe/filter plus the folded, token-scored search) and `hours.js` (the OSM `opening_hours` subset parser, "open now" and the German week view) — those two are the unit-tested part, via `node --test web/*.test.js`. `app.js` does the map, filter UI, search dropdown, brand autocomplete, and submission forms.
+No build step, no npm deps: vanilla ES modules + vendored MapLibre (`web/vendor/`). The pure functions live in `datasource.js` (load/dedupe/filter, the folded token-scored venue search, and the brand chip/picker lists) and `hours.js` (the OSM `opening_hours` subset parser, "open now" and the German week view) — those two are the unit-tested part, via `node --test web/*.test.js`. `app.js` does the map, filter UI, search dropdown, brand autocomplete, and submission forms.
+
+Three filters combine: the serving group (all/draught/fass/tank), a brand, and the "Jetzt geöffnet" toggle. Open-now drops every venue whose `opening_hours` is missing or outside the parser's scope — "we don't know" is not a yes — and re-checks itself every minute, since it is the one filter that goes stale while the map just sits there. Only ~9 of the ~1500 brands fit the chip bar; the rest live behind the "Alle Marken" chip, whose picker searches all of them and puts the chosen one in front of the bar so it stays visible and switch-off-able.
 
 Two mobile-Safari rules the UI depends on: form inputs are ≥16px on small screens (anything smaller makes iOS zoom the page on focus), and suggestion lists are hand-rolled rather than `<datalist>`, which mobile Safari renders erratically.
 

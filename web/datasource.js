@@ -74,6 +74,38 @@ export function topBrands(freq, n, pinned = PINNED_BRANDS) {
   return [...first, ...rest].slice(0, n);
 }
 
+/** The brand chips to render: the top `n`, plus the selected brand in front
+ *  when it isn't among them. Only ~10 of the ~1500 brands fit the bar, so a
+ *  brand chosen from the full-list picker would otherwise filter the map with
+ *  nothing on screen to show — or switch off — the active filter. */
+export function brandChips(freq, n, selected = null, pinned = PINNED_BRANDS) {
+  const top = topBrands(freq, n, pinned);
+  if (!selected || top.some(([name]) => name === selected)) return top;
+  return [freq.find(([name]) => name === selected) || [selected, 0], ...top];
+}
+
+/** All brands matching `query`, best match first: whole string, then prefix,
+ *  then word start, then substring anywhere; within a tier the frequency order
+ *  of `freq` survives (Array#sort is stable), so "pils" leads with Pilsner
+ *  Urquell rather than with whatever obscure brand shares the letters. An
+ *  empty query returns every brand in frequency order. */
+export function searchBrands(freq, query) {
+  const q = fold(query);
+  if (!q) return [...freq];
+  const tier = ([name]) => {
+    const f = fold(name);
+    if (f === q) return 0;
+    if (f.startsWith(q)) return 1;
+    if (startsWord(f, q)) return 2;
+    return f.includes(q) ? 3 : 4;
+  };
+  return freq
+    .map((entry) => ({ entry, t: tier(entry) }))
+    .filter((h) => h.t < 4)
+    .sort((a, b) => a.t - b.t)
+    .map((h) => h.entry);
+}
+
 export function venuesByBrand(venues, brand, serving = null) {
   return venues.filter((v) =>
     v.brands.some((b) => b.brand === brand && (!serving || servingMatch(b, serving))));
