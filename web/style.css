@@ -443,6 +443,9 @@ header {
   cursor: pointer;
 }
 .brand-pick:first-child { border-top: 0; }
+/* "Brands" come from OSM: some are 70-character sentences. Let them wrap
+   inside the row rather than push the venue count off the edge. */
+.brand-pick-name { min-width: 0; overflow-wrap: anywhere; }
 .brand-pick:hover, .brand-pick.active { background: oklch(96% 0.02 70); }
 .brand-pick.active { font-weight: 600; color: var(--accent); }
 .brand-pick .cnt { flex: 0 0 auto; font-size: 12px; color: var(--muted); }
