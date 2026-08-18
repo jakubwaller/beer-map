@@ -97,7 +97,7 @@ Both jobs run inside the container, so they need no venv on the host:
 - `/admin` — HTTP Basic (`BEERMAP_ADMIN_PW`) moderation queue; approve = instant re-export.
 - Approved edits are `source="community"`, ranked just below your `manual` curation.yaml.
 - **Docker deploy:** `./docker-run.sh` (build + start + build dataset), `./docker-stop.sh`.
-  Full steps in `deploy/DEPLOY.md`. `zapfkompass.de` is live; `www.zapfkompass.de` and the
+  Full steps in `docs/DEPLOY.md`. `zapfkompass.de` is live; `www.zapfkompass.de` and the
   old `beermap.jakubwaller.eu` redirect there.
 
 ## Adding a brand finder

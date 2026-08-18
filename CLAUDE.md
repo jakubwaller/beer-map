@@ -6,6 +6,19 @@ Guidance for coding agents working in this repository.
 
 A map of German, Austrian and Czech drinking venues filterable by draft beer brand and serving type (Fassbier/Tankbier); every venue in all three countries is in the DB (`pipeline/country.py` sweeps nationwide, tile by tile), branded venues are exported to GeoJSON, and the brandless majority is served per viewport via `/api/gray`. A Python pipeline builds a SQLite DB + GeoJSON export; a static vanilla-JS frontend renders it; a FastAPI app adds tile/search endpoints and anonymous submissions with a moderation queue. Deployed as a Docker container behind Caddy on a Linux VPS (it ran on a Raspberry Pi until August 2026 — older notes still say "the Pi").
 
+## Working in this repo
+
+**Work in a git worktree, not this checkout.** More than one session runs here at once and they
+share the working tree. Run `git status` before you edit anything: modified or untracked files you
+did not create mean someone else is mid-task, and a `git add -A` or `git checkout -- .` will eat
+their work with no warning. Isolate instead:
+
+```bash
+git worktree add -b <branch> ~/gitlab/.worktrees/beermap-<task> main
+```
+
+Stage by naming paths, never `git add -A` / `git commit -a`, in any checkout you share.
+
 ## Commands
 
 ```bash
@@ -80,10 +93,13 @@ When a bugfix or feature is ready, ship it end to end without being asked for ea
 2. **Branch + commit**: create a descriptive branch off `main` (never commit to `main` directly), commit the change.
 3. **PR**: push and open a GitHub PR with `gh pr create` (summary + test results in the body).
 4. **Merge**: `gh pr merge --squash --delete-branch` once CI/checks (if any) pass.
-5. **Deploy**: `ssh <deploy-host> "cd ~/beer-map && git pull && ./docker-run.sh"` — rebuilds the image, restarts the container, and rebuilds the dataset.
-6. **Verify**: `curl -s https://zapfkompass.de/api/brands | head` and `curl -s -o /dev/null -w "%{http_code}\n" https://zapfkompass.de/` should return brands and `200`. Use the canonical domain — `beermap.jakubwaller.eu` only 301s here, so verifying against it reports a healthy deploy as a failure.
+5. **Deploy and verify** per **[`docs/DEPLOY.md`](docs/DEPLOY.md)** — that file is the runbook and the only place deploy commands live. Do not copy them here; a second copy is what rots. (It already did: the verify step drifted to a domain that only 301s, and reported a healthy deploy as a failure until #47.)
 
-If tests fail or the deploy verification fails, stop and report — do not merge or leave the server half-deployed (re-run `./docker-run.sh` after a fix rolls forward).
+Verify against **https://zapfkompass.de**, the canonical host. `www.zapfkompass.de` and `beermap.jakubwaller.eu` only redirect there, so checking them reports a healthy deploy as a failure.
+
+A web-only change still needs the deploy, but not a dataset rebuild — the pipeline is what takes the time, not the container.
+
+If tests fail or the deploy verification fails, stop and report — do not merge or leave the server half-deployed.
 
 ## Tests
 
