@@ -112,6 +112,10 @@ export const MESSAGES = {
     "contact.legal": "Rechtliches",
     "contact.imprint": "Impressum",
     "contact.privacy": "Datenschutz",
+    "kofi.short": "☕ Kaffee",
+    "kofi.aria": "Kaffee spendieren (Ko-fi)",
+    "kofi.cta": "☕ Kaffee spendieren",
+    "kofi.free": "Zapfkompass ist kostenlos und werbefrei.",
 
     "add.p1": "Klick auf eine Kneipe direkt auf der Karte — dort kannst du eine Marke und Ausschankart (Fass/Tank) melden.",
     "add.p2strong": "Fehlt ein Ort komplett?",
@@ -246,6 +250,10 @@ export const MESSAGES = {
     "contact.legal": "Právní informace",
     "contact.imprint": "Impressum",
     "contact.privacy": "Ochrana údajů",
+    "kofi.short": "☕ Káva",
+    "kofi.aria": "Kup mi kávu (Ko-fi)",
+    "kofi.cta": "☕ Kup mi kávu",
+    "kofi.free": "Zapfkompass je zdarma a bez reklam.",
 
     "add.p1": "Klikněte na hospodu přímo na mapě — tam můžete nahlásit značku a způsob výčepu (sud/tank).",
     "add.p2strong": "Chybí místo úplně?",
@@ -378,6 +386,10 @@ export const MESSAGES = {
     "contact.legal": "Legal",
     "contact.imprint": "Imprint",
     "contact.privacy": "Privacy",
+    "kofi.short": "☕ Coffee",
+    "kofi.aria": "Buy me a coffee (Ko-fi)",
+    "kofi.cta": "☕ Buy me a coffee",
+    "kofi.free": "Zapfkompass is free and ad-free.",
 
     "add.p1": "Click a pub directly on the map — there you can report a brand and serving type (keg/tank).",
     "add.p2strong": "Is a place missing entirely?",
