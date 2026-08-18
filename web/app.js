@@ -686,6 +686,7 @@ function openContact() {
   openModal(t("modal.contact"), `<div class="modal-text">
     <p>${esc(t("contact.intro"))} <a href="mailto:beermap@jakubwaller.eu">beermap@jakubwaller.eu</a></p>
     <p>${esc(t("contact.legal"))}: <a href="impressum.html">${esc(t("contact.imprint"))}</a> · <a href="datenschutz.html">${esc(t("contact.privacy"))}</a></p>
+    <p>${esc(t("kofi.free"))} <a href="https://ko-fi.com/jakubwaller" target="_blank" rel="noopener">${esc(t("kofi.cta"))}</a></p>
   </div>`);
 }
 
