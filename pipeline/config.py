@@ -19,6 +19,18 @@ OVERPASS_URLS = [u.strip() for u in os.environ.get(
 ).split(",") if u.strip()]
 OVERPASS_RETRIES = int(os.environ.get("BEERMAP_OVERPASS_RETRIES", "3"))
 OVERPASS_BACKOFF_S = float(os.environ.get("BEERMAP_OVERPASS_BACKOFF_S", "2"))
+# Circuit breaker (osm.py). Retries ride out a flapping host; they are the
+# wrong tool for one that has stopped talking to us — on 2026-08-23
+# overpass-api.de refused this host's IPv4 address at the TCP level for six
+# hours while both mirrors answered HTTP 500 to everything, and the weekly
+# sweep kept knocking: 508 tiles × 3 attempts × 3 hosts. A host whose port
+# will not even open (refused, unreachable) is rested on the spot; one that
+# keeps failing at the HTTP level is rested after TRIP_AFTER consecutive
+# queries that exhausted their retries. The rest doubles with each consecutive
+# trip up to TRIP_MAX_S; a successful answer clears the slate.
+OVERPASS_TRIP_AFTER = int(os.environ.get("BEERMAP_OVERPASS_TRIP_AFTER", "3"))
+OVERPASS_TRIP_COOLDOWN_S = float(os.environ.get("BEERMAP_OVERPASS_TRIP_COOLDOWN_S", "900"))
+OVERPASS_TRIP_MAX_S = float(os.environ.get("BEERMAP_OVERPASS_TRIP_MAX_S", "7200"))
 # Hosts that publish /api/status. The main instance grants an IP two slots and
 # holds a used one for ~40 s no matter how briefly the query ran, so a sweep
 # firing back to back collects 429s; asking first costs one cheap request.
