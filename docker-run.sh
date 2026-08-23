@@ -9,5 +9,5 @@ mkdir -p data web-data   # data/ = private sqlite, web-data/ = the served export
 export ASSET_VERSION="$(git rev-parse --short HEAD 2>/dev/null || date +%s)"
 docker compose up -d --build
 echo "Building dataset (OSM + finders + curation + approved submissions)..."
-docker compose exec -T beermap python -m pipeline.run
+docker compose run --rm pipeline python -m pipeline.run
 echo "beermap is up on 127.0.0.1:8011"
