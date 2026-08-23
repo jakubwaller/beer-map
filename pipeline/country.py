@@ -32,6 +32,12 @@ from .db import get_connection, init_db, upsert_brand, upsert_edge, upsert_venue
 # further; 1.0° tiles quarter at most twice (1.0 -> 0.5 -> 0.25).
 MIN_TILE_DEG = 0.3
 RESUME_WINDOW_H = 24
+# How often one run waits for osm.py's circuit breaker (every host resting)
+# before giving up. The rests double — 15 min, 30, 60 — so three of them are
+# about two hours of a service that is not talking to us; after that the run
+# stops and `--resume` picks the sweep up later. Splitting the tile would be
+# wrong: nothing was asked, so nothing was too big.
+MAX_BREAKER_WAITS = 3
 
 
 def build_tile_ql(south, west, north, east,
@@ -87,6 +93,7 @@ def sweep_country(db_path=DB_PATH, bbox=COUNTRY_BBOX, tile_deg=1.0, resume=False
     stats = {"tiles": 0, "skipped": 0, "split": 0, "failed": 0,
              "venues": 0, "edges": 0}
     failures: list[str] = []
+    breaker_waits = 0
     while stack:
         s, w, n, e = stack.pop()
         key = _key(s, w, n, e)
@@ -103,6 +110,19 @@ def sweep_country(db_path=DB_PATH, bbox=COUNTRY_BBOX, tile_deg=1.0, resume=False
             remark = data.get("remark") or ""
             if "timed out" in remark or "error" in remark.lower():
                 raise RuntimeError(f"overpass remark: {remark[:160]}")
+        except osm.OverpassUnavailable as exc:
+            breaker_waits += 1
+            if breaker_waits > MAX_BREAKER_WAITS:
+                raise RuntimeError(
+                    f"Overpass unreachable through {MAX_BREAKER_WAITS} rests — "
+                    f"giving up with {len(stack) + 1} tiles left, rerun with "
+                    f"--resume ({exc})") from exc
+            wait = osm.breaker_wait_s()
+            print(f"  {exc} — waiting {wait / 60:.0f} min "
+                  f"({breaker_waits}/{MAX_BREAKER_WAITS})", file=sys.stderr)
+            time.sleep(wait)
+            stack.append((s, w, n, e))  # the same tile again, unsplit
+            continue
         except Exception as exc:  # noqa: BLE001 — any failure: split or give up
             if n - s > MIN_TILE_DEG or e - w > MIN_TILE_DEG:
                 stats["split"] += 1

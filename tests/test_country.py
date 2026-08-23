@@ -1,3 +1,6 @@
+import pytest
+
+from pipeline import country, osm
 from pipeline.country import build_tile_ql, grid, sweep_country
 from pipeline.db import get_connection
 
@@ -87,3 +90,34 @@ def test_timeout_remark_is_a_failure_not_partial_data(tmp_path):
                           bbox=(50.0, 14.0, 50.2, 14.2), fetch=fetch, sleep_s=0)
     assert stats["failed"] == 1 and stats["tiles"] == 0
     assert stats["failures"] == ["50,14,50.2,14.2"]
+
+
+def test_every_host_resting_waits_and_retries_the_same_tile_unsplit(tmp_path, monkeypatch):
+    calls = []
+
+    def fetch(ql):
+        calls.append(ql)
+        if len(calls) < 3:
+            raise osm.OverpassUnavailable("every Overpass host is resting")
+        return {"elements": []}
+
+    slept = []
+    monkeypatch.setattr(country.time, "sleep", slept.append)
+    monkeypatch.setattr(country.osm, "breaker_wait_s", lambda urls=None, now=None: 900.0)
+    stats = sweep_country(db_path=str(tmp_path / "t.sqlite"),
+                          bbox=(50.0, 14.0, 51.0, 15.0), fetch=fetch, sleep_s=0)
+    assert slept == [900.0, 900.0]
+    assert len(calls) == 3 and all("(50.0,14.0,51.0,15.0)" in q for q in calls)
+    assert stats == {"tiles": 1, "skipped": 0, "split": 0, "failed": 0,
+                     "venues": 0, "edges": 0, "failures": []}
+
+
+def test_gives_up_after_three_rests_with_a_resume_hint(tmp_path, monkeypatch):
+    def fetch(ql):
+        raise osm.OverpassUnavailable("every Overpass host is resting")
+
+    monkeypatch.setattr(country.time, "sleep", lambda s: None)
+    monkeypatch.setattr(country.osm, "breaker_wait_s", lambda urls=None, now=None: 900.0)
+    with pytest.raises(RuntimeError, match="3 rests.*rerun with --resume"):
+        sweep_country(db_path=str(tmp_path / "t.sqlite"),
+                      bbox=(50.0, 14.0, 51.0, 15.0), fetch=fetch, sleep_s=0)
