@@ -6,6 +6,7 @@ services:
         # Cache-busting asset version; docker-run.sh sets it to the git short SHA.
         ASSET_VERSION: ${ASSET_VERSION:-dev}
     container_name: beermap
+    image: beer-map-beermap   # named so the pipeline service below can reuse it
     restart: unless-stopped
     # No host port: the only ingress is Caddy over web_proxy (reverse_proxy
     # beermap:8011). This keeps X-Forwarded-For trustworthy.
@@ -23,6 +24,28 @@ services:
       - ./curation.yaml:/app/curation.yaml   # edit curation without rebuilding
     networks:
       - web_proxy                   # shared net the Caddy container reverse-proxies over
+
+  # The batch jobs: `docker compose run --rm pipeline python -m pipeline.run`
+  # (nightly) and `... python -m pipeline.country` (weekly). Same image and
+  # data mounts as beermap, but on the host network: the jobs only make
+  # outbound requests, and on the host they have IPv6. Docker's bridge networks
+  # here are IPv4-only, and on 2026-08-23 overpass-api.de TCP-refused this
+  # host's IPv4 address for hours while answering the same host over IPv6 —
+  # run inside beermap, every query died with "Network is unreachable". Not
+  # started with the stack (profile); needs the image built by `up --build`.
+  pipeline:
+    image: beer-map-beermap
+    profiles: ["tools"]
+    env_file:
+      - deploy/beermap.env
+    environment:
+      - BEERMAP_DB_PATH=/app/data/beer-map.sqlite
+      - BEERMAP_OUT_PATH=/app/web/data/venues.json
+    volumes:
+      - ./data:/app/data
+      - ./web-data:/app/web/data
+      - ./curation.yaml:/app/curation.yaml
+    network_mode: host
 
 networks:
   web_proxy:

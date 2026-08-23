@@ -66,11 +66,15 @@ node --test web/*.test.js  # frontend pure functions (needs Node.js)
 ```
 
 ## Cron (deploy host)
-Both jobs run inside the container, so they need no venv on the host:
+Both jobs run in a throwaway container from the same image (the `pipeline` service, on
+the host network so it has IPv6 — see `docker-compose.yml`), so they need no venv on the host:
 ```cron
-0 4 * * * cd ~/beer-map && docker compose exec -T beermap python -m pipeline.run >> ~/beer-map/pipeline.log 2>&1
-0 2 * * 0 cd ~/beer-map && docker compose exec -T beermap python -m pipeline.country >> ~/beer-map/country.log 2>&1
+0 4 * * * cd ~/beer-map && docker compose run --rm pipeline python -m pipeline.run >> ~/beer-map/pipeline.log 2>&1
+0 5 * * 0 cd ~/beer-map && docker compose run --rm pipeline python -m pipeline.country >> ~/beer-map/country.log 2>&1
 ```
+Sunday 05:00, not 02:00: papa-map on the same host sweeps Overpass from 02:00 for up to
+two hours, and on 2026-08-23 Overpass banned the shared IPv4 address four minutes after
+both jobs had started in the same minute. Keep them apart.
 
 ## Status / roadmap
 - **Finders:** Ratsherrn (Fassbier) works via static HTML. The Pilsner Urquell

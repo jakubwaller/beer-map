@@ -41,8 +41,12 @@ exported GeoJSON belongs in `web-data/`**. The app refuses to start if
 
 `crontab -e`:
 ```cron
-0 4 * * * cd ~/beer-map && docker compose exec -T beermap python -m pipeline.run >> ~/beer-map/pipeline.log 2>&1
+0 4 * * * cd ~/beer-map && docker compose run --rm pipeline python -m pipeline.run >> ~/beer-map/pipeline.log 2>&1
+0 5 * * 0 cd ~/beer-map && docker compose run --rm pipeline python -m pipeline.country >> ~/beer-map/country.log 2>&1
 ```
+The `pipeline` service is the same image on the host network (IPv6, see
+`docker-compose.yml`). The weekly sweep sits at Sunday 05:00 so it never starts alongside
+papa-map's 02:00 sweep on the same host: Overpass bans per source IP, and did on 2026-08-23.
 
 ## Moderation
 
