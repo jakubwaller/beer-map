@@ -40,8 +40,6 @@ python -m pipeline.country           # nationwide venue sweep (weekly; --resume 
 python -m http.server -d web 8000    # serve frontend only (no API)
 uvicorn api.app:app                  # serve frontend + API on one origin
 python -m pipeline.export_curation   # print approved community subs as curation.yaml entries
-
-./docker-run.sh                      # build + start container + rebuild dataset (deploy)
 ```
 
 Code targets Python 3.9+ — every module starts with `from __future__ import annotations`; keep union type hints (`str | None`) behind it.
@@ -105,7 +103,7 @@ When a bugfix or feature is ready, ship it end to end without being asked for ea
 
 Verify against **https://zapfkompass.de**, the canonical host. `www.zapfkompass.de` and `beermap.jakubwaller.eu` only redirect there, so checking them reports a healthy deploy as a failure.
 
-A web-only change still needs the deploy, but not a dataset rebuild — the pipeline is what takes the time, not the container.
+A web-only change still needs the deploy, but not a dataset rebuild — the pipeline is what takes the time, not the container. The runbook has that shorter path; it is not `./docker-run.sh` with the last step left off, because the asset cache-buster then has to be passed by hand or Cloudflare keeps serving the old bundle.
 
 If tests fail or the deploy verification fails, stop and report — do not merge or leave the server half-deployed.
 

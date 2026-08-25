@@ -55,9 +55,33 @@ Approvals apply the edit and re-export `venues.json` instantly.
 
 ## Update the app
 
+The full path — rebuild the image, then rebuild the dataset inside it:
+
 ```bash
 cd ~/beer-map && git pull && ./docker-run.sh   # rebuilds image + dataset
 ```
+
+**A change that does not touch the data does not need the dataset rebuild.** The image build takes
+seconds; `pipeline.run` re-queries Overpass and takes minutes. So for a frontend, API or copy
+change:
+
+```bash
+cd ~/beer-map && git pull && ASSET_VERSION="$(git rev-parse --short HEAD)" docker compose up -d --build
+```
+
+**Setting `ASSET_VERSION` is not optional.** It is a build arg, `sed`-substituted into
+`web/index.html` and `web/app.js` at image build time (`Dockerfile`); omit it and Compose falls back
+to `${ASSET_VERSION:-dev}`, so every deploy serves `app.js?v=dev` — a URL that never changes, which
+means Cloudflare keeps handing out the previous copy for hours. `docker-run.sh` exports it for you;
+this command has to do it itself. Check what is actually live with:
+
+```bash
+curl -s https://zapfkompass.de/ | grep -oE 'app\.js\?v=[a-f0-9]+'   # must match the deployed SHA
+```
+
+Take the full path whenever the dataset itself has to change: a new or edited finder, a hand-edited
+`curation.yaml`, a new city. The nightly cron below does the same rebuild, so a data change that can
+wait until 04:00 needs no deploy at all.
 
 ## Cloudflare cache
 
