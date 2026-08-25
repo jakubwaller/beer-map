@@ -98,7 +98,7 @@ All runtime config is env vars read in `pipeline/config.py` (`BEERMAP_*`, `TELEG
 When a bugfix or feature is ready, ship it end to end without being asked for each step:
 
 1. **Test**: `pytest -v` and `node --test web/*.test.js` — all green before anything else.
-2. **Branch + commit**: create a descriptive branch off `main` (never commit to `main` directly), commit the change.
+2. **Branch + commit**: create a descriptive branch off `origin/main` (never commit to `main` directly), commit the change.
 3. **PR**: push and open a GitHub PR with `gh pr create` (summary + test results in the body).
 4. **Merge**: `gh pr merge --squash --delete-branch` once CI/checks (if any) pass.
 5. **Deploy and verify** per **[`docs/DEPLOY.md`](docs/DEPLOY.md)** — that file is the runbook and the only place deploy commands live. Do not copy them here; a second copy is what rots. (It already did: the verify step drifted to a domain that only 301s, and reported a healthy deploy as a failure until #47.)
