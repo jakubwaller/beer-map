@@ -650,10 +650,10 @@ function openVenueModal(v) {
     `<form class="addbeer" data-osm="${esc(osm)}">
        <ul class="staged" hidden></ul>
        <span class="combo">
-         <input name="brand" data-combo placeholder="${esc(t("venue.addBrand"))}" autocomplete="off" required>
+         <input name="brand" data-combo placeholder="${esc(t("venue.addBrand"))}" maxlength="80" autocomplete="off" required>
          <div class="combo-list" hidden></div>
        </span>
-       <input name="beer" placeholder="${esc(t("venue.beerOptional"))}">
+       <input name="beer" placeholder="${esc(t("venue.beerOptional"))}" maxlength="80">
        <label><input type="radio" name="serving" value="fass" checked>${esc(t("beer.fass"))}</label>
        <label><input type="radio" name="serving" value="tank">${esc(t("beer.tank"))}</label>
        <input class="hp" name="hp" tabindex="-1" autocomplete="off">
@@ -1087,24 +1087,24 @@ function submissionBody(form, action) {
 // A venue typically pours one Tankbier and the rest Fassbier, so the serving
 // type belongs to the row, not to the report. Each staged row is sent as its
 // own submission so /admin can approve them one at a time.
-const stagedOf = (form) => (form._staged ||= []);
+const stagedOf = (form) => (form._rows ||= []);
 
 function renderStaged(form) {
   const ul = form.querySelector(".staged");
   const rows = stagedOf(form);
   ul.hidden = !rows.length;
   ul.innerHTML = rows.map((r, i) => `
-    <li>
+    <li class="${r.rejected ? "rejected" : ""}">
       <span class="staged-name">${esc(r.brand)}${r.beer
         ? ` <span class="beer-product">${esc(r.beer)}</span>` : ""}</span>
-      <span class="badge">${esc(servingLabel(r.serving))}</span>
+      <span class="badge">${esc(r.rejected ? t("venue.rejectedRow") : servingLabel(r.serving))}</span>
       <button type="button" class="staged-remove" data-i="${i}"
               aria-label="${esc(t("venue.removeStaged"))}"
               title="${esc(t("venue.removeStaged"))}">✕</button>
     </li>`).join("");
   // Once something is staged the live row may be left empty, so `required`
   // would otherwise block the submit with an empty-field bubble.
-  form.brand.required = !rows.length;
+  form.brand.required = !rows.some((r) => !r.rejected);
 }
 
 function stageRow(form) {
@@ -1133,25 +1133,32 @@ async function submitBeerRows(form) {
   // Each /api/submit notifies synchronously (Telegram POST with a 10 s timeout,
   // plus optional SMTP), so a batch takes seconds. Without a guard a second tap
   // re-sends the whole still-unmodified list: duplicate rows for the moderator,
-  // duplicate notifications, and the two runs race on form._staged, which can
-  // re-stage rows that already landed.
+  // duplicate notifications, and two runs racing on the staged array.
   if (form._sending) return;
-  const submitBtn = form.querySelector(":scope > button:not(.addrow)");
-  const addBtn = form.querySelector(".addrow");
+  const controls = () => [...form.querySelectorAll("button, input, select")];
   const msg = form.querySelector(".msg");
 
-  const rows = stagedOf(form).slice();
+  // A rejected row is never resent: it failed validation and would fail
+  // identically forever. It stays on screen, marked, so its text is not lost.
+  const queued = stagedOf(form).filter((r) => !r.rejected);
   const live = form.brand.value.trim();
-  if (live) rows.push({ brand: live, beer: form.beer.value.trim(), serving: form.serving.value });
+  const liveRow = live
+    ? { brand: live, beer: form.beer.value.trim(), serving: form.serving.value }
+    : null;
+  const rows = liveRow ? queued.concat(liveRow) : queued;
   if (!rows.length) { form.brand.focus(); return; }
 
   form._sending = true;
-  submitBtn.disabled = addBtn.disabled = true;
+  // Everything, not just the two buttons: the remove buttons and the text
+  // inputs stayed live during a run that can take tens of seconds, so a row
+  // deleted mid-batch was resurrected by the write-back below.
+  const frozen = controls();
+  frozen.forEach((el) => (el.disabled = true));
   msg.classList.remove("bad");
   msg.textContent = t("form.sending");
 
-  const failed = [];    // retryable (429, 5xx, network) — stays staged
-  const rejected = [];  // permanent 4xx — the server will never accept it
+  const failed = [];    // retryable (429, 5xx, network) — stays queued
+  const rejected = [];  // permanent 4xx — kept visible but never resent
   try {
     for (const r of rows) {
       let status = 0;
@@ -1166,7 +1173,7 @@ async function submitBeerRows(form) {
         status = res.status;
       } catch { status = 0; }   // offline: worth retrying
       // A 400 (brand too long, unknown venue, bad serving) fails identically
-      // forever, so keeping it staged under "try again later" is a lie.
+      // forever, so leaving it queued under "try again later" is a lie.
       if (status >= 400 && status < 500 && status !== 429) rejected.push(r);
       else failed.push(r);
     }
@@ -1174,17 +1181,28 @@ async function submitBeerRows(form) {
     form._sending = false;
   }
 
-  // Whatever landed is gone from the list, so a retry cannot double-report it;
-  // only the retryable failures stay staged and visible.
-  form._staged = failed;
-  form.brand.value = "";
-  form.beer.value = "";
+  // The modal can be dismissed mid-batch, which detaches this form.
+  if (!form.isConnected) return;
+
+  // Rows that landed are gone, so a retry cannot double-report them. Rejected
+  // rows are kept, flagged, and skipped by the next send. Rows the user
+  // deleted while this ran are simply not put back.
+  const stillRejected = stagedOf(form).filter((r) => r.rejected);
+  form._rows = stillRejected.concat(failed,
+    rejected.filter((r) => r !== liveRow).map((r) => ({ ...r, rejected: true })));
+
+  // Leave a rejected live row in the inputs so it can be corrected in place;
+  // the old single-submit path never cleared a field on failure either.
+  if (!liveRow || !rejected.includes(liveRow)) {
+    form.brand.value = "";
+    form.beer.value = "";
+  }
   renderStaged(form);
 
   const sent = rows.length - failed.length - rejected.length;
   if (!failed.length && !rejected.length) {
     msg.textContent = t("form.thanks");
-    form.querySelectorAll("button, input, select").forEach((el) => (el.disabled = true));
+    controls().forEach((el) => (el.disabled = true));
     return;
   }
   const bits = [];
@@ -1194,7 +1212,7 @@ async function submitBeerRows(form) {
   // Each of these strings already starts with a space, as form.thanks does.
   msg.textContent = bits.join("") || t("form.error");
   msg.classList.add("bad");
-  submitBtn.disabled = addBtn.disabled = false;
+  controls().forEach((el) => (el.disabled = false));
 }
 
 modalBody.addEventListener("submit", async (ev) => {
