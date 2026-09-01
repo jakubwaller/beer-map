@@ -853,8 +853,6 @@ searchEl.addEventListener("input", () => {
   applyFilters();
 });
 searchEl.addEventListener("focus", () => { if (search.trim()) renderSuggestions(); });
-// Delayed: a tap on a row must land before the list disappears.
-searchEl.addEventListener("blur", () => setTimeout(closeSuggestions, 150));
 searchEl.addEventListener("keydown", (e) => {
   if (e.key === "ArrowDown" || e.key === "ArrowUp") {
     e.preventDefault();
@@ -868,9 +866,13 @@ searchEl.addEventListener("keydown", (e) => {
     if (resultsEl.hidden) clearSearch(); else closeSuggestions();
   }
 });
-// preventDefault keeps the focus (and the on-screen keyboard) put, so `blur`
-// never fires before the click that picks a row.
-resultsEl.addEventListener("pointerdown", (e) => e.preventDefault());
+// Closed on an outside click rather than on `blur`, for the same reason as the
+// brand combo above: the old guard against blur-closing first was a
+// `preventDefault()` on pointerdown, and that cancels touch panning, so this
+// list (up to 8 two-line rows in 58vh) could not be scrolled on a phone.
+document.addEventListener("click", (e) => {
+  if (!e.target.closest(".search-wrap")) closeSuggestions();
+});
 resultsEl.addEventListener("click", (e) => {
   if (e.target.closest(".suggest-all")) { showAllMatches(); return; }
   const row = e.target.closest(".suggest-row");
@@ -924,17 +926,30 @@ modalBody.addEventListener("input", (e) => {
 modalBody.addEventListener("focusin", (e) => {
   if (e.target.matches("input[data-combo]")) renderCombo(e.target);
 });
-modalBody.addEventListener("focusout", (e) => {
-  if (e.target.matches("input[data-combo]")) setTimeout(() => closeCombo(e.target), 150);
-});
-modalBody.addEventListener("pointerdown", (e) => {
+// Both of these are deliberately bound to `click` rather than to `focusout` or
+// `pointerdown`, and that is load-bearing on a phone:
+//
+//   * the list sits in the flow (see style.css), so closing it on `focusout`
+//     reflowed the form mid-tap and pulled "Bier melden" up from under the
+//     finger — pointerdown and pointerup landed on different elements and the
+//     click was never delivered, which is why the button needed two taps;
+//   * `preventDefault()` on pointerdown (which used to hold the focus so the
+//     blur-close wouldn't beat the pick) also cancels the browser's pan
+//     gesture, so the list could not be scrolled by touch at all.
+//
+// Closing on `click` happens after the tap it interrupted has been delivered,
+// which costs nothing and makes both gestures work.
+modalBody.addEventListener("click", (e) => {
   const opt = e.target.closest(".combo-opt");
   if (!opt) return;
-  e.preventDefault();   // hold the focus so the field doesn't blur-close first
   const input = opt.closest(".combo").querySelector("input");
   input.value = opt.dataset.value;
   closeCombo(input);
   input.focus();
+});
+document.addEventListener("click", (e) => {
+  if (e.target.closest(".combo")) return;
+  modalBody.querySelectorAll("input[data-combo]").forEach((i) => closeCombo(i));
 });
 modalBody.addEventListener("keydown", (e) => {
   const input = e.target;
@@ -953,7 +968,7 @@ modalBody.addEventListener("keydown", (e) => {
     e.preventDefault();   // pick the highlighted brand instead of submitting
     input.value = opts[cur].dataset.value;
     closeCombo(input);
-  } else if (e.key === "Escape") {
+  } else if (e.key === "Escape" || e.key === "Tab") {
     closeCombo(input);
   }
 });
