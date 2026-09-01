@@ -783,6 +783,40 @@ header {
   border: 0; border-radius: 9px; cursor: pointer;
 }
 .addbeer > button:hover, .venueadd > button:hover { background: var(--accent-strong); }
+
+/* "+ Weiteres Bier" is secondary: it stages a row, it does not send anything,
+   so it must not read as a second primary action next to "Bier melden". */
+.addbeer > button.addrow {
+  color: var(--accent); background: none;
+  border: 1px solid var(--accent); font-weight: 600;
+}
+.addbeer > button.addrow:hover { background: oklch(62% 0.16 45 / .08); }
+
+/* ---------- Staged beers (multi-report) ---------- */
+.staged {
+  flex: 1 1 100%;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.staged[hidden] { display: none; }
+.staged li {
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 6px 6px 10px;
+  border: 1px solid var(--line-soft);
+  border-radius: 9px;
+  background: oklch(97% 0.01 70);
+}
+.staged-name { flex: 1; min-width: 0; overflow-wrap: anywhere; font-size: 13px; }
+.staged-remove {
+  border: 0; background: none; cursor: pointer;
+  padding: 2px 6px; font-size: 14px; line-height: 1;
+  color: var(--muted-2);
+}
+.staged-remove:hover { color: var(--danger); }
 .addbeer .hp, .venueadd .hp { position: absolute; left: -9999px; }
 .addbeer .msg, .venueadd .msg { flex: 1 1 100%; font-size: 12px; font-weight: 600; color: var(--good); }
 button:disabled { opacity: .55; cursor: default; }

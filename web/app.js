@@ -648,6 +648,7 @@ function openVenueModal(v) {
     hoursBlock(v) +
     beers +
     `<form class="addbeer" data-osm="${esc(osm)}">
+       <ul class="staged" hidden></ul>
        <span class="combo">
          <input name="brand" data-combo placeholder="${esc(t("venue.addBrand"))}" autocomplete="off" required>
          <div class="combo-list" hidden></div>
@@ -656,6 +657,7 @@ function openVenueModal(v) {
        <label><input type="radio" name="serving" value="fass" checked>${esc(t("beer.fass"))}</label>
        <label><input type="radio" name="serving" value="tank">${esc(t("beer.tank"))}</label>
        <input class="hp" name="hp" tabindex="-1" autocomplete="off">
+       <button type="button" class="addrow">${esc(t("venue.addAnother"))}</button>
        <button>${esc(t("venue.submitBeer"))}</button><span class="msg"></span>
      </form>
      <details class="venue-actions">
@@ -893,8 +895,12 @@ document.addEventListener("click", (e) => {
 // `dragstart`/`zoomstart` rather than `movestart`: MapLibre also fires
 // `movestart` from resize(), which a ResizeObserver drives, so a phone rotation
 // or the soft keyboard opening would close the list mid-typing.
-map.on("dragstart", closeSuggestions);
-map.on("zoomstart", closeSuggestions);
+// `originalEvent` is what separates a user gesture from a programmatic camera
+// move: the geolocation flyTo also fires zoomstart, and closing on that yanks
+// the list away mid-word while a GPS fix lands.
+const closeOnUserGesture = (e) => { if (e.originalEvent) closeSuggestions(); };
+map.on("dragstart", closeOnUserGesture);
+map.on("zoomstart", closeOnUserGesture);
 resultsEl.addEventListener("click", (e) => {
   if (e.target.closest(".suggest-all")) { showAllMatches(); return; }
   const row = e.target.closest(".suggest-row");
@@ -1079,11 +1085,98 @@ function submissionBody(form, action) {
   return null;
 }
 
+// ---- Reporting several beers at once ----
+// A venue typically pours one Tankbier and the rest Fassbier, so the serving
+// type belongs to the row, not to the report. Each staged row is sent as its
+// own submission so /admin can approve them one at a time.
+const stagedOf = (form) => (form._staged ||= []);
+
+function renderStaged(form) {
+  const ul = form.querySelector(".staged");
+  const rows = stagedOf(form);
+  ul.hidden = !rows.length;
+  ul.innerHTML = rows.map((r, i) => `
+    <li>
+      <span class="staged-name">${esc(r.brand)}${r.beer
+        ? ` <span class="beer-product">${esc(r.beer)}</span>` : ""}</span>
+      <span class="badge">${esc(servingLabel(r.serving))}</span>
+      <button type="button" class="staged-remove" data-i="${i}"
+              aria-label="${esc(t("venue.removeStaged"))}"
+              title="${esc(t("venue.removeStaged"))}">✕</button>
+    </li>`).join("");
+  // Once something is staged the live row may be left empty, so `required`
+  // would otherwise block the submit with an empty-field bubble.
+  form.brand.required = !rows.length;
+}
+
+function stageRow(form) {
+  const brand = form.brand.value.trim();
+  if (!brand) { form.brand.focus(); return; }
+  stagedOf(form).push({ brand, beer: form.beer.value.trim(), serving: form.serving.value });
+  form.brand.value = "";
+  form.beer.value = "";
+  renderStaged(form);
+  form.brand.focus();
+}
+
+modalBody.addEventListener("click", (e) => {
+  const add = e.target.closest(".addrow");
+  if (add) { stageRow(add.closest("form")); return; }
+  const rm = e.target.closest(".staged-remove");
+  if (!rm) return;
+  const form = rm.closest("form");
+  stagedOf(form).splice(+rm.dataset.i, 1);
+  renderStaged(form);
+});
+
+// Sequential, not parallel: submissions are rate-limited per IP, and firing a
+// tap wall's worth at once would just collect 429s out of order.
+async function submitBeerRows(form) {
+  const rows = stagedOf(form).slice();
+  const live = form.brand.value.trim();
+  if (live) rows.push({ brand: live, beer: form.beer.value.trim(), serving: form.serving.value });
+  const msg = form.querySelector(".msg");
+  if (!rows.length) { form.brand.focus(); return; }
+
+  const failed = [];
+  for (const r of rows) {
+    let ok = false;
+    try {
+      const res = await fetch("/api/submit", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ venue_osm_id: form.dataset.osm, brand: r.brand,
+                               beer: r.beer || null, serving: r.serving,
+                               kind: "add", hp: form.hp.value }),
+      });
+      ok = res.ok;
+    } catch { ok = false; }
+    if (!ok) failed.push(r);
+  }
+
+  // Whatever landed is gone from the list, so a retry cannot double-report it;
+  // whatever did not stays staged and visible.
+  form._staged = failed;
+  form.brand.value = "";
+  form.beer.value = "";
+  renderStaged(form);
+
+  const sent = rows.length - failed.length;
+  if (!failed.length) {
+    msg.textContent = t("form.thanks");
+    form.querySelectorAll("button, input, select").forEach((el) => (el.disabled = true));
+  } else {
+    msg.textContent = sent
+      ? t("form.partial", { ok: sent, n: rows.length, failed: failed.length })
+      : t("form.error");
+  }
+}
+
 modalBody.addEventListener("submit", async (ev) => {
   const f = ev.target;
   if (!f.matches(".addbeer, .beerform, .venueform, .venueadd")) return;
   ev.preventDefault();
   const action = ev.submitter && ev.submitter.value;
+  if (f.classList.contains("addbeer")) { await submitBeerRows(f); return; }
   if (action === "close_venue" && !confirm(t("confirm.close"))) return;
   const body = submissionBody(f, action);
   if (!body) return;

@@ -90,6 +90,8 @@ export const MESSAGES = {
     "venue.noBeers": "Noch keine Biere erfasst.",
     "venue.addBrand": "Marke hinzufügen",
     "venue.beerOptional": "Sorte (optional)",
+    "venue.addAnother": "+ Weiteres Bier",
+    "venue.removeStaged": "Entfernen",
     "venue.submitBeer": "+ Bier melden",
     "venue.fix": "Ort korrigieren",
     "venue.address": "Adresse",
@@ -126,6 +128,7 @@ export const MESSAGES = {
     "add.submitVenue": "+ Ort melden",
 
     "form.thanks": " Danke, wird geprüft!",
+    "form.partial": " {ok} von {n} gesendet, {failed} nicht. Bitte später nochmal.",
     "form.error": " Fehler",
     "confirm.close": "Diesen Ort wirklich als dauerhaft geschlossen melden?",
 
@@ -228,6 +231,8 @@ export const MESSAGES = {
     "venue.noBeers": "Zatím žádná piva.",
     "venue.addBrand": "Přidat značku",
     "venue.beerOptional": "Druh (nepovinné)",
+    "venue.addAnother": "+ Další pivo",
+    "venue.removeStaged": "Odebrat",
     "venue.submitBeer": "+ Nahlásit pivo",
     "venue.fix": "Opravit místo",
     "venue.address": "Adresa",
@@ -264,6 +269,7 @@ export const MESSAGES = {
     "add.submitVenue": "+ Nahlásit místo",
 
     "form.thanks": " Díky, zkontrolujeme!",
+    "form.partial": " Odesláno {ok} z {n}, {failed} ne. Zkuste to prosím později.",
     "form.error": " Chyba",
     "confirm.close": "Opravdu nahlásit toto místo jako trvale zavřené?",
 
@@ -364,6 +370,8 @@ export const MESSAGES = {
     "venue.noBeers": "No beers recorded yet.",
     "venue.addBrand": "Add a brand",
     "venue.beerOptional": "Beer (optional)",
+    "venue.addAnother": "+ Another beer",
+    "venue.removeStaged": "Remove",
     "venue.submitBeer": "+ Report beer",
     "venue.fix": "Correct this place",
     "venue.address": "Address",
@@ -400,6 +408,7 @@ export const MESSAGES = {
     "add.submitVenue": "+ Report a place",
 
     "form.thanks": " Thanks, we'll review it!",
+    "form.partial": " {ok} of {n} sent, {failed} not. Please retry those later.",
     "form.error": " Error",
     "confirm.close": "Really report this place as permanently closed?",
 
