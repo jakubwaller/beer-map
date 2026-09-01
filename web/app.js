@@ -1102,6 +1102,10 @@ function submissionBody(form, action) {
 // The limiter allows 10 submissions per IP per hour while this form invites a
 // whole tap wall, so leftovers have to survive a close for "bitte später
 // nochmal" to be true at all.
+// Keyed by venue rather than by form node: dismissing the modal mid-batch and
+// reopening it builds a *new* form element, whose own flag would be unset.
+const sendingVenues = new Set();
+
 const STAGE_TTL_MS = 24 * 60 * 60 * 1000;
 const stageKey = (osm) => "beermap.staged." + osm;
 
@@ -1128,7 +1132,15 @@ function rawWrite(osm, value) {
       if (value === null) localStorage.removeItem(stageKey(osm));
       else localStorage.setItem(stageKey(osm), value);
       return;
-    } catch { storageWorks = false; }
+    } catch {
+      storageWorks = false;
+      // Best effort: the snapshot written before the throw is now stale, and a
+      // reload would restore `storageWorks` and resurrect rows that have since
+      // been sent. On a quota failure removeItem still works; where storage is
+      // blocked outright this throws too, but then the read side throws as
+      // well, so the stale entry is never seen.
+      try { localStorage.removeItem(stageKey(osm)); } catch { /* blocked */ }
+    }
   }
   if (value === null) memStore.delete(osm);
   else memStore.set(osm, value);
@@ -1181,7 +1193,8 @@ function updateStaged(osm, fn) {
 function renderStaged(form) {
   const ul = form.querySelector(".staged");
   if (!ul) return;
-  const rows = readStaged(form.dataset.osm);
+  const osm = form.dataset.osm;
+  const rows = readStaged(osm);
   ul.hidden = !rows.length;
   ul.innerHTML = rows.map((r) => `
     <li class="${r.rejected ? "rejected" : ""}">
@@ -1195,6 +1208,17 @@ function renderStaged(form) {
   // Once something sendable is queued the live row may be left empty, so
   // `required` would otherwise block the submit with an empty-field bubble.
   form.brand.required = !rows.some((r) => !r.rejected);
+
+  // A batch owns its venue until it finishes. Dismissing the modal mid-send and
+  // reopening it builds a fresh, fully enabled form over the same queue, and
+  // every race this feature had came from that second form: typing into it,
+  // submitting from it, deleting a row the running batch was about to send.
+  // One interactive form per venue at a time removes the whole class.
+  if (sendingVenues.has(osm)) {
+    form.querySelectorAll("button, input, select").forEach((el) => (el.disabled = true));
+    const busy = form.querySelector(".msg");
+    if (busy) { busy.classList.remove("bad"); busy.textContent = t("form.sending"); }
+  }
 }
 
 function stageRow(form) {
@@ -1219,10 +1243,6 @@ modalBody.addEventListener("click", (e) => {
   updateStaged(form.dataset.osm, (rows) => rows.filter((r) => r.id !== rm.dataset.id));
   renderStaged(form);
 });
-
-// Keyed by venue rather than by form node: dismissing the modal mid-batch and
-// reopening it builds a *new* form element, whose own flag would be unset.
-const sendingVenues = new Set();
 
 async function postRow(osm, hp, r) {
   try {
