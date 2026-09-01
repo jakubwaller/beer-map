@@ -1065,10 +1065,8 @@ citySelect.addEventListener("change", () => {
 // ---- Submission forms (delegated on the modal) ----
 function submissionBody(form, action) {
   const osm = form.dataset.osm;
-  if (form.classList.contains("addbeer"))
-    return { venue_osm_id: osm, brand: form.brand.value.trim(),
-             beer: form.beer.value.trim() || null,
-             serving: form.serving.value, kind: "add", hp: form.hp.value };
+  // .addbeer is not handled here: it can carry several rows, so the submit
+  // handler routes it to submitBeerRows(), which builds one payload per row.
   if (form.classList.contains("beerform"))
     return action === "remove"
       ? { venue_osm_id: osm, brand: form.dataset.brand, beer: form.dataset.beer || null, kind: "remove" }
@@ -1132,43 +1130,71 @@ modalBody.addEventListener("click", (e) => {
 // Sequential, not parallel: submissions are rate-limited per IP, and firing a
 // tap wall's worth at once would just collect 429s out of order.
 async function submitBeerRows(form) {
+  // Each /api/submit notifies synchronously (Telegram POST with a 10 s timeout,
+  // plus optional SMTP), so a batch takes seconds. Without a guard a second tap
+  // re-sends the whole still-unmodified list: duplicate rows for the moderator,
+  // duplicate notifications, and the two runs race on form._staged, which can
+  // re-stage rows that already landed.
+  if (form._sending) return;
+  const submitBtn = form.querySelector(":scope > button:not(.addrow)");
+  const addBtn = form.querySelector(".addrow");
+  const msg = form.querySelector(".msg");
+
   const rows = stagedOf(form).slice();
   const live = form.brand.value.trim();
   if (live) rows.push({ brand: live, beer: form.beer.value.trim(), serving: form.serving.value });
-  const msg = form.querySelector(".msg");
   if (!rows.length) { form.brand.focus(); return; }
 
-  const failed = [];
-  for (const r of rows) {
-    let ok = false;
-    try {
-      const res = await fetch("/api/submit", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ venue_osm_id: form.dataset.osm, brand: r.brand,
-                               beer: r.beer || null, serving: r.serving,
-                               kind: "add", hp: form.hp.value }),
-      });
-      ok = res.ok;
-    } catch { ok = false; }
-    if (!ok) failed.push(r);
+  form._sending = true;
+  submitBtn.disabled = addBtn.disabled = true;
+  msg.classList.remove("bad");
+  msg.textContent = t("form.sending");
+
+  const failed = [];    // retryable (429, 5xx, network) — stays staged
+  const rejected = [];  // permanent 4xx — the server will never accept it
+  try {
+    for (const r of rows) {
+      let status = 0;
+      try {
+        const res = await fetch("/api/submit", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ venue_osm_id: form.dataset.osm, brand: r.brand,
+                                 beer: r.beer || null, serving: r.serving,
+                                 kind: "add", hp: form.hp.value }),
+        });
+        if (res.ok) continue;
+        status = res.status;
+      } catch { status = 0; }   // offline: worth retrying
+      // A 400 (brand too long, unknown venue, bad serving) fails identically
+      // forever, so keeping it staged under "try again later" is a lie.
+      if (status >= 400 && status < 500 && status !== 429) rejected.push(r);
+      else failed.push(r);
+    }
+  } finally {
+    form._sending = false;
   }
 
   // Whatever landed is gone from the list, so a retry cannot double-report it;
-  // whatever did not stays staged and visible.
+  // only the retryable failures stay staged and visible.
   form._staged = failed;
   form.brand.value = "";
   form.beer.value = "";
   renderStaged(form);
 
-  const sent = rows.length - failed.length;
-  if (!failed.length) {
+  const sent = rows.length - failed.length - rejected.length;
+  if (!failed.length && !rejected.length) {
     msg.textContent = t("form.thanks");
     form.querySelectorAll("button, input, select").forEach((el) => (el.disabled = true));
-  } else {
-    msg.textContent = sent
-      ? t("form.partial", { ok: sent, n: rows.length, failed: failed.length })
-      : t("form.error");
+    return;
   }
+  const bits = [];
+  if (sent) bits.push(t("form.sent", { ok: sent, n: rows.length }));
+  if (failed.length) bits.push(t("form.retry", { failed: failed.length }));
+  if (rejected.length) bits.push(t("form.rejected", { rejected: rejected.length }));
+  // Each of these strings already starts with a space, as form.thanks does.
+  msg.textContent = bits.join("") || t("form.error");
+  msg.classList.add("bad");
+  submitBtn.disabled = addBtn.disabled = false;
 }
 
 modalBody.addEventListener("submit", async (ev) => {

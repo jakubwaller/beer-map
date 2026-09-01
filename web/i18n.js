@@ -128,7 +128,10 @@ export const MESSAGES = {
     "add.submitVenue": "+ Ort melden",
 
     "form.thanks": " Danke, wird geprüft!",
-    "form.partial": " {ok} von {n} gesendet, {failed} nicht. Bitte später nochmal.",
+    "form.sending": " Wird gesendet…",
+    "form.sent": " {ok} von {n} gesendet.",
+    "form.retry": " {failed} nicht angekommen, bitte später nochmal.",
+    "form.rejected": " {rejected} abgelehnt (ungültige Angabe).",
     "form.error": " Fehler",
     "confirm.close": "Diesen Ort wirklich als dauerhaft geschlossen melden?",
 
@@ -269,7 +272,10 @@ export const MESSAGES = {
     "add.submitVenue": "+ Nahlásit místo",
 
     "form.thanks": " Díky, zkontrolujeme!",
-    "form.partial": " Odesláno {ok} z {n}, {failed} ne. Zkuste to prosím později.",
+    "form.sending": " Odesílá se…",
+    "form.sent": " Odesláno {ok} z {n}.",
+    "form.retry": " {failed} se nepodařilo odeslat, zkuste to prosím později.",
+    "form.rejected": " {rejected} zamítnuto (neplatný údaj).",
     "form.error": " Chyba",
     "confirm.close": "Opravdu nahlásit toto místo jako trvale zavřené?",
 
@@ -408,7 +414,10 @@ export const MESSAGES = {
     "add.submitVenue": "+ Report a place",
 
     "form.thanks": " Thanks, we'll review it!",
-    "form.partial": " {ok} of {n} sent, {failed} not. Please retry those later.",
+    "form.sending": " Sending…",
+    "form.sent": " {ok} of {n} sent.",
+    "form.retry": " {failed} didn't go through, please retry later.",
+    "form.rejected": " {rejected} rejected (invalid entry).",
     "form.error": " Error",
     "confirm.close": "Really report this place as permanently closed?",
 

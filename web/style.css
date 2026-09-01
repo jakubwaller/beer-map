@@ -819,6 +819,10 @@ header {
 .staged-remove:hover { color: var(--danger); }
 .addbeer .hp, .venueadd .hp { position: absolute; left: -9999px; }
 .addbeer .msg, .venueadd .msg { flex: 1 1 100%; font-size: 12px; font-weight: 600; color: var(--good); }
+/* A partial send is not a success: "6 von 9 gesendet" in the green of
+   form.thanks reads as a confirmation, and the unsent rows above it get
+   ignored. */
+.addbeer .msg.bad, .venueadd .msg.bad { color: var(--danger); }
 button:disabled { opacity: .55; cursor: default; }
 
 /* ---------- "Ort korrigieren" ---------- */
