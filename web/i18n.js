@@ -133,6 +133,7 @@ export const MESSAGES = {
     "form.sent": " {ok} von {n} gesendet.",
     "form.retry": " {failed} nicht angekommen, bitte später nochmal.",
     "form.rejected": " {rejected} abgelehnt (ungültige Angabe).",
+    "form.needBrand": " Bitte auch die Marke angeben.",
     "form.error": " Fehler",
     "confirm.close": "Diesen Ort wirklich als dauerhaft geschlossen melden?",
 
@@ -278,6 +279,7 @@ export const MESSAGES = {
     "form.sent": " Odesláno {ok} z {n}.",
     "form.retry": " {failed} se nepodařilo odeslat, zkuste to prosím později.",
     "form.rejected": " {rejected} zamítnuto (neplatný údaj).",
+    "form.needBrand": " Uveďte prosím také značku.",
     "form.error": " Chyba",
     "confirm.close": "Opravdu nahlásit toto místo jako trvale zavřené?",
 
@@ -421,6 +423,7 @@ export const MESSAGES = {
     "form.sent": " {ok} of {n} sent.",
     "form.retry": " {failed} didn't go through, please retry later.",
     "form.rejected": " {rejected} rejected (invalid entry).",
+    "form.needBrand": " Please add the brand as well.",
     "form.error": " Error",
     "confirm.close": "Really report this place as permanently closed?",
 

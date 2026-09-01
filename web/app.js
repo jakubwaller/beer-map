@@ -1090,69 +1090,93 @@ function submissionBody(form, action) {
 // A venue typically pours one Tankbier and the rest Fassbier, so the serving
 // type belongs to the row, not to the report. Each staged row is sent as its
 // own submission so /admin can approve them one at a time.
-// Unsent rows outlive the modal. The limiter allows 10 submissions per IP per
-// hour while this form invites a whole tap wall, so "bitte später nochmal" is
-// only true if the leftovers are still here later; closeModal() throws the DOM
-// node (and with it form._rows) away on X, overlay, Escape and language switch.
+// ---- Reporting several beers at once ----
+// A venue typically pours one Tankbier and the rest Fassbier, so the serving
+// type belongs to the row, not to the report. Each staged row is sent as its
+// own submission so /admin can approve them one at a time.
+//
+// localStorage is the ONE source of truth for the queue, and it is rewritten
+// after every single row resolves. An earlier version cached the list on the
+// form node and only wrote back once the whole batch finished; the modal can be
+// dismissed and reopened while a batch is still running, and the reopened form
+// then read a pre-send list and re-sent rows that had already landed. Keeping
+// exactly one copy, always current, removes that class of bug rather than
+// guarding each way of hitting it. It also makes a second tab behave.
+//
+// The limiter allows 10 submissions per IP per hour while this form invites a
+// whole tap wall, so leftovers have to survive a close for "bitte später
+// nochmal" to be true at all.
 const STAGE_TTL_MS = 24 * 60 * 60 * 1000;
-const stageKey = (form) => "beermap.staged." + form.dataset.osm;
+const stageKey = (osm) => "beermap.staged." + osm;
+let rowSeq = 0;
+const newRowId = () => `${Date.now().toString(36)}-${rowSeq++}`;
 
-function loadStaged(form) {
+function readStaged(osm) {
   try {
-    const raw = localStorage.getItem(stageKey(form));
+    const raw = localStorage.getItem(stageKey(osm));
     if (!raw) return [];
     const { at, rows } = JSON.parse(raw);
     if (!Array.isArray(rows) || !(Date.now() - at < STAGE_TTL_MS)) {
-      localStorage.removeItem(stageKey(form));
+      localStorage.removeItem(stageKey(osm));
       return [];
     }
-    // Shape-check what comes back: it is user data from another session.
-    return rows.filter((r) => r && typeof r.brand === "string" && r.brand
-                              && r.brand.length <= 80)
-               .map((r) => ({ brand: r.brand,
-                              beer: typeof r.beer === "string" ? r.beer : "",
-                              serving: r.serving === "tank" ? "tank" : "fass",
-                              rejected: r.rejected === true }));
+    // Shape-check: this is user data from another session (or another tab).
+    return rows
+      .filter((r) => r && typeof r.brand === "string" && r.brand && r.brand.length <= 80)
+      .map((r) => ({
+        id: typeof r.id === "string" ? r.id : newRowId(),
+        brand: r.brand,
+        beer: typeof r.beer === "string" ? r.beer.slice(0, 80) : "",
+        serving: r.serving === "tank" ? "tank" : "fass",
+        rejected: r.rejected === true,
+      }));
   } catch { return []; }   // private mode, quota, corrupt JSON
 }
 
-function saveStaged(form) {
+function writeStaged(osm, rows) {
   try {
-    const rows = stagedOf(form);
     if (rows.length)
-      localStorage.setItem(stageKey(form), JSON.stringify({ at: Date.now(), rows }));
-    else localStorage.removeItem(stageKey(form));
+      localStorage.setItem(stageKey(osm), JSON.stringify({ at: Date.now(), rows }));
+    else localStorage.removeItem(stageKey(osm));
   } catch { /* staging just stops surviving a close */ }
 }
 
-const stagedOf = (form) => (form._rows ||= loadStaged(form));
+// Read-modify-write in one step, so every caller sees current storage.
+function updateStaged(osm, fn) {
+  const rows = fn(readStaged(osm));
+  writeStaged(osm, rows);
+  return rows;
+}
 
 function renderStaged(form) {
   const ul = form.querySelector(".staged");
-  const rows = stagedOf(form);
+  if (!ul) return;
+  const rows = readStaged(form.dataset.osm);
   ul.hidden = !rows.length;
-  ul.innerHTML = rows.map((r, i) => `
+  ul.innerHTML = rows.map((r) => `
     <li class="${r.rejected ? "rejected" : ""}">
       <span class="staged-name">${esc(r.brand)}${r.beer
         ? ` <span class="beer-product">${esc(r.beer)}</span>` : ""}</span>
       <span class="badge">${esc(r.rejected ? t("venue.rejectedRow") : servingLabel(r.serving))}</span>
-      <button type="button" class="staged-remove" data-i="${i}"
+      <button type="button" class="staged-remove" data-id="${esc(r.id)}"
               aria-label="${esc(t("venue.removeStaged"))}"
               title="${esc(t("venue.removeStaged"))}">✕</button>
     </li>`).join("");
-  // Once something is staged the live row may be left empty, so `required`
-  // would otherwise block the submit with an empty-field bubble.
+  // Once something sendable is queued the live row may be left empty, so
+  // `required` would otherwise block the submit with an empty-field bubble.
   form.brand.required = !rows.some((r) => !r.rejected);
 }
 
 function stageRow(form) {
   const brand = form.brand.value.trim();
   if (!brand) { form.brand.focus(); return; }
-  stagedOf(form).push({ brand, beer: form.beer.value.trim(), serving: form.serving.value });
+  updateStaged(form.dataset.osm, (rows) => rows.concat({
+    id: newRowId(), brand, beer: form.beer.value.trim(),
+    serving: form.serving.value, rejected: false,
+  }));
   form.brand.value = "";
   form.beer.value = "";
   renderStaged(form);
-  saveStaged(form);
   form.brand.focus();
 }
 
@@ -1162,121 +1186,123 @@ modalBody.addEventListener("click", (e) => {
   const rm = e.target.closest(".staged-remove");
   if (!rm) return;
   const form = rm.closest("form");
-  stagedOf(form).splice(+rm.dataset.i, 1);
+  updateStaged(form.dataset.osm, (rows) => rows.filter((r) => r.id !== rm.dataset.id));
   renderStaged(form);
-  saveStaged(form);
 });
 
-// Sequential, not parallel: submissions are rate-limited per IP, and firing a
-// tap wall's worth at once would just collect 429s out of order.
 // Keyed by venue rather than by form node: dismissing the modal mid-batch and
 // reopening it builds a *new* form element, whose own flag would be unset.
 const sendingVenues = new Set();
 
+async function postRow(osm, hp, r) {
+  try {
+    const res = await fetch("/api/submit", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ venue_osm_id: osm, brand: r.brand,
+                             beer: r.beer || null, serving: r.serving,
+                             kind: "add", hp }),
+    });
+    return res.ok ? "ok" : res.status;
+  } catch { return 0; }   // offline: worth retrying
+}
+
+// Sequential, not parallel: submissions are rate-limited per IP, and firing a
+// tap wall's worth at once would just collect 429s out of order.
 async function submitBeerRows(form) {
-  // Each /api/submit notifies synchronously (Telegram POST with a 10 s timeout,
-  // plus optional SMTP), so a batch takes seconds. Without a guard a second tap
-  // re-sends the whole still-unmodified list: duplicate rows for the moderator,
-  // duplicate notifications, and two runs racing on the staged array.
-  if (sendingVenues.has(form.dataset.osm)) return;
-  const controls = () => [...form.querySelectorAll("button, input, select")];
-  const msg = form.querySelector(".msg");
+  const osm = form.dataset.osm;
+  if (sendingVenues.has(osm)) return;
 
   // A rejected row is never resent: it failed validation and would fail
   // identically forever. It stays on screen, marked, so its text is not lost.
-  const queued = stagedOf(form).filter((r) => !r.rejected);
+  const queued = readStaged(osm).filter((r) => !r.rejected);
   const live = form.brand.value.trim();
   const liveRow = live
-    ? { brand: live, beer: form.beer.value.trim(), serving: form.serving.value }
+    ? { id: newRowId(), brand: live, beer: form.beer.value.trim(),
+        serving: form.serving.value, rejected: false }
     : null;
-  const rows = liveRow ? queued.concat(liveRow) : queued;
-  if (!rows.length) { form.brand.focus(); return; }
-  // A product typed with no brand is an unfinished row, not an empty one:
-  // sending the rest would leave it stranded in a field the all-clear then
-  // disables. Same treatment `required` gives the nothing-typed case.
-  if (!liveRow && form.beer.value.trim()) { form.brand.focus(); return; }
+  const msg = form.querySelector(".msg");
+  if (!queued.length && !liveRow) { form.brand.focus(); return; }
+  // A product typed with no brand is an unfinished row, not an empty one.
+  // `required` is off while anything is queued, so the browser says nothing.
+  if (!liveRow && form.beer.value.trim()) {
+    msg.classList.add("bad");
+    msg.textContent = t("form.needBrand");
+    form.brand.focus();
+    return;
+  }
 
-  sendingVenues.add(form.dataset.osm);
-  // Everything, not just the two buttons: the remove buttons and the text
-  // inputs stayed live during a run that can take tens of seconds, so a row
-  // deleted mid-batch was resurrected by the write-back below.
-  const frozen = controls();
-  frozen.forEach((el) => (el.disabled = true));
+  const rows = liveRow ? queued.concat(liveRow) : queued;
+  sendingVenues.add(osm);
+  const controls = () => [...form.querySelectorAll("button, input, select")];
+  // Everything, not just the two buttons: the remove buttons and the inputs
+  // stayed live during a run that can take tens of seconds, so a row deleted
+  // mid-batch was resurrected by the write-back.
+  controls().forEach((el) => (el.disabled = true));
   msg.classList.remove("bad");
   msg.textContent = t("form.sending");
 
-  const failed = [];    // retryable (429, 5xx, network) — stays queued
-  const rejected = [];  // permanent 4xx — kept visible but never resent
+  let sent = 0, failed = 0, rejected = 0, liveRejected = false;
   try {
     for (let i = 0; i < rows.length; i++) {
       const r = rows[i];
-      let status = 0;
-      try {
-        const res = await fetch("/api/submit", {
-          method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ venue_osm_id: form.dataset.osm, brand: r.brand,
-                                 beer: r.beer || null, serving: r.serving,
-                                 kind: "add", hp: form.hp.value }),
-        });
-        if (res.ok) continue;
-        status = res.status;
-      } catch { status = 0; }   // offline: worth retrying
-      if (status === 429) {
+      const result = await postRow(osm, form.hp.value, r);
+
+      if (result === "ok") {
+        sent++;
+        // Gone from storage the moment it lands, so nothing can resend it.
+        updateStaged(osm, (cur) => cur.filter((x) => x.id !== r.id));
+        continue;
+      }
+      if (result === 429) {
         // The window is an hour, so every remaining row is already doomed.
-        failed.push(...rows.slice(i));
+        // Queue whatever is not stored yet (i.e. the live row) and stop.
+        const rest = rows.slice(i);
+        failed += rest.length;
+        updateStaged(osm, (cur) => cur.concat(
+          rest.filter((x) => !cur.some((c) => c.id === x.id))));
         break;
       }
-      // Only what this app actually emits for bad input counts as permanent.
-      // A 403 from the Cloudflare edge or a 408 is not the user's data being
-      // wrong, and must stay retryable rather than be struck through.
-      if (status === 400 || status === 422) rejected.push(r);
-      else failed.push(r);
+      // Only what this app emits for bad input counts as permanent. A 403 from
+      // the Cloudflare edge or a 408 is not the user's data being wrong.
+      if (result === 400 || result === 422) {
+        rejected++;
+        if (r === liveRow) liveRejected = true;   // stays in the inputs to fix
+        else updateStaged(osm, (cur) =>
+          cur.map((x) => (x.id === r.id ? { ...x, rejected: true } : x)));
+      } else {
+        failed++;
+        updateStaged(osm, (cur) =>
+          cur.some((c) => c.id === r.id) ? cur : cur.concat(r));
+      }
     }
   } finally {
-    sendingVenues.delete(form.dataset.osm);
+    sendingVenues.delete(osm);
   }
 
-  // Rows that landed are gone, so a retry cannot double-report them. Rejected
-  // rows are kept, flagged, and skipped by the next send. Rows the user
-  // deleted while this ran are simply not put back.
-  //
-  // This runs even if the modal was dismissed mid-batch: both the write-back
-  // and saveStaged work fine on a detached node, and skipping them would leave
-  // the *pre-send* list in localStorage, so rows that already reached the
-  // server would come back staged and go out a second time.
-  const stillRejected = stagedOf(form).filter((r) => r.rejected);
-  form._rows = stillRejected.concat(failed,
-    rejected.filter((r) => r !== liveRow).map((r) => ({ ...r, rejected: true })));
-  saveStaged(form);
-
-  // Only the DOM work needs a live node.
+  // Only the DOM work needs a live node; storage is already correct either way.
   if (!form.isConnected) return;
 
   // Clear the inputs only when the live row actually went. A rejected one stays
-  // so it can be corrected in place (the old single-submit path never cleared a
-  // field on failure), and with no live row at all there may still be a product
-  // typed without a brand, which wiping would silently discard.
-  if (liveRow && !rejected.includes(liveRow)) {
+  // so it can be corrected in place; the old single-submit path never cleared a
+  // field on failure either.
+  if (liveRow && !liveRejected) {
     form.brand.value = "";
     form.beer.value = "";
   }
   renderStaged(form);
 
-  const sent = rows.length - failed.length - rejected.length;
-  // An all-clear needs three things: nothing left in the list, nothing that
-  // failed, and nothing rejected. A rejected live row is deliberately kept out
-  // of the list so it stays in the inputs, so testing the list alone reported
-  // "Danke, wird geprüft!" for a submission the server had refused — and then
-  // disabled the form — on the single-beer path, which is the common one.
-  if (!form._rows.length && !failed.length && !rejected.length) {
+  // An all-clear needs an empty queue AND nothing failed AND nothing rejected:
+  // a rejected live row is kept out of the queue, so testing the queue alone
+  // reported success for a submission the server had refused.
+  if (!readStaged(osm).length && !failed && !rejected) {
     msg.textContent = t("form.thanks");
     controls().forEach((el) => (el.disabled = true));
     return;
   }
   const bits = [];
   if (sent) bits.push(t("form.sent", { ok: sent, n: rows.length }));
-  if (failed.length) bits.push(t("form.retry", { failed: failed.length }));
-  if (rejected.length) bits.push(t("form.rejected", { rejected: rejected.length }));
+  if (failed) bits.push(t("form.retry", { failed }));
+  if (rejected) bits.push(t("form.rejected", { rejected }));
   // Each of these strings already starts with a space, as form.thanks does.
   msg.textContent = bits.join("") || t("form.error");
   msg.classList.add("bad");

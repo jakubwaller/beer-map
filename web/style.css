@@ -831,7 +831,7 @@ header {
 /* A partial send is not a success: "6 von 9 gesendet" in the green of
    form.thanks reads as a confirmation, and the unsent rows above it get
    ignored. */
-.addbeer .msg.bad, .venueadd .msg.bad { color: var(--danger); }
+.addbeer .msg.bad { color: var(--danger); }
 button:disabled { opacity: .55; cursor: default; }
 
 /* ---------- "Ort korrigieren" ---------- */
