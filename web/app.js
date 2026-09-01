@@ -580,6 +580,10 @@ const modalTitle = document.getElementById("modal-title");
 const modalBody = document.getElementById("modal-body");
 
 function openModal(title, html) {
+  // Marker and cluster handlers stopPropagation, so their clicks never reach
+  // the document-level close below; without this the search list stays open
+  // behind the modal (z-index 12 vs 20) and is still there when it closes.
+  closeSuggestions();
   modalTitle.textContent = title;
   modalBody.innerHTML = html;
   modalRoot.hidden = false;
@@ -864,15 +868,20 @@ searchEl.addEventListener("keydown", (e) => {
     else showAllMatches();
   } else if (e.key === "Escape") {
     if (resultsEl.hidden) clearSearch(); else closeSuggestions();
+  } else if (e.key === "Tab") {
+    closeSuggestions();   // else it stays open and aria-expanded="true"
   }
 });
 // Closed on an outside click rather than on `blur`, for the same reason as the
-// brand combo above: the old guard against blur-closing first was a
+// brand combo further down this file: the old guard against blur-closing was a
 // `preventDefault()` on pointerdown, and that cancels touch panning, so this
 // list (up to 8 two-line rows in 58vh) could not be scrolled on a phone.
 document.addEventListener("click", (e) => {
   if (!e.target.closest(".search-wrap")) closeSuggestions();
 });
+// Panning by touch produces no click anywhere, so the document listener above
+// never fires for it and the list would sit over the map being dragged.
+map.on("movestart", closeSuggestions);
 resultsEl.addEventListener("click", (e) => {
   if (e.target.closest(".suggest-all")) { showAllMatches(); return; }
   const row = e.target.closest(".suggest-row");
@@ -944,8 +953,14 @@ modalBody.addEventListener("click", (e) => {
   if (!opt) return;
   const input = opt.closest(".combo").querySelector("input");
   input.value = opt.dataset.value;
-  closeCombo(input);
+  // Focus first, close second. Blink and Gecko move focus to a <button> on
+  // mousedown, so by click time the field has blurred and this focus() re-fires
+  // `focusin` -> renderCombo, which re-opens the list for every brand that is a
+  // strict prefix of another ("Augustiner" pulls back its five variants). The
+  // old pointerdown preventDefault used to mask this by never letting the field
+  // blur; closing after the focus does it without blocking touch scroll.
   input.focus();
+  closeCombo(input);
 });
 document.addEventListener("click", (e) => {
   if (e.target.closest(".combo")) return;
