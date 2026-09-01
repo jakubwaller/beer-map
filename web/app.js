@@ -648,14 +648,16 @@ function openVenueModal(v) {
     hoursBlock(v) +
     beers +
     `<form class="addbeer" data-osm="${esc(osm)}">
+       <ul class="staged" hidden></ul>
        <span class="combo">
-         <input name="brand" data-combo placeholder="${esc(t("venue.addBrand"))}" autocomplete="off" required>
+         <input name="brand" data-combo placeholder="${esc(t("venue.addBrand"))}" maxlength="80" autocomplete="off" required>
          <div class="combo-list" hidden></div>
        </span>
-       <input name="beer" placeholder="${esc(t("venue.beerOptional"))}">
+       <input name="beer" placeholder="${esc(t("venue.beerOptional"))}" maxlength="80">
        <label><input type="radio" name="serving" value="fass" checked>${esc(t("beer.fass"))}</label>
        <label><input type="radio" name="serving" value="tank">${esc(t("beer.tank"))}</label>
        <input class="hp" name="hp" tabindex="-1" autocomplete="off">
+       <button type="button" class="addrow">${esc(t("venue.addAnother"))}</button>
        <button>${esc(t("venue.submitBeer"))}</button><span class="msg"></span>
      </form>
      <details class="venue-actions">
@@ -668,6 +670,9 @@ function openVenueModal(v) {
        </form>
      </details>`;
   openModal(v.name || t("venue.fallbackName"), html);
+  // Rows staged before the modal was last closed come back with it.
+  const af = modalBody.querySelector(".addbeer");
+  if (af) renderStaged(af);
 }
 
 // --- Statistik / Über / Kontakt / Bier melden ---
@@ -893,8 +898,12 @@ document.addEventListener("click", (e) => {
 // `dragstart`/`zoomstart` rather than `movestart`: MapLibre also fires
 // `movestart` from resize(), which a ResizeObserver drives, so a phone rotation
 // or the soft keyboard opening would close the list mid-typing.
-map.on("dragstart", closeSuggestions);
-map.on("zoomstart", closeSuggestions);
+// `originalEvent` is what separates a user gesture from a programmatic camera
+// move: the geolocation flyTo also fires zoomstart, and closing on that yanks
+// the list away mid-word while a GPS fix lands.
+const closeOnUserGesture = (e) => { if (e.originalEvent) closeSuggestions(); };
+map.on("dragstart", closeOnUserGesture);
+map.on("zoomstart", closeOnUserGesture);
 resultsEl.addEventListener("click", (e) => {
   if (e.target.closest(".suggest-all")) { showAllMatches(); return; }
   const row = e.target.closest(".suggest-row");
@@ -1059,10 +1068,8 @@ citySelect.addEventListener("change", () => {
 // ---- Submission forms (delegated on the modal) ----
 function submissionBody(form, action) {
   const osm = form.dataset.osm;
-  if (form.classList.contains("addbeer"))
-    return { venue_osm_id: osm, brand: form.brand.value.trim(),
-             beer: form.beer.value.trim() || null,
-             serving: form.serving.value, kind: "add", hp: form.hp.value };
+  // .addbeer is not handled here: it can carry several rows, so the submit
+  // handler routes it to submitBeerRows(), which builds one payload per row.
   if (form.classList.contains("beerform"))
     return action === "remove"
       ? { venue_osm_id: osm, brand: form.dataset.brand, beer: form.dataset.beer || null, kind: "remove" }
@@ -1079,11 +1086,318 @@ function submissionBody(form, action) {
   return null;
 }
 
+// ---- Reporting several beers at once ----
+// A venue typically pours one Tankbier and the rest Fassbier, so the serving
+// type belongs to the row, not to the report. Each staged row is sent as its
+// own submission so /admin can approve them one at a time.
+//
+// localStorage is the ONE source of truth for the queue, and it is rewritten
+// after every single row resolves. An earlier version cached the list on the
+// form node and only wrote back once the whole batch finished; the modal can be
+// dismissed and reopened while a batch is still running, and the reopened form
+// then read a pre-send list and re-sent rows that had already landed. Keeping
+// exactly one copy, always current, removes that class of bug rather than
+// guarding each way of hitting it. It also makes a second tab behave.
+//
+// The limiter allows 10 submissions per IP per hour while this form invites a
+// whole tap wall, so leftovers have to survive a close for "bitte später
+// nochmal" to be true at all.
+// Keyed by venue rather than by form node: dismissing the modal mid-batch and
+// reopening it builds a *new* form element, whose own flag would be unset.
+const sendingVenues = new Set();
+
+const STAGE_TTL_MS = 24 * 60 * 60 * 1000;
+const stageKey = (osm) => "beermap.staged." + osm;
+
+// Storage can be unavailable outright — Safari's "Block All Cookies", Firefox
+// cookieBehavior=2, or a full quota all make localStorage throw. Since the
+// queue now lives only in storage, swallowing that would not merely stop
+// rows surviving a close, it would delete them as they were typed. So a throw
+// demotes us to an in-memory map for the rest of the session: rows still
+// survive closing and reopening the modal, they just do not survive a reload.
+const memStore = new Map();
+let storageWorks = true;
+
+function rawRead(osm) {
+  if (storageWorks) {
+    try { return localStorage.getItem(stageKey(osm)); }
+    catch { storageWorks = false; }
+  }
+  return memStore.has(osm) ? memStore.get(osm) : null;
+}
+
+function rawWrite(osm, value) {
+  if (storageWorks) {
+    try {
+      if (value === null) localStorage.removeItem(stageKey(osm));
+      else localStorage.setItem(stageKey(osm), value);
+      return;
+    } catch {
+      storageWorks = false;
+      // Best effort: the snapshot written before the throw is now stale, and a
+      // reload would restore `storageWorks` and resurrect rows that have since
+      // been sent. On a quota failure removeItem still works; where storage is
+      // blocked outright this throws too, but then the read side throws as
+      // well, so the stale entry is never seen.
+      try { localStorage.removeItem(stageKey(osm)); } catch { /* blocked */ }
+    }
+  }
+  if (value === null) memStore.delete(osm);
+  else memStore.set(osm, value);
+}
+let rowSeq = 0;
+const newRowId = () => `${Date.now().toString(36)}-${rowSeq++}`;
+
+function readEntry(osm) {
+  try {
+    const raw = rawRead(osm);
+    if (!raw) return { at: 0, rows: [] };
+    const { at, rows } = JSON.parse(raw);
+    if (!Array.isArray(rows) || !(Date.now() - at < STAGE_TTL_MS)) {
+      rawWrite(osm, null);
+      return { at: 0, rows: [] };
+    }
+    // Shape-check: this is user data from another session (or another tab).
+    // Length is deliberately NOT capped at the server's 80 here. The combo
+    // picker assigns input.value programmatically, which maxlength does not
+    // constrain, so an over-long OSM brand can be staged; dropping it on the
+    // next read made the row vanish silently. Let it through and let the
+    // server's 400 surface it as "abgelehnt", the way the live row already
+    // does. 200 is just a sanity bound on what we keep in storage.
+    return { at: typeof at === "number" ? at : Date.now(), rows: rows
+      .filter((r) => r && typeof r.brand === "string" && r.brand && r.brand.length <= 200)
+      .map((r) => ({
+        id: typeof r.id === "string" ? r.id : newRowId(),
+        brand: r.brand,
+        beer: typeof r.beer === "string" ? r.beer.slice(0, 200) : "",
+        serving: r.serving === "tank" ? "tank" : "fass",
+        rejected: r.rejected === true,
+      })) };
+  } catch { return { at: 0, rows: [] }; }   // private mode, quota, corrupt JSON
+}
+
+const readStaged = (osm) => readEntry(osm).rows;
+
+// Read-modify-write in one step, so every caller sees current storage. `at` is
+// stamped when the queue goes from empty to non-empty and preserved after that,
+// so the TTL measures age rather than being reset by every update.
+function updateStaged(osm, fn) {
+  const cur = readEntry(osm);
+  const rows = fn(cur.rows);
+  rawWrite(osm, rows.length
+    ? JSON.stringify({ at: cur.rows.length ? cur.at : Date.now(), rows })
+    : null);
+  return rows;
+}
+
+function renderStaged(form) {
+  const ul = form.querySelector(".staged");
+  if (!ul) return;
+  const osm = form.dataset.osm;
+  const rows = readStaged(osm);
+  ul.hidden = !rows.length;
+  ul.innerHTML = rows.map((r) => `
+    <li class="${r.rejected ? "rejected" : ""}">
+      <span class="staged-name">${esc(r.brand)}${r.beer
+        ? ` <span class="beer-product">${esc(r.beer)}</span>` : ""}</span>
+      <span class="badge">${esc(r.rejected ? t("venue.rejectedRow") : servingLabel(r.serving))}</span>
+      <button type="button" class="staged-remove" data-id="${esc(r.id)}"
+              aria-label="${esc(t("venue.removeStaged"))}"
+              title="${esc(t("venue.removeStaged"))}">✕</button>
+    </li>`).join("");
+  // Once something sendable is queued the live row may be left empty, so
+  // `required` would otherwise block the submit with an empty-field bubble.
+  form.brand.required = !rows.some((r) => !r.rejected);
+
+  // A batch owns its venue until it finishes. Dismissing the modal mid-send and
+  // reopening it builds a fresh, fully enabled form over the same queue, and
+  // every race this feature had came from that second form: typing into it,
+  // submitting from it, deleting a row the running batch was about to send.
+  // One interactive form per venue at a time removes the whole class.
+  if (sendingVenues.has(osm)) {
+    form.querySelectorAll("button, input, select").forEach((el) => (el.disabled = true));
+    const busy = form.querySelector(".msg");
+    if (busy) { busy.classList.remove("bad"); busy.textContent = t("form.sending"); }
+  }
+}
+
+function stageRow(form) {
+  const brand = form.brand.value.trim();
+  if (!brand) { form.brand.focus(); return; }
+  updateStaged(form.dataset.osm, (rows) => rows.concat({
+    id: newRowId(), brand, beer: form.beer.value.trim(),
+    serving: form.serving.value, rejected: false,
+  }));
+  form.brand.value = "";
+  form.beer.value = "";
+  renderStaged(form);
+  form.brand.focus();
+}
+
+modalBody.addEventListener("click", (e) => {
+  const add = e.target.closest(".addrow");
+  if (add) { stageRow(add.closest("form")); return; }
+  const rm = e.target.closest(".staged-remove");
+  if (!rm) return;
+  const form = rm.closest("form");
+  updateStaged(form.dataset.osm, (rows) => rows.filter((r) => r.id !== rm.dataset.id));
+  renderStaged(form);
+});
+
+async function postRow(osm, hp, r) {
+  try {
+    const res = await fetch("/api/submit", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ venue_osm_id: osm, brand: r.brand,
+                             beer: r.beer || null, serving: r.serving,
+                             kind: "add", hp }),
+    });
+    return res.ok ? "ok" : res.status;
+  } catch { return 0; }   // offline: worth retrying
+}
+
+// Sequential, not parallel: submissions are rate-limited per IP, and firing a
+// tap wall's worth at once would just collect 429s out of order.
+async function submitBeerRows(form) {
+  const osm = form.dataset.osm;
+  if (sendingVenues.has(osm)) {
+    // A batch started before the modal was reopened is still running. Say so,
+    // or the button looks broken for as long as it lasts.
+    const busy = form.querySelector(".msg");
+    if (busy) busy.textContent = t("form.sending");
+    return;
+  }
+
+  // A rejected row is never resent: it failed validation and would fail
+  // identically forever. It stays on screen, marked, so its text is not lost.
+  const queued = readStaged(osm).filter((r) => !r.rejected);
+  const live = form.brand.value.trim();
+  const liveRow = live
+    ? { id: newRowId(), brand: live, beer: form.beer.value.trim(),
+        serving: form.serving.value, rejected: false }
+    : null;
+  const msg = form.querySelector(".msg");
+  if (!queued.length && !liveRow) { form.brand.focus(); return; }
+  // A product typed with no brand is an unfinished row, not an empty one.
+  // `required` is off while anything is queued, so the browser says nothing.
+  if (!liveRow && form.beer.value.trim()) {
+    msg.classList.add("bad");
+    msg.textContent = t("form.needBrand");
+    form.brand.focus();
+    return;
+  }
+
+  const rows = liveRow ? queued.concat(liveRow) : queued;
+  // Only the live row may be put into the queue by a failure. Everything else
+  // came out of storage and is still there — unless the user deleted it from a
+  // modal reopened during this batch, in which case it must stay deleted.
+  const requeueLive = (list) => {
+    if (!liveRow || !list.includes(liveRow)) return;
+    updateStaged(osm, (cur) =>
+      cur.some((c) => c.id === liveRow.id) ? cur : cur.concat(liveRow));
+  };
+
+  sendingVenues.add(osm);
+  const controls = () => [...form.querySelectorAll("button, input, select")];
+  // Everything, not just the two buttons: the remove buttons and the inputs
+  // stayed live during a run that can take tens of seconds, so a row deleted
+  // mid-batch was resurrected by the write-back.
+  controls().forEach((el) => (el.disabled = true));
+  msg.classList.remove("bad");
+  msg.textContent = t("form.sending");
+
+  let sent = 0, failed = 0, rejected = 0, liveRejected = false;
+  try {
+    for (let i = 0; i < rows.length; i++) {
+      const r = rows[i];
+      const result = await postRow(osm, form.hp.value, r);
+
+      if (result === "ok") {
+        sent++;
+        // Gone from storage the moment it lands, so nothing can resend it.
+        updateStaged(osm, (cur) => cur.filter((x) => x.id !== r.id));
+        continue;
+      }
+      if (result === 429) {
+        // The window is an hour, so every remaining row is already doomed.
+        const rest = rows.slice(i);
+        failed += rest.length;
+        requeueLive(rest);
+        break;
+      }
+      // Only what this app emits for bad input counts as permanent. A 403 from
+      // the Cloudflare edge or a 408 is not the user's data being wrong.
+      if (result === 400 || result === 422) {
+        rejected++;
+        if (r === liveRow) liveRejected = true;   // stays in the inputs to fix
+        else updateStaged(osm, (cur) =>
+          cur.map((x) => (x.id === r.id ? { ...x, rejected: true } : x)));
+      } else {
+        failed++;
+        requeueLive([r]);
+        if (result === 0) {
+          // No transport at all (a bar cellar with no signal). The remaining
+          // rows would each time out in turn and tell the same story, so stop
+          // and leave them queued.
+          const rest = rows.slice(i + 1);
+          failed += rest.length;
+          requeueLive(rest);
+          break;
+        }
+      }
+    }
+  } finally {
+    sendingVenues.delete(osm);
+  }
+
+  // Storage is already correct; only the DOM still needs doing. The modal may
+  // have been dismissed and reopened during the batch, which leaves `form`
+  // detached — update whichever form is on screen for this venue instead, or
+  // the reopened one sits on "Wird gesendet…" forever showing rows that landed.
+  const view = form.isConnected
+    ? form
+    : modalBody.querySelector(".addbeer");
+  if (!view || view.dataset.osm !== osm) return;
+  const out = view.querySelector(".msg");
+  const viewControls = () => [...view.querySelectorAll("button, input, select")];
+
+  // Clear the inputs only when the live row actually went. A rejected one stays
+  // so it can be corrected in place; the old single-submit path never cleared a
+  // field on failure either.
+  if (view === form && liveRow && !liveRejected) {
+    view.brand.value = "";
+    view.beer.value = "";
+  }
+  renderStaged(view);
+
+  // Judge THIS batch. A rejected row stays in storage indefinitely, so testing
+  // the queue as well meant a later single report that fully succeeded rendered
+  // as a red " 1 von 1 gesendet." instead of the green thanks.
+  if (!failed && !rejected) {
+    out.classList.remove("bad");
+    out.textContent = t("form.thanks");
+    // Disable only when there is genuinely nothing left; a lingering rejected
+    // row still needs its remove button to work.
+    const done = !readStaged(osm).length;
+    viewControls().forEach((el) => (el.disabled = done));
+    return;
+  }
+  const bits = [];
+  if (sent) bits.push(t("form.sent", { ok: sent, n: rows.length }));
+  if (failed) bits.push(t("form.retry", { failed }));
+  if (rejected) bits.push(t("form.rejected", { rejected }));
+  // Each of these strings already starts with a space, as form.thanks does.
+  out.textContent = bits.join("") || t("form.error");
+  out.classList.add("bad");
+  viewControls().forEach((el) => (el.disabled = false));
+}
+
 modalBody.addEventListener("submit", async (ev) => {
   const f = ev.target;
   if (!f.matches(".addbeer, .beerform, .venueform, .venueadd")) return;
   ev.preventDefault();
   const action = ev.submitter && ev.submitter.value;
+  if (f.classList.contains("addbeer")) { await submitBeerRows(f); return; }
   if (action === "close_venue" && !confirm(t("confirm.close"))) return;
   const body = submissionBody(f, action);
   if (!body) return;
