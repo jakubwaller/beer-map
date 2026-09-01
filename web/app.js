@@ -1136,36 +1136,45 @@ function rawWrite(osm, value) {
 let rowSeq = 0;
 const newRowId = () => `${Date.now().toString(36)}-${rowSeq++}`;
 
-function readStaged(osm) {
+function readEntry(osm) {
   try {
     const raw = rawRead(osm);
-    if (!raw) return [];
+    if (!raw) return { at: 0, rows: [] };
     const { at, rows } = JSON.parse(raw);
     if (!Array.isArray(rows) || !(Date.now() - at < STAGE_TTL_MS)) {
       rawWrite(osm, null);
-      return [];
+      return { at: 0, rows: [] };
     }
     // Shape-check: this is user data from another session (or another tab).
-    return rows
-      .filter((r) => r && typeof r.brand === "string" && r.brand && r.brand.length <= 80)
+    // Length is deliberately NOT capped at the server's 80 here. The combo
+    // picker assigns input.value programmatically, which maxlength does not
+    // constrain, so an over-long OSM brand can be staged; dropping it on the
+    // next read made the row vanish silently. Let it through and let the
+    // server's 400 surface it as "abgelehnt", the way the live row already
+    // does. 200 is just a sanity bound on what we keep in storage.
+    return { at: typeof at === "number" ? at : Date.now(), rows: rows
+      .filter((r) => r && typeof r.brand === "string" && r.brand && r.brand.length <= 200)
       .map((r) => ({
         id: typeof r.id === "string" ? r.id : newRowId(),
         brand: r.brand,
-        beer: typeof r.beer === "string" ? r.beer.slice(0, 80) : "",
+        beer: typeof r.beer === "string" ? r.beer.slice(0, 200) : "",
         serving: r.serving === "tank" ? "tank" : "fass",
         rejected: r.rejected === true,
-      }));
-  } catch { return []; }   // private mode, quota, corrupt JSON
+      })) };
+  } catch { return { at: 0, rows: [] }; }   // private mode, quota, corrupt JSON
 }
 
-function writeStaged(osm, rows) {
-  rawWrite(osm, rows.length ? JSON.stringify({ at: Date.now(), rows }) : null);
-}
+const readStaged = (osm) => readEntry(osm).rows;
 
-// Read-modify-write in one step, so every caller sees current storage.
+// Read-modify-write in one step, so every caller sees current storage. `at` is
+// stamped when the queue goes from empty to non-empty and preserved after that,
+// so the TTL measures age rather than being reset by every update.
 function updateStaged(osm, fn) {
-  const rows = fn(readStaged(osm));
-  writeStaged(osm, rows);
+  const cur = readEntry(osm);
+  const rows = fn(cur.rows);
+  rawWrite(osm, rows.length
+    ? JSON.stringify({ at: cur.rows.length ? cur.at : Date.now(), rows })
+    : null);
   return rows;
 }
 
@@ -1259,6 +1268,15 @@ async function submitBeerRows(form) {
   }
 
   const rows = liveRow ? queued.concat(liveRow) : queued;
+  // Only the live row may be put into the queue by a failure. Everything else
+  // came out of storage and is still there — unless the user deleted it from a
+  // modal reopened during this batch, in which case it must stay deleted.
+  const requeueLive = (list) => {
+    if (!liveRow || !list.includes(liveRow)) return;
+    updateStaged(osm, (cur) =>
+      cur.some((c) => c.id === liveRow.id) ? cur : cur.concat(liveRow));
+  };
+
   sendingVenues.add(osm);
   const controls = () => [...form.querySelectorAll("button, input, select")];
   // Everything, not just the two buttons: the remove buttons and the inputs
@@ -1282,11 +1300,9 @@ async function submitBeerRows(form) {
       }
       if (result === 429) {
         // The window is an hour, so every remaining row is already doomed.
-        // Queue whatever is not stored yet (i.e. the live row) and stop.
         const rest = rows.slice(i);
         failed += rest.length;
-        updateStaged(osm, (cur) => cur.concat(
-          rest.filter((x) => !cur.some((c) => c.id === x.id))));
+        requeueLive(rest);
         break;
       }
       // Only what this app emits for bad input counts as permanent. A 403 from
@@ -1298,16 +1314,14 @@ async function submitBeerRows(form) {
           cur.map((x) => (x.id === r.id ? { ...x, rejected: true } : x)));
       } else {
         failed++;
-        updateStaged(osm, (cur) =>
-          cur.some((c) => c.id === r.id) ? cur : cur.concat(r));
+        requeueLive([r]);
         if (result === 0) {
           // No transport at all (a bar cellar with no signal). The remaining
           // rows would each time out in turn and tell the same story, so stop
           // and leave them queued.
           const rest = rows.slice(i + 1);
           failed += rest.length;
-          updateStaged(osm, (cur) => cur.concat(
-            rest.filter((x) => !cur.some((c) => c.id === x.id))));
+          requeueLive(rest);
           break;
         }
       }
@@ -1316,24 +1330,36 @@ async function submitBeerRows(form) {
     sendingVenues.delete(osm);
   }
 
-  // Only the DOM work needs a live node; storage is already correct either way.
-  if (!form.isConnected) return;
+  // Storage is already correct; only the DOM still needs doing. The modal may
+  // have been dismissed and reopened during the batch, which leaves `form`
+  // detached — update whichever form is on screen for this venue instead, or
+  // the reopened one sits on "Wird gesendet…" forever showing rows that landed.
+  const view = form.isConnected
+    ? form
+    : modalBody.querySelector(".addbeer");
+  if (!view || view.dataset.osm !== osm) return;
+  const out = view.querySelector(".msg");
+  const viewControls = () => [...view.querySelectorAll("button, input, select")];
 
   // Clear the inputs only when the live row actually went. A rejected one stays
   // so it can be corrected in place; the old single-submit path never cleared a
   // field on failure either.
-  if (liveRow && !liveRejected) {
-    form.brand.value = "";
-    form.beer.value = "";
+  if (view === form && liveRow && !liveRejected) {
+    view.brand.value = "";
+    view.beer.value = "";
   }
-  renderStaged(form);
+  renderStaged(view);
 
-  // An all-clear needs an empty queue AND nothing failed AND nothing rejected:
-  // a rejected live row is kept out of the queue, so testing the queue alone
-  // reported success for a submission the server had refused.
-  if (!readStaged(osm).length && !failed && !rejected) {
-    msg.textContent = t("form.thanks");
-    controls().forEach((el) => (el.disabled = true));
+  // Judge THIS batch. A rejected row stays in storage indefinitely, so testing
+  // the queue as well meant a later single report that fully succeeded rendered
+  // as a red " 1 von 1 gesendet." instead of the green thanks.
+  if (!failed && !rejected) {
+    out.classList.remove("bad");
+    out.textContent = t("form.thanks");
+    // Disable only when there is genuinely nothing left; a lingering rejected
+    // row still needs its remove button to work.
+    const done = !readStaged(osm).length;
+    viewControls().forEach((el) => (el.disabled = done));
     return;
   }
   const bits = [];
@@ -1341,9 +1367,9 @@ async function submitBeerRows(form) {
   if (failed) bits.push(t("form.retry", { failed }));
   if (rejected) bits.push(t("form.rejected", { rejected }));
   // Each of these strings already starts with a space, as form.thanks does.
-  msg.textContent = bits.join("") || t("form.error");
-  msg.classList.add("bad");
-  controls().forEach((el) => (el.disabled = false));
+  out.textContent = bits.join("") || t("form.error");
+  out.classList.add("bad");
+  viewControls().forEach((el) => (el.disabled = false));
 }
 
 modalBody.addEventListener("submit", async (ev) => {
