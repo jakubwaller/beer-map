@@ -768,7 +768,12 @@ async function remoteSearch(q) {
   }
   if (!added) return;
   rebuildSearchPool();
-  renderSuggestions();  // the open dropdown picks up the new hits
+  // Only refresh a list that is still open. renderSuggestions() opens it
+  // unconditionally, so a late answer used to re-open one the user had already
+  // dismissed: picking a venue inside the debounce+fetch window left the
+  // dropdown sitting behind the modal (z-index 12 vs 20), still there when the
+  // modal closed. The pool is rebuilt either way, so the hits are not lost.
+  if (!resultsEl.hidden) renderSuggestions();
 }
 
 function suggestRow(v, i) {
@@ -881,7 +886,11 @@ document.addEventListener("click", (e) => {
 });
 // Panning by touch produces no click anywhere, so the document listener above
 // never fires for it and the list would sit over the map being dragged.
-map.on("movestart", closeSuggestions);
+// `dragstart`/`zoomstart` rather than `movestart`: MapLibre also fires
+// `movestart` from resize(), which a ResizeObserver drives, so a phone rotation
+// or the soft keyboard opening would close the list mid-typing.
+map.on("dragstart", closeSuggestions);
+map.on("zoomstart", closeSuggestions);
 resultsEl.addEventListener("click", (e) => {
   if (e.target.closest(".suggest-all")) { showAllMatches(); return; }
   const row = e.target.closest(".suggest-row");
