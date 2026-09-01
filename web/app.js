@@ -370,7 +370,8 @@ function refreshMarkers() {
       const half = clusterSize(bucket.length) / 2;
       dotBoxes.push([pt.x - half, pt.y - half, pt.x + half, pt.y + half]);
       el.onclick = (e) => {
-        e.stopPropagation();
+        e.stopPropagation();   // ...so close the dropdown by hand: at maxZoom
+        closeSuggestions();    // easeTo only pans and emits no zoomstart either
         map.easeTo({ center: [lon, lat], zoom: Math.min(map.getZoom() + 2.2, 18) });
       };
     } else {
@@ -773,7 +774,7 @@ async function remoteSearch(q) {
   // dismissed: picking a venue inside the debounce+fetch window left the
   // dropdown sitting behind the modal (z-index 12 vs 20), still there when the
   // modal closed. The pool is rebuilt either way, so the hits are not lost.
-  if (!resultsEl.hidden) renderSuggestions();
+  renderSuggestions({ open: !resultsEl.hidden });
 }
 
 function suggestRow(v, i) {
@@ -804,12 +805,15 @@ function closeSuggestions() {
   suggestIdx = -1;
 }
 
-function renderSuggestions() {
+// `open: false` refreshes `matches` without showing or re-showing the list —
+// Enter still fits bounds over the full set even though the dropdown is closed.
+function renderSuggestions({ open = true } = {}) {
   const q = search.trim();
   clearEl.hidden = !q;
   if (!q) { matches = []; closeSuggestions(); return; }
   matches = searchVenues(searchPool, q);
   suggestIdx = -1;
+  if (!open) return;
   resultsEl.innerHTML = matches.length
     ? matches.slice(0, MAX_SUGGESTIONS).map(suggestRow).join("")
       + `<button type="button" class="suggest-all">`
@@ -992,7 +996,10 @@ modalBody.addEventListener("keydown", (e) => {
     e.preventDefault();   // pick the highlighted brand instead of submitting
     input.value = opts[cur].dataset.value;
     closeCombo(input);
-  } else if (e.key === "Escape" || e.key === "Tab") {
+  } else if (e.key === "Escape") {
+    e.stopPropagation();   // else the document-level Escape closes the modal too
+    closeCombo(input);
+  } else if (e.key === "Tab") {
     closeCombo(input);
   }
 });
