@@ -1090,10 +1090,6 @@ function submissionBody(form, action) {
 // A venue typically pours one Tankbier and the rest Fassbier, so the serving
 // type belongs to the row, not to the report. Each staged row is sent as its
 // own submission so /admin can approve them one at a time.
-// ---- Reporting several beers at once ----
-// A venue typically pours one Tankbier and the rest Fassbier, so the serving
-// type belongs to the row, not to the report. Each staged row is sent as its
-// own submission so /admin can approve them one at a time.
 //
 // localStorage is the ONE source of truth for the queue, and it is rewritten
 // after every single row resolves. An earlier version cached the list on the
@@ -1108,16 +1104,45 @@ function submissionBody(form, action) {
 // nochmal" to be true at all.
 const STAGE_TTL_MS = 24 * 60 * 60 * 1000;
 const stageKey = (osm) => "beermap.staged." + osm;
+
+// Storage can be unavailable outright — Safari's "Block All Cookies", Firefox
+// cookieBehavior=2, or a full quota all make localStorage throw. Since the
+// queue now lives only in storage, swallowing that would not merely stop
+// rows surviving a close, it would delete them as they were typed. So a throw
+// demotes us to an in-memory map for the rest of the session: rows still
+// survive closing and reopening the modal, they just do not survive a reload.
+const memStore = new Map();
+let storageWorks = true;
+
+function rawRead(osm) {
+  if (storageWorks) {
+    try { return localStorage.getItem(stageKey(osm)); }
+    catch { storageWorks = false; }
+  }
+  return memStore.has(osm) ? memStore.get(osm) : null;
+}
+
+function rawWrite(osm, value) {
+  if (storageWorks) {
+    try {
+      if (value === null) localStorage.removeItem(stageKey(osm));
+      else localStorage.setItem(stageKey(osm), value);
+      return;
+    } catch { storageWorks = false; }
+  }
+  if (value === null) memStore.delete(osm);
+  else memStore.set(osm, value);
+}
 let rowSeq = 0;
 const newRowId = () => `${Date.now().toString(36)}-${rowSeq++}`;
 
 function readStaged(osm) {
   try {
-    const raw = localStorage.getItem(stageKey(osm));
+    const raw = rawRead(osm);
     if (!raw) return [];
     const { at, rows } = JSON.parse(raw);
     if (!Array.isArray(rows) || !(Date.now() - at < STAGE_TTL_MS)) {
-      localStorage.removeItem(stageKey(osm));
+      rawWrite(osm, null);
       return [];
     }
     // Shape-check: this is user data from another session (or another tab).
@@ -1134,11 +1159,7 @@ function readStaged(osm) {
 }
 
 function writeStaged(osm, rows) {
-  try {
-    if (rows.length)
-      localStorage.setItem(stageKey(osm), JSON.stringify({ at: Date.now(), rows }));
-    else localStorage.removeItem(stageKey(osm));
-  } catch { /* staging just stops surviving a close */ }
+  rawWrite(osm, rows.length ? JSON.stringify({ at: Date.now(), rows }) : null);
 }
 
 // Read-modify-write in one step, so every caller sees current storage.
@@ -1210,7 +1231,13 @@ async function postRow(osm, hp, r) {
 // tap wall's worth at once would just collect 429s out of order.
 async function submitBeerRows(form) {
   const osm = form.dataset.osm;
-  if (sendingVenues.has(osm)) return;
+  if (sendingVenues.has(osm)) {
+    // A batch started before the modal was reopened is still running. Say so,
+    // or the button looks broken for as long as it lasts.
+    const busy = form.querySelector(".msg");
+    if (busy) busy.textContent = t("form.sending");
+    return;
+  }
 
   // A rejected row is never resent: it failed validation and would fail
   // identically forever. It stays on screen, marked, so its text is not lost.
@@ -1273,6 +1300,16 @@ async function submitBeerRows(form) {
         failed++;
         updateStaged(osm, (cur) =>
           cur.some((c) => c.id === r.id) ? cur : cur.concat(r));
+        if (result === 0) {
+          // No transport at all (a bar cellar with no signal). The remaining
+          // rows would each time out in turn and tell the same story, so stop
+          // and leave them queued.
+          const rest = rows.slice(i + 1);
+          failed += rest.length;
+          updateStaged(osm, (cur) => cur.concat(
+            rest.filter((x) => !cur.some((c) => c.id === x.id))));
+          break;
+        }
       }
     }
   } finally {
