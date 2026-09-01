@@ -370,7 +370,8 @@ function refreshMarkers() {
       const half = clusterSize(bucket.length) / 2;
       dotBoxes.push([pt.x - half, pt.y - half, pt.x + half, pt.y + half]);
       el.onclick = (e) => {
-        e.stopPropagation();
+        e.stopPropagation();   // ...so close the dropdown by hand: at maxZoom
+        closeSuggestions();    // easeTo only pans and emits no zoomstart either
         map.easeTo({ center: [lon, lat], zoom: Math.min(map.getZoom() + 2.2, 18) });
       };
     } else {
@@ -580,6 +581,10 @@ const modalTitle = document.getElementById("modal-title");
 const modalBody = document.getElementById("modal-body");
 
 function openModal(title, html) {
+  // Marker and cluster handlers stopPropagation, so their clicks never reach
+  // the document-level close below; without this the search list stays open
+  // behind the modal (z-index 12 vs 20) and is still there when it closes.
+  closeSuggestions();
   modalTitle.textContent = title;
   modalBody.innerHTML = html;
   modalRoot.hidden = false;
@@ -764,7 +769,12 @@ async function remoteSearch(q) {
   }
   if (!added) return;
   rebuildSearchPool();
-  renderSuggestions();  // the open dropdown picks up the new hits
+  // Only refresh a list that is still open. renderSuggestions() opens it
+  // unconditionally, so a late answer used to re-open one the user had already
+  // dismissed: picking a venue inside the debounce+fetch window left the
+  // dropdown sitting behind the modal (z-index 12 vs 20), still there when the
+  // modal closed. The pool is rebuilt either way, so the hits are not lost.
+  renderSuggestions({ open: !resultsEl.hidden });
 }
 
 function suggestRow(v, i) {
@@ -795,12 +805,15 @@ function closeSuggestions() {
   suggestIdx = -1;
 }
 
-function renderSuggestions() {
+// `open: false` refreshes `matches` without showing or re-showing the list —
+// Enter still fits bounds over the full set even though the dropdown is closed.
+function renderSuggestions({ open = true } = {}) {
   const q = search.trim();
   clearEl.hidden = !q;
   if (!q) { matches = []; closeSuggestions(); return; }
   matches = searchVenues(searchPool, q);
   suggestIdx = -1;
+  if (!open) return;
   resultsEl.innerHTML = matches.length
     ? matches.slice(0, MAX_SUGGESTIONS).map(suggestRow).join("")
       + `<button type="button" class="suggest-all">`
@@ -853,8 +866,6 @@ searchEl.addEventListener("input", () => {
   applyFilters();
 });
 searchEl.addEventListener("focus", () => { if (search.trim()) renderSuggestions(); });
-// Delayed: a tap on a row must land before the list disappears.
-searchEl.addEventListener("blur", () => setTimeout(closeSuggestions, 150));
 searchEl.addEventListener("keydown", (e) => {
   if (e.key === "ArrowDown" || e.key === "ArrowUp") {
     e.preventDefault();
@@ -866,11 +877,24 @@ searchEl.addEventListener("keydown", (e) => {
     else showAllMatches();
   } else if (e.key === "Escape") {
     if (resultsEl.hidden) clearSearch(); else closeSuggestions();
+  } else if (e.key === "Tab") {
+    closeSuggestions();   // else it stays open and aria-expanded="true"
   }
 });
-// preventDefault keeps the focus (and the on-screen keyboard) put, so `blur`
-// never fires before the click that picks a row.
-resultsEl.addEventListener("pointerdown", (e) => e.preventDefault());
+// Closed on an outside click rather than on `blur`, for the same reason as the
+// brand combo further down this file: the old guard against blur-closing was a
+// `preventDefault()` on pointerdown, and that cancels touch panning, so this
+// list (up to 8 two-line rows in 58vh) could not be scrolled on a phone.
+document.addEventListener("click", (e) => {
+  if (!e.target.closest(".search-wrap")) closeSuggestions();
+});
+// Panning by touch produces no click anywhere, so the document listener above
+// never fires for it and the list would sit over the map being dragged.
+// `dragstart`/`zoomstart` rather than `movestart`: MapLibre also fires
+// `movestart` from resize(), which a ResizeObserver drives, so a phone rotation
+// or the soft keyboard opening would close the list mid-typing.
+map.on("dragstart", closeSuggestions);
+map.on("zoomstart", closeSuggestions);
 resultsEl.addEventListener("click", (e) => {
   if (e.target.closest(".suggest-all")) { showAllMatches(); return; }
   const row = e.target.closest(".suggest-row");
@@ -924,17 +948,36 @@ modalBody.addEventListener("input", (e) => {
 modalBody.addEventListener("focusin", (e) => {
   if (e.target.matches("input[data-combo]")) renderCombo(e.target);
 });
-modalBody.addEventListener("focusout", (e) => {
-  if (e.target.matches("input[data-combo]")) setTimeout(() => closeCombo(e.target), 150);
-});
-modalBody.addEventListener("pointerdown", (e) => {
+// Both of these are deliberately bound to `click` rather than to `focusout` or
+// `pointerdown`, and that is load-bearing on a phone:
+//
+//   * the list sits in the flow (see style.css), so closing it on `focusout`
+//     reflowed the form mid-tap and pulled "Bier melden" up from under the
+//     finger — pointerdown and pointerup landed on different elements and the
+//     click was never delivered, which is why the button needed two taps;
+//   * `preventDefault()` on pointerdown (which used to hold the focus so the
+//     blur-close wouldn't beat the pick) also cancels the browser's pan
+//     gesture, so the list could not be scrolled by touch at all.
+//
+// Closing on `click` happens after the tap it interrupted has been delivered,
+// which costs nothing and makes both gestures work.
+modalBody.addEventListener("click", (e) => {
   const opt = e.target.closest(".combo-opt");
   if (!opt) return;
-  e.preventDefault();   // hold the focus so the field doesn't blur-close first
   const input = opt.closest(".combo").querySelector("input");
   input.value = opt.dataset.value;
-  closeCombo(input);
+  // Focus first, close second. Blink and Gecko move focus to a <button> on
+  // mousedown, so by click time the field has blurred and this focus() re-fires
+  // `focusin` -> renderCombo, which re-opens the list for every brand that is a
+  // strict prefix of another ("Augustiner" pulls back its five variants). The
+  // old pointerdown preventDefault used to mask this by never letting the field
+  // blur; closing after the focus does it without blocking touch scroll.
   input.focus();
+  closeCombo(input);
+});
+document.addEventListener("click", (e) => {
+  if (e.target.closest(".combo")) return;
+  modalBody.querySelectorAll("input[data-combo]").forEach((i) => closeCombo(i));
 });
 modalBody.addEventListener("keydown", (e) => {
   const input = e.target;
@@ -954,6 +997,9 @@ modalBody.addEventListener("keydown", (e) => {
     input.value = opts[cur].dataset.value;
     closeCombo(input);
   } else if (e.key === "Escape") {
+    e.stopPropagation();   // else the document-level Escape closes the modal too
+    closeCombo(input);
+  } else if (e.key === "Tab") {
     closeCombo(input);
   }
 });
