@@ -1169,12 +1169,16 @@ modalBody.addEventListener("click", (e) => {
 
 // Sequential, not parallel: submissions are rate-limited per IP, and firing a
 // tap wall's worth at once would just collect 429s out of order.
+// Keyed by venue rather than by form node: dismissing the modal mid-batch and
+// reopening it builds a *new* form element, whose own flag would be unset.
+const sendingVenues = new Set();
+
 async function submitBeerRows(form) {
   // Each /api/submit notifies synchronously (Telegram POST with a 10 s timeout,
   // plus optional SMTP), so a batch takes seconds. Without a guard a second tap
   // re-sends the whole still-unmodified list: duplicate rows for the moderator,
   // duplicate notifications, and two runs racing on the staged array.
-  if (form._sending) return;
+  if (sendingVenues.has(form.dataset.osm)) return;
   const controls = () => [...form.querySelectorAll("button, input, select")];
   const msg = form.querySelector(".msg");
 
@@ -1187,8 +1191,12 @@ async function submitBeerRows(form) {
     : null;
   const rows = liveRow ? queued.concat(liveRow) : queued;
   if (!rows.length) { form.brand.focus(); return; }
+  // A product typed with no brand is an unfinished row, not an empty one:
+  // sending the rest would leave it stranded in a field the all-clear then
+  // disables. Same treatment `required` gives the nothing-typed case.
+  if (!liveRow && form.beer.value.trim()) { form.brand.focus(); return; }
 
-  form._sending = true;
+  sendingVenues.add(form.dataset.osm);
   // Everything, not just the two buttons: the remove buttons and the text
   // inputs stayed live during a run that can take tens of seconds, so a row
   // deleted mid-batch was resurrected by the write-back below.
@@ -1225,33 +1233,42 @@ async function submitBeerRows(form) {
       else failed.push(r);
     }
   } finally {
-    form._sending = false;
+    sendingVenues.delete(form.dataset.osm);
   }
-
-  // The modal can be dismissed mid-batch, which detaches this form.
-  if (!form.isConnected) return;
 
   // Rows that landed are gone, so a retry cannot double-report them. Rejected
   // rows are kept, flagged, and skipped by the next send. Rows the user
   // deleted while this ran are simply not put back.
+  //
+  // This runs even if the modal was dismissed mid-batch: both the write-back
+  // and saveStaged work fine on a detached node, and skipping them would leave
+  // the *pre-send* list in localStorage, so rows that already reached the
+  // server would come back staged and go out a second time.
   const stillRejected = stagedOf(form).filter((r) => r.rejected);
   form._rows = stillRejected.concat(failed,
     rejected.filter((r) => r !== liveRow).map((r) => ({ ...r, rejected: true })));
+  saveStaged(form);
 
-  // Leave a rejected live row in the inputs so it can be corrected in place;
-  // the old single-submit path never cleared a field on failure either.
-  if (!liveRow || !rejected.includes(liveRow)) {
+  // Only the DOM work needs a live node.
+  if (!form.isConnected) return;
+
+  // Clear the inputs only when the live row actually went. A rejected one stays
+  // so it can be corrected in place (the old single-submit path never cleared a
+  // field on failure), and with no live row at all there may still be a product
+  // typed without a brand, which wiping would silently discard.
+  if (liveRow && !rejected.includes(liveRow)) {
     form.brand.value = "";
     form.beer.value = "";
   }
   renderStaged(form);
 
-  saveStaged(form);
-
   const sent = rows.length - failed.length - rejected.length;
-  // Only an empty list is an all-clear: a row rejected on an earlier attempt is
-  // still sitting there, and disabling everything would kill its remove button.
-  if (!form._rows.length) {
+  // An all-clear needs three things: nothing left in the list, nothing that
+  // failed, and nothing rejected. A rejected live row is deliberately kept out
+  // of the list so it stays in the inputs, so testing the list alone reported
+  // "Danke, wird geprüft!" for a submission the server had refused — and then
+  // disabled the form — on the single-beer path, which is the common one.
+  if (!form._rows.length && !failed.length && !rejected.length) {
     msg.textContent = t("form.thanks");
     controls().forEach((el) => (el.disabled = true));
     return;
