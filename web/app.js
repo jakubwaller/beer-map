@@ -670,6 +670,9 @@ function openVenueModal(v) {
        </form>
      </details>`;
   openModal(v.name || t("venue.fallbackName"), html);
+  // Rows staged before the modal was last closed come back with it.
+  const af = modalBody.querySelector(".addbeer");
+  if (af) renderStaged(af);
 }
 
 // --- Statistik / Über / Kontakt / Bier melden ---
@@ -1087,7 +1090,42 @@ function submissionBody(form, action) {
 // A venue typically pours one Tankbier and the rest Fassbier, so the serving
 // type belongs to the row, not to the report. Each staged row is sent as its
 // own submission so /admin can approve them one at a time.
-const stagedOf = (form) => (form._rows ||= []);
+// Unsent rows outlive the modal. The limiter allows 10 submissions per IP per
+// hour while this form invites a whole tap wall, so "bitte später nochmal" is
+// only true if the leftovers are still here later; closeModal() throws the DOM
+// node (and with it form._rows) away on X, overlay, Escape and language switch.
+const STAGE_TTL_MS = 24 * 60 * 60 * 1000;
+const stageKey = (form) => "beermap.staged." + form.dataset.osm;
+
+function loadStaged(form) {
+  try {
+    const raw = localStorage.getItem(stageKey(form));
+    if (!raw) return [];
+    const { at, rows } = JSON.parse(raw);
+    if (!Array.isArray(rows) || !(Date.now() - at < STAGE_TTL_MS)) {
+      localStorage.removeItem(stageKey(form));
+      return [];
+    }
+    // Shape-check what comes back: it is user data from another session.
+    return rows.filter((r) => r && typeof r.brand === "string" && r.brand
+                              && r.brand.length <= 80)
+               .map((r) => ({ brand: r.brand,
+                              beer: typeof r.beer === "string" ? r.beer : "",
+                              serving: r.serving === "tank" ? "tank" : "fass",
+                              rejected: r.rejected === true }));
+  } catch { return []; }   // private mode, quota, corrupt JSON
+}
+
+function saveStaged(form) {
+  try {
+    const rows = stagedOf(form);
+    if (rows.length)
+      localStorage.setItem(stageKey(form), JSON.stringify({ at: Date.now(), rows }));
+    else localStorage.removeItem(stageKey(form));
+  } catch { /* staging just stops surviving a close */ }
+}
+
+const stagedOf = (form) => (form._rows ||= loadStaged(form));
 
 function renderStaged(form) {
   const ul = form.querySelector(".staged");
@@ -1114,6 +1152,7 @@ function stageRow(form) {
   form.brand.value = "";
   form.beer.value = "";
   renderStaged(form);
+  saveStaged(form);
   form.brand.focus();
 }
 
@@ -1125,6 +1164,7 @@ modalBody.addEventListener("click", (e) => {
   const form = rm.closest("form");
   stagedOf(form).splice(+rm.dataset.i, 1);
   renderStaged(form);
+  saveStaged(form);
 });
 
 // Sequential, not parallel: submissions are rate-limited per IP, and firing a
@@ -1160,7 +1200,8 @@ async function submitBeerRows(form) {
   const failed = [];    // retryable (429, 5xx, network) — stays queued
   const rejected = [];  // permanent 4xx — kept visible but never resent
   try {
-    for (const r of rows) {
+    for (let i = 0; i < rows.length; i++) {
+      const r = rows[i];
       let status = 0;
       try {
         const res = await fetch("/api/submit", {
@@ -1172,9 +1213,15 @@ async function submitBeerRows(form) {
         if (res.ok) continue;
         status = res.status;
       } catch { status = 0; }   // offline: worth retrying
-      // A 400 (brand too long, unknown venue, bad serving) fails identically
-      // forever, so leaving it queued under "try again later" is a lie.
-      if (status >= 400 && status < 500 && status !== 429) rejected.push(r);
+      if (status === 429) {
+        // The window is an hour, so every remaining row is already doomed.
+        failed.push(...rows.slice(i));
+        break;
+      }
+      // Only what this app actually emits for bad input counts as permanent.
+      // A 403 from the Cloudflare edge or a 408 is not the user's data being
+      // wrong, and must stay retryable rather than be struck through.
+      if (status === 400 || status === 422) rejected.push(r);
       else failed.push(r);
     }
   } finally {
@@ -1199,8 +1246,12 @@ async function submitBeerRows(form) {
   }
   renderStaged(form);
 
+  saveStaged(form);
+
   const sent = rows.length - failed.length - rejected.length;
-  if (!failed.length && !rejected.length) {
+  // Only an empty list is an all-clear: a row rejected on an earlier attempt is
+  // still sitting there, and disabling everything would kill its remove button.
+  if (!form._rows.length) {
     msg.textContent = t("form.thanks");
     controls().forEach((el) => (el.disabled = true));
     return;
