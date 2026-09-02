@@ -66,7 +66,7 @@ seconds; `pipeline.run` re-queries Overpass and takes minutes. So for a frontend
 change:
 
 ```bash
-cd ~/beer-map && git pull && ASSET_VERSION="$(git rev-parse --short HEAD)" docker compose up -d --build
+cd ~/beer-map && git pull --ff-only && ASSET_VERSION="$(git rev-parse --short HEAD)" docker compose up -d --build
 ```
 
 **Setting `ASSET_VERSION` is not optional.** It is a build arg, `sed`-substituted into
@@ -86,9 +86,17 @@ wait until 04:00 needs no deploy at all.
 ## Auto-deploy (GitHub Actions)
 
 Every push to `main` — in practice every squash-merge — runs
-`.github/workflows/deploy.yml`, which SSHes to the VPS and runs the web-only
-path above, then checks the result. Deploys queue rather than overlap. You can
-also fire one by hand from the Actions tab (`workflow_dispatch`).
+`.github/workflows/deploy.yml` once the CI workflow has passed for that commit:
+it SSHes to the VPS and runs the web-only path above, then checks the result.
+Deploys queue rather than overlap. You can also fire one by hand from the
+Actions tab (`workflow_dispatch`), from `main` only — the VPS tracks `main`, so
+a dispatch from another branch would deploy `main` and then report red.
+
+**Do not edit tracked files on the VPS.** `curation.yaml` is bind-mounted into
+the container, which makes editing it in place tempting; one such edit makes
+`git pull --ff-only` refuse, and every merge from then on fails until someone
+commits or discards the change. The workflow names the dirty file in its error
+instead of failing with git's generic message.
 
 It deliberately **does not rebuild the dataset**: `pipeline.run` re-queries
 Overpass and takes minutes, and the 04:00 cron does it anyway. So a change that
@@ -97,10 +105,11 @@ a new city — is live in the app immediately but shows its new *data* after the
 next nightly run. Take the full path by hand when that is too slow.
 
 The workflow fails loudly rather than reporting a green deploy that did not
-happen. It checks the VPS checkout is at the pushed SHA, that
-`https://zapfkompass.de/` answers 200, that the page serves
-`app.js?v=<short sha>` (proof the new image is live and Cloudflare is not still
-replaying the old one), and that the sqlite DB is not publicly reachable.
+happen. It checks the VPS checkout contains the pushed SHA (a descendant is
+fine: two quick merges leave the earlier run looking at the later commit), that
+`https://zapfkompass.de/` answers 200, that the page serves `app.js?v=` with the
+short hash the VPS built (proof the new image is live and Cloudflare is not
+still replaying the old one), and that the sqlite DB answers 404.
 
 ### Auto-deploy secrets
 
