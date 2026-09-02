@@ -100,6 +100,12 @@ export const MESSAGES = {
     "venue.reportClosed": "Als geschlossen melden",
     "venue.fallbackName": "Kneipe",
 
+    "venue.fixHours": "Zeiten korrigieren",
+    "hours.closedDay": "geschlossen",
+    "hours.addBreak": "Pause",
+    "hours.save": "Zeiten vorschlagen",
+    "hours.gridInvalid": " Bitte für jeden offenen Tag eine Zeit angeben.",
+    "hours.complex": "Die aktuellen Zeiten sind zu komplex für dieses Raster. Ein Vorschlag ersetzt sie vollständig.",
     "hours.title": "Öffnungszeiten",
     "hours.note": "Zeiten aus OpenStreetMap — ohne Gewähr.",
 
@@ -246,6 +252,12 @@ export const MESSAGES = {
     "venue.reportClosed": "Nahlásit jako zavřené",
     "venue.fallbackName": "Hospoda",
 
+    "venue.fixHours": "Opravit otevírací dobu",
+    "hours.closedDay": "zavřeno",
+    "hours.addBreak": "Přestávka",
+    "hours.save": "Navrhnout dobu",
+    "hours.gridInvalid": " U každého otevřeného dne zadejte prosím čas.",
+    "hours.complex": "Současná otevírací doba je pro tuto mřížku příliš složitá. Návrh ji zcela nahradí.",
     "hours.title": "Otevírací doba",
     "hours.note": "Časy z OpenStreetMap — bez záruky.",
 
@@ -390,6 +402,12 @@ export const MESSAGES = {
     "venue.reportClosed": "Report as closed",
     "venue.fallbackName": "Pub",
 
+    "venue.fixHours": "Correct opening hours",
+    "hours.closedDay": "closed",
+    "hours.addBreak": "Break",
+    "hours.save": "Suggest hours",
+    "hours.gridInvalid": " Please give a time for every open day.",
+    "hours.complex": "The current hours are too complex for this grid. A suggestion replaces them entirely.",
     "hours.title": "Opening hours",
     "hours.note": "Hours from OpenStreetMap — no guarantee.",
 

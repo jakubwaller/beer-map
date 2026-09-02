@@ -1,6 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { parseOpeningHours, openState, statusText, formatWeek, venueSchedule, venuesOpenNow }
+import { parseOpeningHours, openState, statusText, formatWeek, venueSchedule, venuesOpenNow,
+         scheduleToGrid, gridToOpeningHours }
   from "./hours.js";
 
 // Monday 2026-08-03 18:30 local, unless a test says otherwise.
@@ -172,4 +173,46 @@ test("venueSchedule memoizes the parse on the venue object", () => {
   const bad = { opening_hours: "on request" };
   assert.equal(venueSchedule(bad), null);
   assert.equal(bad._schedule, null);       // null is cached, undefined is "not tried yet"
+});
+
+test("gridToOpeningHours merges consecutive identical days", () => {
+  const grid = scheduleToGrid(parseOpeningHours("Mo-Fr 10:00-22:00; Sa,Su 12:00-23:00"));
+  assert.equal(gridToOpeningHours(grid), "Mo-Fr 10:00-22:00; Sa-Su 12:00-23:00");
+});
+
+test("the grid round-trips the values it is offered for", () => {
+  for (const raw of [
+    "Mo-Fr 10:00-22:00; Sa-Su 12:00-23:00",
+    "Mo-Su 16:00-01:00",
+    "Mo-Fr 11:00-14:00,17:00-23:00; Sa-Su off",
+    "Mo-Sa 11:00-24:00; Su off",
+  ]) {
+    const again = gridToOpeningHours(scheduleToGrid(parseOpeningHours(raw)));
+    assert.equal(again, raw, `round trip of ${raw}`);
+    // and the result stays inside the subset the parser reads
+    assert.ok(parseOpeningHours(again), `${again} must parse`);
+  }
+});
+
+test("24/7 survives the round trip as 24/7", () => {
+  assert.equal(gridToOpeningHours(scheduleToGrid(parseOpeningHours("24/7"))), "24/7");
+});
+
+test("an end of midnight is written as 24:00, not 00:00", () => {
+  // 00:00 as an end is a zero-length range; OSM spells the end of the day 24:00.
+  const grid = scheduleToGrid(parseOpeningHours("Mo-Su 18:00-24:00"));
+  assert.deepEqual(grid[0].ranges, [["18:00", "24:00"]]);
+  assert.equal(gridToOpeningHours(grid), "Mo-Su 18:00-24:00");
+});
+
+test("gridToOpeningHours refuses a grid that says nothing usable", () => {
+  const allClosed = Array.from({ length: 7 }, () => ({ closed: true, ranges: [] }));
+  assert.equal(gridToOpeningHours(allClosed), null);   // that is a closure report
+  const openButBlank = Array.from({ length: 7 }, () => ({ closed: false, ranges: [["", ""]] }));
+  assert.equal(gridToOpeningHours(openButBlank), null);
+});
+
+test("a single differing day does not collapse into its neighbours", () => {
+  const grid = scheduleToGrid(parseOpeningHours("Mo-Tu 10:00-20:00; We off; Th-Su 10:00-20:00"));
+  assert.equal(gridToOpeningHours(grid), "Mo-Tu 10:00-20:00; We off; Th-Su 10:00-20:00");
 });

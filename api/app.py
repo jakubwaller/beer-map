@@ -77,6 +77,7 @@ _KIND_LABELS = {
     "add": "Neues Bier",
     "remove": "Bier entfernen",
     "edit_venue": "Adresse ändern",
+    "edit_hours": "Öffnungszeiten",
     "close_venue": "Geschlossen",
     "add_venue": "Neuer Ort",
 }
@@ -168,6 +169,7 @@ class Submission(BaseModel):
     beer: Optional[str] = None  # optional specific product, e.g. "Edelstoff"
     kind: str = "add"
     address: Optional[str] = None  # new address for kind="edit_venue"/"add_venue"
+    opening_hours: Optional[str] = None  # OSM syntax, for kind="edit_hours"
     note: Optional[str] = None
     hp: Optional[str] = None  # honeypot
 
@@ -340,6 +342,8 @@ def create_app() -> FastAPI:
                 return html.escape(r["address"] or "") + brand
             if r["kind"] == "edit_venue":
                 return "Neue Adresse: " + html.escape(r["address"] or "")
+            if r["kind"] == "edit_hours":
+                return "Neue Zeiten: " + html.escape(r["opening_hours"] or "")
             if r["kind"] == "close_venue":
                 return "Als geschlossen gemeldet"
             beer = f" – {html.escape(r['beer'])}" if r.get("beer") else ""

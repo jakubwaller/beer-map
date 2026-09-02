@@ -7,16 +7,26 @@ from . import config
 from .curation import slugify
 from .db import (
     count_submissions_since, delete_edges, get_submission, list_submissions,
-    set_submission_status, set_venue_hidden, update_venue_address, upsert_brand,
-    upsert_edge, upsert_venue,
+    set_submission_status, set_venue_hidden, update_venue_address,
+    update_venue_hours, upsert_brand, upsert_edge, upsert_venue,
 )
 from .export import export_geojson
 from .geocode import geocode_address
 from .models import Venue
 
 _SERVINGS = {"fass", "tank"}
+# One rule is a day selector (Mo, Mo-Fr, "Mo,We", optionally empty) followed by
+# either `off`/`closed` or up to a few HH:MM-HH:MM ranges; rules join with `;`.
+# Deliberately narrower than real opening_hours: anything web/hours.js cannot
+# read would show up as an uninterpreted string on the map, which is the state
+# this feature exists to fix.
+_DAY = r"(?:Mo|Tu|We|Th|Fr|Sa|Su)"
+_SEL = rf"(?:{_DAY}(?:-{_DAY})?)(?:,{_DAY}(?:-{_DAY})?)*"
+_RANGE = r"(?:[01]\d|2[0-3]):[0-5]\d-(?:[01]\d|2[0-3]|24):[0-5]\d"
+_RULE = rf"(?:{_SEL}\s+(?:off|closed|{_RANGE}(?:,{_RANGE})*))"
+_HOURS_RE = __import__("re").compile(rf"(?:24/7|{_RULE}(?:\s*;\s*{_RULE})*)")
 _BRAND_KINDS = ("add", "remove")
-_VENUE_KINDS = ("edit_venue", "close_venue")
+_VENUE_KINDS = ("edit_venue", "close_venue", "edit_hours")
 _NEW_VENUE_KIND = "add_venue"
 KINDS = _BRAND_KINDS + _VENUE_KINDS + (_NEW_VENUE_KIND,)
 
@@ -41,6 +51,15 @@ def validate_submission(payload: dict) -> str | None:
         address = (payload.get("address") or "").strip()
         if not address or len(address) > 200:
             return "address must be 1-200 chars"
+    elif kind == "edit_hours":
+        hours = (payload.get("opening_hours") or "").strip()
+        if not hours or len(hours) > 200:
+            return "opening_hours must be 1-200 chars"
+        # The UI builds this from a weekday grid, but the endpoint is public, so
+        # the shape is checked here too: day selectors, clock ranges, `off`, or
+        # 24/7, separated by `;` — the subset web/hours.js can actually read.
+        if not _HOURS_RE.fullmatch(hours):
+            return "opening_hours must look like 'Mo-Fr 10:00-22:00; Sa off'"
     elif kind == _NEW_VENUE_KIND:
         name = (payload.get("name") or "").strip()
         if not name or len(name) > 120:
@@ -124,6 +143,9 @@ def apply_one(conn, sub: dict, today: str) -> bool:
         coords = geocode_address(sub["address"], near=(row["lat"], row["lon"]))
         lat, lon = coords if coords else (None, None)
         update_venue_address(conn, osm_id, sub["address"], lat, lon)
+        return True
+    if kind == "edit_hours":
+        update_venue_hours(conn, osm_id, sub["opening_hours"])
         return True
     if kind == "close_venue":
         set_venue_hidden(conn, osm_id, True)
