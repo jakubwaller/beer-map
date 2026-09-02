@@ -30,8 +30,10 @@ def _conn():
 
 
 def _approved(conn, hours, osm_id="node/1", created="2026-09-01T12:00:00"):
+    # venue_name is the OSM id, exactly as api/app.py stores it for every kind
+    # but add_venue — the venue's name has to come from elsewhere.
     sid = insert_submission(conn, dict(kind="edit_hours", venue_osm_id=osm_id,
-                                       venue_name="Bar X", opening_hours=hours,
+                                       venue_name=osm_id, opening_hours=hours,
                                        brand="", serving="unknown", submitter_ip="h:x"),
                             created)
     set_submission_status(conn, sid, "approved", "2026-09-02")
@@ -148,6 +150,7 @@ def test_push_uploads_one_changeset_per_venue():
     ]
     create_body = fake.calls[1][2]
     assert 'k="source" v="zapfkompass.de visitor report"' in create_body
+    assert "opening_hours of Bar X:" in create_body and "node/1" not in create_body
     upload_body = fake.calls[2][2]
     assert 'changeset="123"' in upload_body and 'version="3"' in upload_body
     assert 'v="Mo-Su 12:00-22:00"' in upload_body and 'user=' not in upload_body
@@ -156,6 +159,74 @@ def test_push_uploads_one_changeset_per_venue():
     assert get_submission(conn, sid)["osm_changeset"] == 123
     assert list_hours_for_osm(conn) == []
     assert any("changeset/123" in ln for ln in lines)
+
+
+def test_changeset_comment_falls_back_to_our_venue_row_when_osm_has_no_name():
+    conn = _conn()
+    _approved(conn, "Mo-Su 12:00-22:00")
+    fake = FakeOsm(xml=NODE_XML.replace('  <tag k="name" v="Bar X"/>\n', ""))
+    push(conn, _api(fake), log=lambda s: None, pause_s=0)
+    assert "opening_hours of Bar X:" in fake.calls[1][2]
+
+
+def test_a_tag_with_rules_the_grid_cannot_express_is_not_replaced_unless_forced():
+    conn = _conn()
+    sid = _approved(conn, "Mo-Su 11:00-23:00")
+    fake = FakeOsm(xml=NODE_XML.replace('v="Mo-Su 11:00-24:00"', 'v="Mo-Su 10:00-22:00; PH off; Dec 24 off"'))
+    lines = []
+    counts = push(conn, _api(fake), log=lines.append, pause_s=0)
+    assert counts["conflict"] == 1 and fake.paths("PUT") == []
+    assert get_submission(conn, sid)["osm_changeset"] is None
+    assert "cannot express" in lines[-1] and f"--force --id {sid}" in lines[-1]
+
+    counts = push(conn, _api(fake), force=True, log=lambda s: None, pause_s=0)
+    assert counts["uploaded"] == 1
+    assert 'v="Mo-Su 11:00-23:00"' in fake.calls[-2][2]
+
+
+def test_a_200_with_an_unreadable_body_is_a_failure_not_a_crash():
+    conn = _conn()
+    sid = _approved(conn, "Mo-Su 12:00-22:00")
+    fake = FakeOsm(xml="<html>maintenance</html>")
+    counts = push(conn, _api(fake), log=lambda s: None, pause_s=0)
+    assert counts["failed"] == 1 and fake.paths("PUT") == []
+    assert get_submission(conn, sid)["osm_changeset"] is None
+
+
+def test_an_unreadable_upload_answer_still_closes_the_changeset():
+    conn = _conn()
+    sid = _approved(conn, "Mo-Su 12:00-22:00")
+    fake = FakeOsm()
+    real = fake.__call__
+
+    def handler(request):
+        if request.method == "PUT" and request.url.path == "/api/0.6/node/1":
+            fake.calls.append((request.method, request.url.path, request.content.decode()))
+            return httpx.Response(200, text="<html>not a version</html>")
+        return real(request)
+
+    api = OsmApi("https://osm.test", token="t", transport=httpx.MockTransport(handler))
+    counts = push(conn, api, log=lambda s: None, pause_s=0)
+    assert counts["failed"] == 1
+    assert fake.paths("PUT")[-1] == "/api/0.6/changeset/123/close"
+    assert get_submission(conn, sid)["osm_changeset"] is None
+
+
+def test_an_interrupt_during_the_upload_closes_the_changeset():
+    conn = _conn()
+    _approved(conn, "Mo-Su 12:00-22:00")
+    fake = FakeOsm()
+    real = fake.__call__
+
+    def handler(request):
+        if request.method == "PUT" and request.url.path == "/api/0.6/node/1":
+            raise KeyboardInterrupt
+        return real(request)
+
+    api = OsmApi("https://osm.test", token="t", transport=httpx.MockTransport(handler))
+    with pytest.raises(KeyboardInterrupt):
+        push(conn, api, log=lambda s: None, pause_s=0)
+    assert fake.paths("PUT")[-1] == "/api/0.6/changeset/123/close"
 
 
 def test_dry_run_only_reads():
@@ -204,6 +275,31 @@ def test_only_the_newest_report_per_venue_is_uploaded():
     assert fake.paths("PUT").count("/api/0.6/changeset/create") == 1
     assert 'v="Mo-Su 13:00-23:00"' in fake.calls[2][2]
     assert get_submission(conn, old)["osm_changeset"] == 0
+    assert get_submission(conn, new)["osm_changeset"] == 123
+
+
+def test_an_older_report_approved_after_a_newer_one_was_pushed_is_superseded():
+    conn = _conn()
+    old = _approved(conn, "Mo-Su 12:00-22:00", created="2026-09-01T12:00:00")
+    new = _approved(conn, "Mo-Su 13:00-23:00", created="2026-09-01T13:00:00")
+    osm_push.set_submission_changeset(conn, new, 500)  # B went up first
+    fake = FakeOsm()
+    lines = []
+    counts = push(conn, _api(fake), log=lines.append, pause_s=0)
+    assert counts["superseded"] == 1 and fake.calls == []
+    assert get_submission(conn, old)["osm_changeset"] == 0
+    assert f"#{new}" in lines[-1] and "changeset/500" in lines[-1]
+
+
+def test_our_own_previous_upload_is_not_mistaken_for_someone_elses_edit():
+    conn = _conn()
+    old = _approved(conn, "Mo-Su 11:00-24:00", created="2026-09-01T10:00:00")
+    osm_push.set_submission_changeset(conn, old, 500)  # what OSM holds now is ours
+    new = _approved(conn, "Mo-Su 12:00-22:00", created="2026-09-01T11:00:00")
+    # The element's timestamp is our push, after the newer report was filed.
+    fake = FakeOsm(xml=NODE_XML.replace("2026-08-01T10:00:00Z", "2026-09-01T12:00:00Z"))
+    counts = push(conn, _api(fake), log=lambda s: None, pause_s=0)
+    assert counts["uploaded"] == 1 and counts["conflict"] == 0
     assert get_submission(conn, new)["osm_changeset"] == 123
 
 
@@ -297,6 +393,12 @@ def test_cli_dry_run_needs_no_token_and_drop_needs_no_network(tmp_path, monkeypa
 
     assert osm_push.main(["--db", db]) == 2  # no token, not a dry run
     assert "OSM_TOKEN" in capsys.readouterr().err
+
+    assert osm_push.main(["--dry-run", "--drop", str(sid), "--db", db]) == 0
+    assert "would be dropped" in capsys.readouterr().out
+    conn = get_connection(db)
+    assert get_submission(conn, sid)["osm_changeset"] is None  # a rehearsal drops nothing
+    conn.close()
 
     assert osm_push.main(["--drop", str(sid), "--db", db]) == 0
     assert fake.paths("PUT") == []

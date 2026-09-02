@@ -45,17 +45,27 @@ def load_env_file(path: str) -> dict[str, str]:
 
 
 def write_env_line(path: str, key: str, value: str) -> None:
-    """Replace or append `key=value`, leaving the file at mode 600."""
+    """Replace or append `key=value`, leaving the file at mode 600.
+
+    Written to a sibling temp file and renamed over: the file is the only
+    copy of the client secret, which OSM shows once, so truncating it in
+    place would put that one crash away from gone."""
     lines: list[str] = []
     if os.path.exists(path):
         with open(path) as f:
             lines = [ln.rstrip("\n") for ln in f]
     lines = [ln for ln in lines if not ln.startswith(key + "=")]
     lines.append(f"{key}={value}")
-    fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
-    with os.fdopen(fd, "w") as f:
-        f.write("\n".join(lines) + "\n")
-    os.chmod(path, 0o600)
+    tmp = f"{path}.{os.getpid()}.tmp"
+    fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+    try:
+        with os.fdopen(fd, "w") as f:
+            f.write("\n".join(lines) + "\n")
+        os.chmod(tmp, 0o600)
+        os.replace(tmp, path)
+    finally:
+        if os.path.exists(tmp):
+            os.unlink(tmp)
 
 
 def authorize_url(client_id: str, redirect_uri: str = OOB, auth_url: str | None = None) -> str:
@@ -122,8 +132,16 @@ def main(argv: list[str] | None = None) -> int:
         print(f"token exchange refused ({exc.response.status_code}): {exc.response.text[:300]}",
               file=sys.stderr)
         return 1
-    granted = permissions(token)
+    # The token is written before anything else can go wrong: the code it
+    # came from is single-use, and a failed check must not cost a new
+    # browser round.
     write_env_line(path, "OSM_TOKEN", token)
+    try:
+        granted = permissions(token)
+    except httpx.HTTPError as exc:
+        print(f"OSM_TOKEN written to {path}, but checking its permissions failed ({exc}); "
+              "try `python -m pipeline.osm_push --dry-run` on the server", file=sys.stderr)
+        return 1
     print(f"OSM_TOKEN written to {path} (permissions: {', '.join(granted) or 'none'})")
     if "allow_write_api" not in granted:
         print("that token cannot write — the app was authorized without write_api", file=sys.stderr)

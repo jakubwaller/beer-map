@@ -19,8 +19,11 @@ citizen:
   only `opening_hours` changed and the fetched `version`, so a concurrent
   edit answers 409 instead of being overwritten.
 - An element edited on OSM *after* the visitor filed the report is not
-  touched: someone else got there first, and the two edits need a human to
-  compare. `--force --id N` overrides for one submission, `--drop N` gives
+  touched (unless what OSM holds is our own previous upload): someone else
+  got there first, and the two edits need a human to compare. Neither is a
+  tag with rules the grid cannot express (`PH off`, `Dec 24 off`, ...):
+  the grid's value would replace it wholesale and silently drop them.
+  `--force --id N` overrides either for one submission, `--drop N` gives
   up on it.
 - A value OSM already holds (or one that means the same hours, e.g. the tag
   `11:00-24:00` against our `Mo-Su 11:00-24:00`) is not re-uploaded.
@@ -239,6 +242,9 @@ class OsmApi:
         r = self.client.put(f"{self.base}/api/0.6/changeset/{cid}/close")
         r.raise_for_status()
 
+    def close(self) -> None:
+        self.client.close()
+
 
 def changeset_url(cid: int) -> str:
     return f"{config.OSM_AUTH_URL.rstrip('/')}/changeset/{cid}"
@@ -261,6 +267,33 @@ def plan(subs: list[dict]) -> tuple[list[dict], list[dict]]:
 
 def _status(exc: Exception) -> int | None:
     return exc.response.status_code if isinstance(exc, httpx.HTTPStatusError) else None
+
+
+# What an upload can throw: transport and status errors, and a 200 whose body
+# is not what the API sends (a proxy page) — read_element and int() raise
+# ValueError on those, and a whole batch must not die of one.
+_CALL_ERRORS = (httpx.HTTPError, ValueError)
+
+
+def _venue_name(conn, el: ET.Element, osm_id: str) -> str:
+    """For the changeset comment: OSM's own `name` tag first, then our venue
+    row. Not the submission's `venue_name` — the API stores the OSM id there
+    for every kind but add_venue."""
+    name = tag_value(el, "name")
+    if name:
+        return name
+    row = conn.execute("SELECT name FROM venues WHERE osm_id=?", (osm_id,)).fetchone()
+    return (row["name"] if row else None) or osm_id
+
+
+def _last_pushed(conn, osm_id: str) -> dict | None:
+    """The newest correction for this venue that reached OSM, if any."""
+    row = conn.execute(
+        "SELECT * FROM submissions WHERE kind='edit_hours' AND status='approved' "
+        "AND venue_osm_id=? AND osm_changeset > 0 ORDER BY created_at DESC, id DESC LIMIT 1",
+        (osm_id,),
+    ).fetchone()
+    return dict(row) if row else None
 
 
 def push(conn, api: OsmApi, subs: list[dict] | None = None, dry_run: bool = False,
@@ -289,9 +322,17 @@ def push(conn, api: OsmApi, subs: list[dict] | None = None, dry_run: bool = Fals
             counts["skipped"] += 1
             continue
         kind, oid = ref
+        filed = (s.get("created_at") or "")[:19]
+        pushed = _last_pushed(conn, osm_id)
+        if pushed and ((pushed["created_at"] or "")[:19], pushed["id"]) > (filed, sid):
+            log(f"#{sid} {osm_id}: superseded by #{pushed['id']}, already in "
+                f"{changeset_url(pushed['osm_changeset'])}")
+            resolve(s, 0)
+            counts["superseded"] += 1
+            continue
         try:
             el = api.get_element(kind, oid)
-        except httpx.HTTPError as exc:
+        except _CALL_ERRORS as exc:
             code = _status(exc)
             if code in (404, 410):
                 log(f"#{sid} {osm_id}: gone from OSM ({code}), nothing to push")
@@ -309,37 +350,45 @@ def push(conn, api: OsmApi, subs: list[dict] | None = None, dry_run: bool = Fals
             counts["unchanged"] += 1
             continue
         edited = (el.get("timestamp") or "")[:19]
-        filed = (s.get("created_at") or "")[:19]
-        if edited > filed and not force:
+        # A later edit on OSM is someone else's work to compare by hand —
+        # unless what OSM holds is our own previous upload for this venue.
+        ours = pushed is not None and same_hours(current, pushed["opening_hours"])
+        how = f"Re-run with --force --id {sid} to replace it anyway, --drop {sid} to let it go"
+        if edited > filed and not ours and not force:
             log(f"#{sid} {osm_id}: edited on OSM at {edited} after the report ({filed}); "
-                f"OSM has {current!r}, the report says {target!r}. "
-                f"Re-run with --force --id {sid} to overwrite it anyway, --drop {sid} to let it go")
+                f"OSM has {current!r}, the report says {target!r}. {how}")
+            counts["conflict"] += 1
+            continue
+        if current and normalize_hours(current) is None and not force:
+            log(f"#{sid} {osm_id}: OSM has {current!r}, with rules the grid cannot express; "
+                f"uploading {target!r} would drop them. {how}")
             counts["conflict"] += 1
             continue
 
-        name = s.get("venue_name") or tag_value(el, "name") or osm_id
+        name = _venue_name(conn, el, osm_id)
         log(f"#{sid} {osm_id} ({name}): {current!r} -> {target!r}")
         if dry_run:
             counts["uploaded"] += 1
             continue
         try:
             cid = api.create_changeset(changeset_tags(name))
-        except httpx.HTTPError as exc:
+        except _CALL_ERRORS as exc:
             log(f"#{sid} {osm_id}: creating the changeset failed ({exc})")
             counts["failed"] += 1
             continue
         try:
             version = api.upload(kind, oid, with_opening_hours(el, target, cid))
-        except httpx.HTTPError as exc:
+        except _CALL_ERRORS as exc:
             # 409 is the version check doing its job: the element changed
-            # between our GET and PUT. Anything else is just a failure. Either
-            # way the changeset must not stay open.
+            # between our GET and PUT. Anything else is just a failure.
             what = "conflict" if _status(exc) == 409 else "failed"
             log(f"#{sid} {osm_id}: upload {what} ({exc})")
             counts[what] += 1
-            _close_quietly(api, cid, log)
             continue
-        _close_quietly(api, cid, log)
+        finally:
+            # Whatever happened — a refused upload, an unreadable answer, a
+            # Ctrl-C — the changeset must not stay open.
+            _close_quietly(api, cid, log)
         resolve(s, cid)
         log(f"    -> version {version}, {changeset_url(cid)}")
         counts["uploaded"] += 1
@@ -400,8 +449,11 @@ def main(argv: list[str] | None = None) -> int:
     init_db(conn)
     for sid in args.drop:
         for s in _select(conn, [sid], print):
-            set_submission_changeset(conn, s["id"], 0)
-            print(f"#{sid}: dropped, will not be uploaded")
+            if args.dry_run:
+                print(f"#{sid}: would be dropped")
+            else:
+                set_submission_changeset(conn, s["id"], 0)
+                print(f"#{sid}: dropped, will not be uploaded")
     if args.drop and not args.id:
         return 0
 
@@ -410,11 +462,14 @@ def main(argv: list[str] | None = None) -> int:
               "and put it in the environment (deploy/beermap.env on the server)",
               file=sys.stderr)
         return 2
-    api = OsmApi(token=config.OSM_TOKEN)
     subs = _select(conn, args.id, print) if args.id else None
     if args.id and not subs:
         return 1
-    counts = push(conn, api, subs, dry_run=args.dry_run, force=args.force)
+    api = OsmApi(token=config.OSM_TOKEN)
+    try:
+        counts = push(conn, api, subs, dry_run=args.dry_run, force=args.force)
+    finally:
+        api.close()
     verb = "would upload" if args.dry_run else "uploaded"
     print(f"{verb} {counts['uploaded']}, unchanged {counts['unchanged']}, "
           f"superseded {counts['superseded']}, skipped {counts['skipped']}, "

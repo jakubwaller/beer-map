@@ -19,8 +19,12 @@ that has not been pushed yet and, per venue:
 2. skips it if OSM already holds the same hours (spelled differently counts
    as the same: `11:00-24:00` on OSM is `Mo-Su 11:00-24:00` from the grid);
 3. refuses it if the element was edited on OSM after the visitor filed the
-   report — someone else got there first and the two edits need a human
-   to compare (`--force --id N` to overwrite anyway, `--drop N` to give up);
+   report (unless what OSM holds is our own previous upload) — someone else
+   got there first and the two edits need a human to compare; refuses it
+   likewise if OSM's tag has rules the weekday grid cannot express
+   (`PH off`, `Dec 24 off`, seasonal months), because the grid's value would
+   replace the whole tag and silently drop them (`--force --id N` to replace
+   anyway, `--drop N` to give up);
 4. opens one changeset for that venue, uploads the element whole with only
    `opening_hours` changed and the fetched `version`, closes the changeset.
    A concurrent edit in the seconds between fetch and upload answers 409
