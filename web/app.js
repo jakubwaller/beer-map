@@ -627,7 +627,12 @@ function beerRow(osm, b) {
 function hoursEditor(v, schedule) {
   const osm = v.osm_id || "";
   const labels = dayLabels(getLang());
-  const grid = scheduleToGrid(schedule);
+  // The grid holds at most two ranges a day. A day tagged with three (a rare
+  // morning/afternoon/evening split) is not prefilled at all: showing the
+  // first two would drop the third on save, silently deleting it from the
+  // venue on approval. Same treatment as a tag the parser cannot read.
+  const fits = schedule && schedule.days.every((d) => d.length <= 2);
+  const grid = scheduleToGrid(fits ? schedule : null);
   const rows = grid.map((d, i) => {
     const [a = "", b = ""] = d.ranges[0] || [];
     const [c = "", e = ""] = d.ranges[1] || [];
@@ -652,10 +657,10 @@ function hoursEditor(v, schedule) {
         </label>
       </div>`;
   }).join("");
-  // A tag the parser cannot read is not shown as a grid — it may carry season
-  // or holiday rules the grid has no way to express, and a suggestion replaces
-  // the whole value.
-  const warn = (v.opening_hours && !schedule)
+  // A tag the parser cannot read is not shown as a grid either — it may carry
+  // season or holiday rules the grid has no way to express, and a suggestion
+  // replaces the whole value.
+  const warn = (v.opening_hours && !fits)
     ? `<p class="hours-warn">${esc(t("hours.complex"))}</p>` : "";
   return `<details class="hours-fix">
       <summary>${esc(t("venue.fixHours"))}</summary>

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import re
 from datetime import datetime, timedelta
 
 from . import config
@@ -22,9 +23,13 @@ _SERVINGS = {"fass", "tank"}
 # this feature exists to fix.
 _DAY = r"(?:Mo|Tu|We|Th|Fr|Sa|Su)"
 _SEL = rf"(?:{_DAY}(?:-{_DAY})?)(?:,{_DAY}(?:-{_DAY})?)*"
-_RANGE = r"(?:[01]\d|2[0-3]):[0-5]\d-(?:[01]\d|2[0-3]|24):[0-5]\d"
+# 24:00 is the end of the day and the only hour-24 time there is: web/hours.js
+# refuses anything past 1440, so 24:30 would validate here and then sit on the
+# venue as a string the map cannot read.
+_RANGE = r"(?:[01]\d|2[0-3]):[0-5]\d-(?:(?:[01]\d|2[0-3]):[0-5]\d|24:00)"
 _RULE = rf"(?:{_SEL}\s+(?:off|closed|{_RANGE}(?:,{_RANGE})*))"
-_HOURS_RE = __import__("re").compile(rf"(?:24/7|{_RULE}(?:\s*;\s*{_RULE})*)")
+_HOURS_RE = re.compile(rf"(?:24/7|{_RULE}(?:\s*;\s*{_RULE})*)")
+_RANGE_RE = re.compile(_RANGE)
 _BRAND_KINDS = ("add", "remove")
 _VENUE_KINDS = ("edit_venue", "close_venue", "edit_hours")
 _NEW_VENUE_KIND = "add_venue"
@@ -60,6 +65,11 @@ def validate_submission(payload: dict) -> str | None:
         # 24/7, separated by `;` — the subset web/hours.js can actually read.
         if not _HOURS_RE.fullmatch(hours):
             return "opening_hours must look like 'Mo-Fr 10:00-22:00; Sa off'"
+        # Every day `off` is a closure report, not opening hours — the grid
+        # refuses to build one, and applying it would leave the venue
+        # permanently never-open through every re-import.
+        if hours != "24/7" and not _RANGE_RE.search(hours):
+            return "opening_hours must give at least one time range"
     elif kind == _NEW_VENUE_KIND:
         name = (payload.get("name") or "").strip()
         if not name or len(name) > 120:

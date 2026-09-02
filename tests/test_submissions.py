@@ -238,14 +238,21 @@ def test_validate_edit_hours_accepts_only_the_parseable_subset():
               opening_hours="Mo-Fr 10:00-22:00; Sa,Su 12:00-23:00")
     assert validate_submission(ok) is None
     assert validate_submission({**ok, "opening_hours": "24/7"}) is None
-    assert validate_submission({**ok, "opening_hours": "Mo-Fr off"}) is None
     assert validate_submission(
         {**ok, "opening_hours": "Mo-Fr 11:00-14:00,17:00-23:00; Sa off"}) is None
+    assert validate_submission({**ok, "opening_hours": "Mo-Sa 18:00-24:00"}) is None
     # Anything web/hours.js cannot read is refused rather than stored as an
     # uninterpretable string that the map would print verbatim.
     for bad in ("sunset-sunrise", "Mo-Fr 10-22", "Jan Mo 10:00-12:00", "",
-                "Mo-Fr 25:00-99:00", "x" * 201):
-        assert validate_submission({**ok, "opening_hours": bad})
+                "Mo-Fr 25:00-99:00", "x" * 201,
+                # 24 is the end of the day and nothing else: parseRanges drops
+                # anything past 1440, so these would be stored unreadable.
+                "Mo-Fr 10:00-24:30", "Mo-Fr 24:00-24:00",
+                # No time range anywhere is a closure report, not hours, and
+                # close_venue is the kind for that. Applying one would leave
+                # the venue never-open through every re-import.
+                "Mo-Fr off", "Mo-Su off", "Mo-Sa closed; Su off"):
+        assert validate_submission({**ok, "opening_hours": bad}), bad
 
 
 def test_edit_hours_survives_the_nightly_osm_reimport():

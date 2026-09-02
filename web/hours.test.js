@@ -198,11 +198,30 @@ test("24/7 survives the round trip as 24/7", () => {
   assert.equal(gridToOpeningHours(scheduleToGrid(parseOpeningHours("24/7"))), "24/7");
 });
 
-test("an end of midnight is written as 24:00, not 00:00", () => {
-  // 00:00 as an end is a zero-length range; OSM spells the end of the day 24:00.
+test("a midnight end reaches the grid as 00:00 and comes back out as 24:00", () => {
+  // The grid feeds <input type="time">, which silently blanks any value whose
+  // hour is not 00-23 — a "24:00" there would render empty and be dropped on
+  // save. OSM spells the end of the day 24:00, so the round trip restores it.
   const grid = scheduleToGrid(parseOpeningHours("Mo-Su 18:00-24:00"));
-  assert.deepEqual(grid[0].ranges, [["18:00", "24:00"]]);
+  assert.deepEqual(grid[0].ranges, [["18:00", "00:00"]]);
   assert.equal(gridToOpeningHours(grid), "Mo-Su 18:00-24:00");
+});
+
+test("every value the grid produces is one <input type=\"time\"> accepts", () => {
+  // The HTML value sanitisation for type=time keeps only a valid time string
+  // (hour 00-23, minute 00-59) and replaces anything else with "". Whatever a
+  // venue is tagged, the grid must never hand the DOM a value it will discard.
+  const tags = [
+    "Mo-Su 11:00-24:00", "Mo-Su 11:00-00:00", "Mo 16:00-01:00",
+    "24/7", "Mo-Fr 08:00-12:00,17:00-24:00; Sa,Su 10:00-23:30",
+  ];
+  for (const tag of tags) {
+    for (const day of scheduleToGrid(parseOpeningHours(tag))) {
+      for (const value of day.ranges.flat()) {
+        assert.match(value, /^(?:[01]\d|2[0-3]):[0-5]\d$/, `${tag} -> ${value}`);
+      }
+    }
+  }
 });
 
 test("gridToOpeningHours refuses a grid that says nothing usable", () => {

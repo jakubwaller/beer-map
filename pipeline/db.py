@@ -272,6 +272,12 @@ def update_venue_hours(conn, osm_id: str, hours: str) -> int:
     community correction would be undone by the next nightly import. It survives
     because submissions.apply_approved re-runs every approved submission after
     the import, exactly as edit_venue and close_venue already do.
+
+    The weekly country sweep also upserts venues and does not re-apply, so it
+    leaves this column holding OSM's value until the next nightly build. That
+    is invisible today — hours reach the frontend through the GeoJSON export,
+    which only ever runs after apply_approved — but a reader of this column
+    added between those two runs would see the stale value.
     """
     cur = conn.execute("UPDATE venues SET opening_hours=? WHERE osm_id=?",
                        (hours or None, osm_id))

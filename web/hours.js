@@ -239,18 +239,19 @@ export const OSM_DAYS = ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"];
  *  view uses, so the editor and the read-only view agree. */
 export const dayLabels = (lang) => locale(lang).days;
 
-// 1440 is midnight *at the end* of the day, and OSM writes that as 24:00.
-// formatMinutes wraps, so it would say 00:00 and describe a zero-length range.
-const endLabel = (m) => (m > 0 && m % DAY === 0 ? "24:00" : formatMinutes(m));
-
 /** A parsed schedule (or null) -> seven rows of `{closed, ranges}`, where each
- *  range is a pair of "HH:MM" strings ready for an <input type="time">. */
+ *  range is a pair of "HH:MM" strings ready for an <input type="time">.
+ *
+ *  A day closing at midnight ends "00:00" here, not the "24:00" the tag uses:
+ *  <input type="time"> silently discards any value whose hour is not 00-23, so
+ *  a "24:00" would render as an empty box and the range would be lost the next
+ *  time the grid was read back. gridToOpeningHours writes it out as 24:00. */
 export function scheduleToGrid(schedule) {
   return Array.from({ length: 7 }, (_, i) => {
     const day = schedule ? schedule.days[i] : [];
     return {
       closed: !day.length,
-      ranges: day.map(([a, b]) => [formatMinutes(a), endLabel(b)]),
+      ranges: day.map(([a, b]) => [formatMinutes(a), formatMinutes(b)]),
     };
   });
 }
