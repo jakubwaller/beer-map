@@ -1,0 +1,153 @@
+# Auto-deploy: every push to main (i.e. every squash-merge) redeploys the VPS
+# once the CI workflow has passed for that commit. The command it runs is the
+# "Update the app" web-only path of docs/DEPLOY.md — that file stays the
+# runbook; change the command there and here together.
+#
+# This deliberately does NOT rebuild the dataset. `pipeline.run` re-queries
+# Overpass and takes minutes, and the nightly 04:00 cron does it anyway, so a
+# change that alters the *data* (a new or edited finder, curation.yaml, a new
+# city) lands at 04:00 rather than on merge. Only the app is deployed here.
+name: Deploy
+
+on:
+  # Not `push`: that would race the CI run and ship a commit whose tests are
+  # still running. This fires when CI finishes for a push to main; the job
+  # condition below keeps it to runs that passed.
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+# Deploys queue rather than overlap; a newer push deploys after, never during.
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    # A manual run is honoured from main only: the VPS tracks main, so a
+    # dispatch from a feature branch would deploy main and then report red
+    # because the branch tip is not what is live.
+    if: >-
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
+      || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main')
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      # The commit this run is about. Under workflow_run, github.sha is the
+      # default branch tip at trigger time, not necessarily the tested commit.
+      EXPECTED_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+    steps:
+      - name: Check secrets are configured
+        env:
+          KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          TARGET: ${{ secrets.DEPLOY_SSH_TARGET }}
+        run: |
+          missing=""
+          [ -n "$KEY" ] || missing="$missing DEPLOY_SSH_KEY"
+          [ -n "$TARGET" ] || missing="$missing DEPLOY_SSH_TARGET"
+          if [ -n "$missing" ]; then
+            echo "::error::Missing repository secret(s):$missing — see docs/DEPLOY.md, 'Auto-deploy secrets'."
+            exit 1
+          fi
+          case "$EXPECTED_SHA" in
+            *[!0-9a-f]*|"") echo "::error::EXPECTED_SHA is not a commit hash: '$EXPECTED_SHA'"; exit 1 ;;
+          esac
+
+      - name: Prepare SSH
+        env:
+          KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+          PORT: ${{ secrets.DEPLOY_SSH_PORT }}
+        run: |
+          mkdir -p ~/.ssh && chmod 700 ~/.ssh
+          printf '%s\n' "$KEY" | tr -d '\r' > ~/.ssh/id_deploy
+          chmod 600 ~/.ssh/id_deploy
+          # Fail here with a readable message rather than at ssh time with
+          # libcrypto noise. Shape metadata only, never key content.
+          if ! ssh-keygen -y -P '' -f ~/.ssh/id_deploy > /dev/null 2> /tmp/keyerr; then
+            echo "::error::DEPLOY_SSH_KEY is not a usable private key ($(tail -1 /tmp/keyerr)). It has $(wc -l < ~/.ssh/id_deploy) lines, $(grep -c -- '-----BEGIN' ~/.ssh/id_deploy || true) BEGIN marker(s), ENCRYPTED header: $(grep -c 'ENCRYPTED' ~/.ssh/id_deploy || true). A passphrase-protected key cannot be used unattended; re-set the secret from an unencrypted deploy key, whole file including the BEGIN/END lines."
+            exit 1
+          fi
+          echo "IdentityFile ~/.ssh/id_deploy" >> ~/.ssh/config
+          echo "Port ${PORT:-22}" >> ~/.ssh/config
+          if [ -n "$KNOWN_HOSTS" ]; then
+            printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+            echo "StrictHostKeyChecking yes" >> ~/.ssh/config
+          else
+            echo "StrictHostKeyChecking accept-new" >> ~/.ssh/config
+          fi
+
+      - name: Pull and rebuild on the VPS
+        env:
+          TARGET: ${{ secrets.DEPLOY_SSH_TARGET }}
+        run: |
+          # curation.yaml is tracked in git and bind-mounted into the
+          # container, so it invites editing in place on the server — and one
+          # such edit makes `git pull --ff-only` refuse forever. Say which file
+          # it is instead of failing with git's generic message on every merge.
+          ssh "$TARGET" 'cd ~/beer-map && dirty=$(git status --porcelain --untracked-files=no) && if [ -n "$dirty" ]; then echo "::error::the VPS checkout has local edits, so git pull cannot fast-forward. Commit them through a PR (or git checkout -- <file> once they are), then re-run:"; echo "$dirty"; exit 1; fi'
+          # ASSET_VERSION is a build arg sed-substituted into index.html/app.js.
+          # Omit it and Compose falls back to "dev", so every deploy serves
+          # app.js?v=dev — a URL that never changes, and Cloudflare keeps
+          # handing out the previous copy for hours. It is not optional.
+          ssh "$TARGET" 'cd ~/beer-map && git pull --ff-only && ASSET_VERSION="$(git rev-parse --short HEAD)" docker compose up -d --build'
+
+      - name: Verify the VPS runs this commit
+        id: vps
+        env:
+          TARGET: ${{ secrets.DEPLOY_SSH_TARGET }}
+        run: |
+          deployed=$(ssh "$TARGET" 'cd ~/beer-map && git rev-parse HEAD')
+          # Two merges in quick succession: the earlier run can pull after the
+          # later commit landed, and the VPS then runs a descendant of this
+          # commit. That is a healthy box, not a failed deploy.
+          if [ "$deployed" != "$EXPECTED_SHA" ] && \
+             ! ssh "$TARGET" "cd ~/beer-map && git merge-base --is-ancestor $EXPECTED_SHA HEAD"; then
+            echo "::error::VPS checkout is at $deployed, which does not contain $EXPECTED_SHA"
+            exit 1
+          fi
+          # The stamp the image was built with is whatever `git rev-parse
+          # --short` says on the VPS — its length is not ours to assume, so
+          # ask rather than truncate.
+          stamp=$(ssh "$TARGET" 'cd ~/beer-map && git rev-parse --short HEAD')
+          case "$deployed" in
+            "$stamp"*) ;;
+            *) echo "::error::VPS short hash '$stamp' is not a prefix of $deployed"; exit 1 ;;
+          esac
+          echo "stamp=$stamp" >> "$GITHUB_OUTPUT"
+          echo "VPS at $deployed (stamp $stamp)"
+
+      - name: Verify the live site serves this build
+        # zapfkompass.de is the canonical host. www and beermap.jakubwaller.eu
+        # only redirect here, so probing them reports a healthy deploy as a
+        # failure — that drift already cost a false alarm once (#47).
+        env:
+          STAMP: ${{ steps.vps.outputs.stamp }}
+        run: |
+          sleep 10
+          probe() { curl -sS --max-time 30 --retry 5 --retry-delay 5 --retry-all-errors "$@"; }
+          code=$(probe -o /dev/null -w '%{http_code}' https://zapfkompass.de/)
+          [ "$code" = "200" ] || { echo "::error::zapfkompass.de returned $code"; exit 1; }
+
+          # The asset stamp is the only proof the new image is actually being
+          # served rather than Cloudflare replaying the old one.
+          live=$(probe https://zapfkompass.de/ | grep -oE 'app\.js\?v=[a-f0-9]+' | head -1 | cut -d= -f2)
+          if [ "$live" != "$STAMP" ]; then
+            echo "::error::live page serves app.js?v=$live, the VPS built $STAMP"
+            exit 1
+          fi
+
+          # The DB must never be reachable; it holds submission notes and
+          # rate-limit keys, and the app refuses to boot if it is inside web/.
+          # Expect the explicit not-found, so a dead connection (000) does not
+          # pass as "not served".
+          db=$(probe -o /dev/null -w '%{http_code}' https://zapfkompass.de/data/beer-map.sqlite)
+          case "$db" in
+            403|404) ;;
+            *) echo "::error::GET /data/beer-map.sqlite returned $db, expected 404"; exit 1 ;;
+          esac
