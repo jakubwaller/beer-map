@@ -52,6 +52,8 @@ papa-map's 02:00 sweep on the same host: Overpass bans per source IP, and did on
 
 `https://zapfkompass.de/admin` — HTTP Basic (`admin` / `BEERMAP_ADMIN_PW`).
 Approvals apply the edit and re-export `venues.json` instantly.
+Approved opening-hours corrections are additionally pushed to OSM by hand —
+see [`OSM-WRITEBACK.md`](OSM-WRITEBACK.md).
 
 ## Update the app
 

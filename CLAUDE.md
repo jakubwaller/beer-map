@@ -40,6 +40,7 @@ python -m pipeline.country           # nationwide venue sweep (weekly; --resume 
 python -m http.server -d web 8000    # serve frontend only (no API)
 uvicorn api.app:app                  # serve frontend + API on one origin
 python -m pipeline.export_curation   # print approved community subs as curation.yaml entries
+python -m pipeline.osm_push --dry-run # push approved hours corrections to OSM (docs/OSM-WRITEBACK.md)
 ```
 
 Code targets Python 3.9+ — every module starts with `from __future__ import annotations`; keep union type hints (`str | None`) behind it.
@@ -71,6 +72,8 @@ Everything is upserts keyed on `(venue_id, brand_id, source, beer)` — `beer` (
 `create_app()` builds a FastAPI app that also mounts `web/` as static files (single origin). `GET /api/gray/{z}/{x}/{y}` returns the brandless venues of one slippy tile (z 8–14, browser-cacheable for an hour); `GET /api/search?q=` searches the whole venue table over the folded `search_key` column — `fold()` in `pipeline/db.py` MUST stay in sync with `fold()` in `web/datasource.js`, the client compares against the same folded strings. `POST /api/submit` takes anonymous add/remove/edit_venue/close_venue/add_venue submissions (honeypot field + per-IP rate limit); `/admin` is an HTTP-Basic (`BEERMAP_ADMIN_PW`) moderation page. Approving applies the change immediately and re-exports the GeoJSON — no pipeline run needed. `edit_venue` geocodes the new address via Nominatim (`geocode.py`) to move the pin; geocode failure falls back to text-only update. `add_venue` (the "Ort fehlt?" form) geocodes at approval time and creates a `community/<slug>` venue; the hit is stored on the submission row so nightly re-applies don't re-geocode, and a submission that can't be applied (venue gone, address not geocodable) stays pending instead of being approved into a no-op. Client IP comes from `X-Forwarded-For` via ProxyHeadersMiddleware — safe only because the container has no public port and Caddy is the sole ingress.
 
 `pipeline/export_curation.py` renders approved submissions as curation.yaml entries so they can be committed to git and survive DB loss.
+
+`pipeline/osm_push.py` carries approved `edit_hours` submissions upstream to OSM — by hand, never from cron, one changeset per venue, the element re-fetched and sent back whole with its `version` so a concurrent edit gets a 409 instead of being overwritten. The changeset says where the hours really come from (a visitor report on zapfkompass.de, moderator-reviewed); never tag it `source=survey`. `submissions.osm_changeset` records the outcome (NULL = to push, N = changeset, 0 = resolved without upload). `pipeline/osm_auth.py` mints the token. Runbook: **[`docs/OSM-WRITEBACK.md`](docs/OSM-WRITEBACK.md)**.
 
 ### Frontend (`web/`)
 

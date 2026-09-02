@@ -50,7 +50,10 @@ CREATE TABLE IF NOT EXISTS submissions (
     submitter_ip TEXT,
     status TEXT NOT NULL DEFAULT 'pending',
     created_at TEXT NOT NULL,
-    decided_at TEXT
+    decided_at TEXT,
+    -- edit_hours only: NULL = still to push to OSM, N > 0 = uploaded in that
+    -- changeset, 0 = resolved without an upload (pipeline/osm_push.py).
+    osm_changeset INTEGER
 );
 -- One row per fetched tile of the nationwide sweep (pipeline/country.py), so
 -- an interrupted run can resume without refetching what it already has.
@@ -74,6 +77,7 @@ _MIGRATIONS = (
     ("submissions", "address", "TEXT"),
     ("submissions", "beer", "TEXT"),
     ("submissions", "opening_hours", "TEXT"),
+    ("submissions", "osm_changeset", "INTEGER"),
 )
 
 
@@ -400,6 +404,22 @@ def get_submission(conn, sub_id: int) -> dict | None:
 def set_submission_status(conn, sub_id: int, status: str, decided_at: str) -> None:
     conn.execute("UPDATE submissions SET status=?, decided_at=? WHERE id=?",
                  (status, decided_at, sub_id))
+    conn.commit()
+
+
+def list_hours_for_osm(conn) -> list[dict]:
+    """Approved opening-hours corrections not yet pushed to OSM, oldest first
+    (the order apply_approved applies them in, so the last one per venue is
+    what the map shows)."""
+    rows = conn.execute(
+        "SELECT * FROM submissions WHERE kind='edit_hours' AND status='approved' "
+        "AND osm_changeset IS NULL ORDER BY created_at, id"
+    ).fetchall()
+    return [dict(r) for r in rows]
+
+
+def set_submission_changeset(conn, sub_id: int, changeset: int) -> None:
+    conn.execute("UPDATE submissions SET osm_changeset=? WHERE id=?", (changeset, sub_id))
     conn.commit()
 
 
