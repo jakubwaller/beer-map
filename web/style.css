@@ -867,6 +867,52 @@ button:disabled { opacity: .55; cursor: default; }
 .venueform button.danger { background: var(--danger); }
 .venueform .msg { flex: 1 1 100%; font-size: 12px; font-weight: 600; color: var(--good); }
 
+/* ---------- Opening-hours editor ---------- */
+.hours-fix { margin-top: 10px; }
+.hours-fix > summary {
+  font-size: 12px; font-weight: 600; color: var(--accent);
+  cursor: pointer; list-style: none;
+}
+.hours-fix > summary::-webkit-details-marker { display: none; }
+.hours-fix > summary::before { content: "✎ "; }
+.hours-warn { margin: 8px 0 0; font-size: 12px; color: var(--muted-2); }
+.hgrid { display: flex; flex-direction: column; gap: 6px; margin: 10px 0; }
+.hrow { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.hday { width: 32px; font-size: 13px; font-weight: 600; color: var(--ink); }
+.htimes { display: inline-flex; align-items: center; gap: 4px; }
+.htimes[hidden] { display: none; }
+.hrow input[type="time"] {
+  padding: 5px 7px;
+  font-family: inherit; font-size: 13px;
+  border: 1px solid var(--line); border-radius: 8px;
+  background: #fff; color: var(--ink);
+}
+.hdash { color: var(--muted-2); }
+.hbreak {
+  min-width: 30px; min-height: 30px;
+  border: 1px solid var(--line); border-radius: 8px;
+  background: none; color: var(--muted-2);
+  font-size: 15px; line-height: 1; cursor: pointer;
+}
+.hbreak[hidden] { display: none; }
+.hclosed {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 12px; color: var(--muted-2); cursor: pointer;
+}
+/* A closed day dims its times instead of clearing them, so unticking restores
+   whatever was there. */
+.hrow.is-closed .htimes, .hrow.is-closed .hbreak { opacity: .35; }
+.hoursform > button {
+  padding: 8px 14px;
+  font-size: 13px; font-weight: 600;
+  color: #fff; background: var(--accent);
+  border: 0; border-radius: 9px; cursor: pointer;
+}
+.hoursform > button:hover { background: var(--accent-strong); }
+.hoursform .hp { position: absolute; left: -9999px; }
+.hoursform .msg { margin-left: 8px; font-size: 12px; font-weight: 600; color: var(--good); }
+.hoursform .msg.bad { color: var(--danger); }
+
 /* ---------- Mobile ---------- */
 @media (max-width: 640px) {
   header { padding: 10px 14px; gap: 10px 14px; }
@@ -886,7 +932,8 @@ button:disabled { opacity: .55; cursor: default; }
   /* 16px keeps iOS Safari from zooming the page when a field takes focus —
      that zoom is what made the "Bier melden" form jump around on a phone. */
   .addbeer input:not([type="radio"]), .venueadd input:not([type="radio"]),
-  .venueform input, .beerform select, #brand-filter { font-size: 16px; }
+  .venueform input, .beerform select, #brand-filter,
+  .hrow input[type="time"] { font-size: 16px; }
   .combo-opt, .suggest-name, .brand-pick { font-size: 15px; }
   .brand-pick { padding: 11px 14px; }
   .suggest-row { padding: 11px 14px; }

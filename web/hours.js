@@ -225,3 +225,59 @@ export function formatWeek(schedule, lang = "de") {
     text: g.text,
   }));
 }
+
+// ---- Editing --------------------------------------------------------------
+// The venue modal offers a weekday grid rather than a free-text field, so what
+// a visitor produces is always inside the subset parseOpeningHours can read —
+// a value this module cannot parse would land on the map as an uninterpreted
+// string, which is the state the edit feature exists to fix. These two are the
+// round trip between the grid and the tag, and they are what the tests cover.
+
+export const OSM_DAYS = ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"];
+
+/** Weekday labels in the UI language, Monday first — the same ones the week
+ *  view uses, so the editor and the read-only view agree. */
+export const dayLabels = (lang) => locale(lang).days;
+
+/** A parsed schedule (or null) -> seven rows of `{closed, ranges}`, where each
+ *  range is a pair of "HH:MM" strings ready for an <input type="time">.
+ *
+ *  A day closing at midnight ends "00:00" here, not the "24:00" the tag uses:
+ *  <input type="time"> silently discards any value whose hour is not 00-23, so
+ *  a "24:00" would render as an empty box and the range would be lost the next
+ *  time the grid was read back. gridToOpeningHours writes it out as 24:00. */
+export function scheduleToGrid(schedule) {
+  return Array.from({ length: 7 }, (_, i) => {
+    const day = schedule ? schedule.days[i] : [];
+    return {
+      closed: !day.length,
+      ranges: day.map(([a, b]) => [formatMinutes(a), formatMinutes(b)]),
+    };
+  });
+}
+
+/** Seven grid rows -> an opening_hours string, consecutive identical days
+ *  merged into one selector. Returns null when the grid says nothing usable:
+ *  a day marked open with no times, or every day closed (that is a closure
+ *  report, not opening hours). */
+export function gridToOpeningHours(grid) {
+  const spec = [];
+  for (const d of grid) {
+    if (d.closed) { spec.push("off"); continue; }
+    const rs = (d.ranges || []).filter(([a, b]) => a && b);
+    if (!rs.length) return null;
+    // An end of 00:00 means midnight at the end of the day.
+    spec.push(rs.map(([a, b]) => `${a}-${b === "00:00" ? "24:00" : b}`).join(","));
+  }
+  if (spec.every((s) => s === "off")) return null;
+  if (spec.every((s) => s === "00:00-24:00")) return "24/7";
+
+  const out = [];
+  for (let i = 0; i < 7;) {
+    let j = i;
+    while (j + 1 < 7 && spec[j + 1] === spec[i]) j++;
+    out.push(`${i === j ? OSM_DAYS[i] : `${OSM_DAYS[i]}-${OSM_DAYS[j]}`} ${spec[i]}`);
+    i = j + 1;
+  }
+  return out.join("; ");
+}

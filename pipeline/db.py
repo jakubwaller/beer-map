@@ -45,6 +45,7 @@ CREATE TABLE IF NOT EXISTS submissions (
     serving TEXT NOT NULL DEFAULT 'unknown',
     beer TEXT,
     address TEXT,
+    opening_hours TEXT,
     note TEXT,
     submitter_ip TEXT,
     status TEXT NOT NULL DEFAULT 'pending',
@@ -72,6 +73,7 @@ _MIGRATIONS = (
     ("venue_brand", "beer", "TEXT"),
     ("submissions", "address", "TEXT"),
     ("submissions", "beer", "TEXT"),
+    ("submissions", "opening_hours", "TEXT"),
 )
 
 
@@ -263,6 +265,25 @@ def update_venue_address(conn, osm_id: str, address: str,
     return cur.rowcount
 
 
+def update_venue_hours(conn, osm_id: str, hours: str) -> int:
+    """Set a venue's `opening_hours`, overriding what OSM imported.
+
+    OSM is otherwise the only writer of this column (see osm.py), so an approved
+    community correction would be undone by the next nightly import. It survives
+    because submissions.apply_approved re-runs every approved submission after
+    the import, exactly as edit_venue and close_venue already do.
+
+    The weekly country sweep also upserts venues and does not re-apply, so it
+    leaves this column holding OSM's value until the next nightly build. That
+    is invisible today — hours reach the frontend through the GeoJSON export,
+    which only ever runs after apply_approved — but a reader of this column
+    added between those two runs would see the stale value.
+    """
+    cur = conn.execute("UPDATE venues SET opening_hours=? WHERE osm_id=?",
+                       (hours or None, osm_id))
+    return cur.rowcount
+
+
 def set_venue_hidden(conn, osm_id: str, hidden: bool) -> int:
     cur = conn.execute("UPDATE venues SET hidden=? WHERE osm_id=?", (1 if hidden else 0, osm_id))
     return cur.rowcount
@@ -349,7 +370,8 @@ def search_venues_db(conn, query: str, limit: int = 30) -> list[dict]:
 
 
 _SUB_COLS = ("kind", "venue_osm_id", "venue_name", "lat", "lon",
-             "brand", "serving", "beer", "address", "note", "submitter_ip")
+             "brand", "serving", "beer", "address", "opening_hours", "note",
+             "submitter_ip")
 
 
 def insert_submission(conn, sub: dict, created_at: str) -> int:

@@ -56,8 +56,10 @@ def approved_community_entries(conn) -> list[dict]:
     human-readable) so they survive a database loss — the live DB is the only
     place they otherwise exist. Brand add/remove entries resolve by exact
     `osm_id`; add_venue entries carry the geocoded coordinates so re-applying
-    them recreates the venue. Venue address edits and closures have no curation
-    equivalent yet and are skipped.
+    them recreates the venue. Venue address edits, closures and opening-hours
+    corrections have no curation equivalent yet and are skipped — curation.yaml
+    describes which brands are on tap where, and has no field for any of them,
+    so those three survive only in the database.
     """
     entries = []
     for s in list_submissions(conn, "approved"):

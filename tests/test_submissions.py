@@ -231,3 +231,49 @@ def test_add_and_remove_specific_beer():
     sid = insert_submission(conn, _row(kind="remove", brand="Augustiner"), "2026-06-27T10:06:00")
     approve_submission(conn, sid, "2026-06-27", _OUT)
     assert fetch_venues_with_brands(conn)[0]["brands"] == []
+
+
+def test_validate_edit_hours_accepts_only_the_parseable_subset():
+    ok = dict(kind="edit_hours", venue_osm_id="node/1",
+              opening_hours="Mo-Fr 10:00-22:00; Sa,Su 12:00-23:00")
+    assert validate_submission(ok) is None
+    assert validate_submission({**ok, "opening_hours": "24/7"}) is None
+    assert validate_submission(
+        {**ok, "opening_hours": "Mo-Fr 11:00-14:00,17:00-23:00; Sa off"}) is None
+    assert validate_submission({**ok, "opening_hours": "Mo-Sa 18:00-24:00"}) is None
+    # Anything web/hours.js cannot read is refused rather than stored as an
+    # uninterpretable string that the map would print verbatim.
+    for bad in ("sunset-sunrise", "Mo-Fr 10-22", "Jan Mo 10:00-12:00", "",
+                "Mo-Fr 25:00-99:00", "x" * 201,
+                # 24 is the end of the day and nothing else: parseRanges drops
+                # anything past 1440, so these would be stored unreadable.
+                "Mo-Fr 10:00-24:30", "Mo-Fr 24:00-24:00",
+                # No time range anywhere is a closure report, not hours, and
+                # close_venue is the kind for that. Applying one would leave
+                # the venue never-open through every re-import.
+                "Mo-Fr off", "Mo-Su off", "Mo-Sa closed; Su off"):
+        assert validate_submission({**ok, "opening_hours": bad}), bad
+
+
+def test_edit_hours_survives_the_nightly_osm_reimport():
+    conn = _seed()
+    upsert_venue(conn, Venue("node/1", "Bar X", 53.5, 10.0,
+                             opening_hours="Mo-Su 09:00-17:00"), "2026-09-01")
+    sid = insert_submission(conn, _row(kind="edit_hours", brand="", serving="unknown",
+                                       opening_hours="Mo-Fr 16:00-01:00; Sa,Su 14:00-02:00"),
+                            "2026-09-01T12:00:00")
+    set_submission_status(conn, sid, "approved", "2026-09-01T12:01:00")
+    assert apply_approved(conn, "2026-09-01") == 1
+
+    hours = lambda: conn.execute(
+        "SELECT opening_hours FROM venues WHERE osm_id='node/1'").fetchone()["opening_hours"]
+    assert hours() == "Mo-Fr 16:00-01:00; Sa,Su 14:00-02:00"
+
+    # OSM is the only other writer of this column, and the nightly import
+    # overwrites it. Re-applying approved submissions afterwards is what makes
+    # the correction stick, exactly as it does for edit_venue.
+    upsert_venue(conn, Venue("node/1", "Bar X", 53.5, 10.0,
+                             opening_hours="Mo-Su 09:00-17:00"), "2026-09-02")
+    assert hours() == "Mo-Su 09:00-17:00"
+    apply_approved(conn, "2026-09-02")
+    assert hours() == "Mo-Fr 16:00-01:00; Sa,Su 14:00-02:00"

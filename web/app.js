@@ -1,7 +1,8 @@
 import { loadVenues, buildBrandList, venuesByBrand, venuesByServing, searchVenues, fold,
          brandChips, searchBrands, tilesForBounds }
   from "./datasource.js?v=__ASSET_VERSION__";
-import { openState, statusText, formatWeek, venueSchedule, venuesOpenNow }
+import { openState, statusText, formatWeek, venueSchedule, venuesOpenNow,
+         scheduleToGrid, gridToOpeningHours, dayLabels }
   from "./hours.js?v=__ASSET_VERSION__";
 import { initLang, getLang, setLang, t, tn }
   from "./i18n.js?v=__ASSET_VERSION__";
@@ -619,11 +620,70 @@ function beerRow(osm, b) {
 
 // Opening hours come from the OSM `opening_hours` tag. Anything the parser
 // can't read is printed verbatim rather than guessed at — see web/hours.js.
+// The editor is a weekday grid rather than a text field, so a visitor cannot
+// produce a tag web/hours.js is unable to read — the exact state ("we don't
+// know", printed verbatim) that this feature exists to clear up. The grid <->
+// tag conversion and its round trip live in hours.js and are unit-tested.
+function hoursEditor(v, schedule) {
+  const osm = v.osm_id || "";
+  const labels = dayLabels(getLang());
+  // The grid holds at most two ranges a day. A day tagged with three (a rare
+  // morning/afternoon/evening split) is not prefilled at all: showing the
+  // first two would drop the third on save, silently deleting it from the
+  // venue on approval. Same treatment as a tag the parser cannot read.
+  const fits = schedule && schedule.days.every((d) => d.length <= 2);
+  const grid = scheduleToGrid(fits ? schedule : null);
+  const rows = grid.map((d, i) => {
+    const [a = "", b = ""] = d.ranges[0] || [];
+    const [c = "", e = ""] = d.ranges[1] || [];
+    const hasBreak = Boolean(c && e);
+    return `<div class="hrow${d.closed ? " is-closed" : ""}">
+        <span class="hday">${esc(labels[i])}</span>
+        <span class="htimes">
+          <input type="time" name="a${i}from" value="${esc(a)}" aria-label="${esc(labels[i])} ${esc(t("hours.save"))}">
+          <span class="hdash">–</span>
+          <input type="time" name="a${i}to" value="${esc(b)}">
+        </span>
+        <span class="htimes hbreakrow"${hasBreak ? "" : " hidden"}>
+          <input type="time" name="b${i}from" value="${esc(c)}">
+          <span class="hdash">–</span>
+          <input type="time" name="b${i}to" value="${esc(e)}">
+        </span>
+        <button type="button" class="hbreak"${hasBreak ? " hidden" : ""}
+                title="${esc(t("hours.addBreak"))}">+</button>
+        <label class="hclosed">
+          <input type="checkbox" name="closed${i}"${d.closed ? " checked" : ""}>
+          ${esc(t("hours.closedDay"))}
+        </label>
+      </div>`;
+  }).join("");
+  // A tag the parser cannot read is not shown as a grid either — it may carry
+  // season or holiday rules the grid has no way to express, and a suggestion
+  // replaces the whole value.
+  const warn = (v.opening_hours && !fits)
+    ? `<p class="hours-warn">${esc(t("hours.complex"))}</p>` : "";
+  return `<details class="hours-fix">
+      <summary>${esc(t("venue.fixHours"))}</summary>
+      ${warn}
+      <form class="hoursform" data-osm="${esc(osm)}">
+        <div class="hgrid">${rows}</div>
+        <input class="hp" name="hp" tabindex="-1" autocomplete="off">
+        <button>${esc(t("hours.save"))}</button><span class="msg"></span>
+      </form>
+    </details>`;
+}
+
 function hoursBlock(v) {
-  if (!v.opening_hours) return "";
   const schedule = venueSchedule(v);
+  // No tag at all is the commonest case and the most worth fixing, so the
+  // editor is offered then too — there is just nothing to show above it.
+  if (!v.opening_hours)
+    return `<div class="venue-hours">${hoursEditor(v, null)}</div>`;
   if (!schedule)
-    return `<div class="venue-hours"><span class="hours-raw">🕒 ${esc(v.opening_hours)}</span></div>`;
+    return `<div class="venue-hours">
+        <span class="hours-raw">🕒 ${esc(v.opening_hours)}</span>
+        ${hoursEditor(v, null)}
+      </div>`;
   const state = openState(schedule);
   const week = formatWeek(schedule, getLang()).map((g) =>
     `<div class="hours-row"><span>${esc(g.label)}</span><span>${esc(g.text)}</span></div>`).join("");
@@ -634,7 +694,21 @@ function hoursBlock(v) {
         ${week}
         <div class="hours-note">${esc(t("hours.note"))}</div>
       </details>
+      ${hoursEditor(v, schedule)}
     </div>`;
+}
+
+// Reading the grid back out. `closed` wins over whatever is left in the time
+// fields, so ticking it does not need to clear them.
+function readHoursGrid(form) {
+  return Array.from({ length: 7 }, (_, i) => {
+    const ranges = [];
+    const a = [form[`a${i}from`].value, form[`a${i}to`].value];
+    const b = [form[`b${i}from`].value, form[`b${i}to`].value];
+    if (a[0] && a[1]) ranges.push(a);
+    if (b[0] && b[1]) ranges.push(b);
+    return { closed: form[`closed${i}`].checked, ranges };
+  });
 }
 
 function openVenueModal(v) {
@@ -1235,6 +1309,12 @@ function stageRow(form) {
 }
 
 modalBody.addEventListener("click", (e) => {
+  const brk = e.target.closest(".hbreak");
+  if (brk) {
+    brk.hidden = true;
+    brk.closest(".hrow").querySelector(".hbreakrow").hidden = false;
+    return;
+  }
   const add = e.target.closest(".addrow");
   if (add) { stageRow(add.closest("form")); return; }
   const rm = e.target.closest(".staged-remove");
@@ -1392,8 +1472,35 @@ async function submitBeerRows(form) {
   viewControls().forEach((el) => (el.disabled = false));
 }
 
+// A day marked closed dims its times rather than clearing them, so unticking
+// brings the old values back.
+modalBody.addEventListener("change", (e) => {
+  if (!e.target.matches(".hrow input[type=checkbox]")) return;
+  e.target.closest(".hrow").classList.toggle("is-closed", e.target.checked);
+});
+
 modalBody.addEventListener("submit", async (ev) => {
   const f = ev.target;
+  if (f.classList.contains("hoursform")) {
+    ev.preventDefault();
+    const msg = f.querySelector(".msg");
+    const hours = gridToOpeningHours(readHoursGrid(f));
+    if (!hours) {
+      msg.classList.add("bad");
+      msg.textContent = t("hours.gridInvalid");
+      return;
+    }
+    const r = await fetch("/api/submit", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ venue_osm_id: f.dataset.osm, kind: "edit_hours",
+                             opening_hours: hours, hp: f.hp.value }),
+    }).catch(() => null);
+    const ok = Boolean(r && r.ok);
+    msg.classList.toggle("bad", !ok);
+    msg.textContent = ok ? t("form.thanks") : t("form.error");
+    if (ok) f.querySelectorAll("button, input").forEach((el) => (el.disabled = true));
+    return;
+  }
   if (!f.matches(".addbeer, .beerform, .venueform, .venueadd")) return;
   ev.preventDefault();
   const action = ev.submitter && ev.submitter.value;
