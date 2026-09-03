@@ -158,18 +158,42 @@ def _day_set(sel: str) -> set[int] | None:
     return days
 
 
+def _rules(value: str) -> list[str]:
+    """Split a tag into its rules. `;` is the separator, but mappers routinely
+    write `,` for it ("Su-Th 18:00-01:00, Fr,Sa 18:00-02:00") — the same
+    reading as splitRules in web/hours.js: a comma starts a new rule only when
+    what came before already holds a time and what follows names a day, which
+    leaves genuine lists ("12:00-15:00,17:30-22:00", "Mo-Su,PH 11:00-23:00")
+    intact."""
+    rules: list[str] = []
+    for chunk in value.split(";"):
+        buf = ""
+        for part in chunk.split(","):
+            if buf and re.search(r"\d", buf) and re.match(r"[A-Za-z]{2}\b", part):
+                rules.append(buf)
+                buf = part
+            else:
+                buf = f"{buf},{part}" if buf else part
+        if buf.strip():
+            rules.append(buf)
+    return rules
+
+
 def normalize_hours(value: str | None) -> tuple | None:
     """A tag -> seven tuples of (start, end) minute pairs, or None when the
     tag uses anything beyond weekdays, clock ranges, `off`/`closed` and 24/7.
     A range ending at 00:00 is read as ending at 24:00, so both spellings of
-    "until midnight" compare equal."""
+    "until midnight" compare equal. Whitespace around commas is dropped
+    first: "Mo, Tu, Su 17:00-00:00" is valid syntax and common (the first live
+    report, 2026-09-03, hit exactly that spelling and was refused as
+    inexpressible)."""
     if not value:
         return None
-    value = " ".join(value.split())
+    value = re.sub(r"\s*,\s*", ",", " ".join(value.split()))
     if value == "24/7":
         return tuple(((0, 1440),) for _ in range(7))
     days: list[list[tuple[int, int]]] = [[] for _ in range(7)]
-    for rule in value.split(";"):
+    for rule in _rules(value):
         rule = rule.strip()
         if not rule:
             continue
