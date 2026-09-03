@@ -152,14 +152,15 @@ def test_normalize_hours_reads_spaced_lists_and_commas_used_as_semicolons():
     assert normalize_hours("Mo-Su,PH 11:00-23:00") is None
     assert normalize_hours("Mo-Su, PH 11:00-23:00") is None
     # ',' adds a rule, ';' overrides — they only coincide on disjoint days.
-    assert normalize_hours("Tu-Su 11:30-14:00, Tu-Sa 17:30-23:00") == \
-        normalize_hours("Tu-Sa 11:30-14:00,17:30-23:00; Su 11:30-14:00")
-    assert normalize_hours("Mo-Su 11:00-14:00, Mo-Su 18:00-23:00") == \
-        normalize_hours("Mo-Su 11:00-14:00,18:00-23:00")
+    # On a day the group already named, web/hours.js shows the visitor the
+    # override reading, so the grid they saved already lacks the first rule's
+    # hours: out of scope, a human compares (whatever the second rule says).
     assert normalize_hours("Mo-Su 11:00-14:00; Mo-Su 18:00-23:00") == \
         normalize_hours("Mo-Su 18:00-23:00")
-    # An added 'off' over hours the same group gave is a question, not a guess.
-    assert normalize_hours("Mo-Su 10:00-20:00, Su off") is None
+    for overlap in ("Tu-Su 11:30-14:00, Tu-Sa 17:30-23:00", "Mo-Su 11:00-14:00, Mo-Su 18:00-23:00",
+                    "Mo-Su 11:00-23:00, Su 12:00-20:00", "Mo-Fr 09:00-17:00, We 09:00-17:00",
+                    "Mo-Su 10:00-20:00, Su off"):
+        assert normalize_hours(overlap) is None, overlap
     assert normalize_hours("Mo-Su 10:00-20:00; Su off") == normalize_hours("Mo-Sa 10:00-20:00")
     # The splitter needs no tidying first: a raw tag splits the same way.
     assert _rules("Su-Th 18:00-01:00, Fr,Sa 18:00-02:00; Mo off") == \
@@ -226,6 +227,21 @@ def test_a_spaced_weekday_list_on_osm_is_plain_weekday_rules_not_a_conflict():
     assert counts["uploaded"] == 1 and counts["conflict"] == 0
     assert f'v="{target}"' in fake.calls[-2][2]
     assert get_submission(conn, sid)["osm_changeset"] == 123
+
+
+def test_a_comma_added_rule_over_days_already_named_is_left_to_a_human():
+    # The grid the visitor saw was prefilled by web/hours.js, which reads the
+    # second rule as an override — so the saved grid lacks the Tu-Sa lunch
+    # hours, and uploading it would delete them from OSM.
+    conn = _conn()
+    sid = _approved(conn, "Tu-Sa 17:30-23:00; Su 11:30-14:00")
+    fake = FakeOsm(xml=NODE_XML.replace('v="Mo-Su 11:00-24:00"',
+                                        'v="Tu-Su 11:30-14:00, Tu-Sa 17:30-23:00"'))
+    lines = []
+    counts = push(conn, _api(fake), log=lines.append, pause_s=0)
+    assert counts["conflict"] == 1 and fake.paths("PUT") == []
+    assert get_submission(conn, sid)["osm_changeset"] is None
+    assert "cannot express" in lines[-1]
 
 
 def test_a_200_with_an_unreadable_body_is_a_failure_not_a_crash():
