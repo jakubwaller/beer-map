@@ -8,7 +8,7 @@ from pipeline.db import (
 )
 from pipeline.models import Venue
 from pipeline.osm_push import (
-    OsmApi, changeset_tags, normalize_hours, parse_osm_id, plan, push,
+    OsmApi, _rules, changeset_tags, normalize_hours, parse_osm_id, plan, push,
     read_element, same_hours, with_opening_hours,
 )
 
@@ -151,6 +151,19 @@ def test_normalize_hours_reads_spaced_lists_and_commas_used_as_semicolons():
     # Holidays in the day list stay out of scope, however they are spaced.
     assert normalize_hours("Mo-Su,PH 11:00-23:00") is None
     assert normalize_hours("Mo-Su, PH 11:00-23:00") is None
+    # ',' adds a rule, ';' overrides — they only coincide on disjoint days.
+    assert normalize_hours("Tu-Su 11:30-14:00, Tu-Sa 17:30-23:00") == \
+        normalize_hours("Tu-Sa 11:30-14:00,17:30-23:00; Su 11:30-14:00")
+    assert normalize_hours("Mo-Su 11:00-14:00, Mo-Su 18:00-23:00") == \
+        normalize_hours("Mo-Su 11:00-14:00,18:00-23:00")
+    assert normalize_hours("Mo-Su 11:00-14:00; Mo-Su 18:00-23:00") == \
+        normalize_hours("Mo-Su 18:00-23:00")
+    # An added 'off' over hours the same group gave is a question, not a guess.
+    assert normalize_hours("Mo-Su 10:00-20:00, Su off") is None
+    assert normalize_hours("Mo-Su 10:00-20:00; Su off") == normalize_hours("Mo-Sa 10:00-20:00")
+    # The splitter needs no tidying first: a raw tag splits the same way.
+    assert _rules("Su-Th 18:00-01:00, Fr,Sa 18:00-02:00; Mo off") == \
+        [["Su-Th 18:00-01:00", "Fr,Sa 18:00-02:00"], ["Mo off"]]
 
 
 def test_push_uploads_one_changeset_per_venue():
