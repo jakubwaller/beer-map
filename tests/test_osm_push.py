@@ -172,6 +172,8 @@ def test_normalize_hours_reads_spaced_lists_and_commas_used_as_semicolons():
     # ...but a rule's list is read in start order, as the frontend reads it:
     # in written order 10-12 would replace 10-11 and 9-13 then replace that.
     assert normalize_hours("Mo 10:00-11:00, Mo 10:00-12:00,09:00-13:00") is None
+    # ...and ties on the start keep their written order, as there too.
+    assert normalize_hours("Mo 08:00-09:00, Mo 10:00-12:00,10:00-11:00") is None
     # The grid holds two ranges a day; a third is beyond it.
     assert grid_can_hold("Mo-Fr 09:00-11:00,12:00-15:00")
     assert not grid_can_hold("Mo-Fr 09:00-11:00,12:00-15:00,18:00-23:00")

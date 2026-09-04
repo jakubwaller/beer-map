@@ -21,8 +21,10 @@ citizen:
 - An element edited on OSM *after* the visitor filed the report is not
   touched (unless what OSM holds is our own previous upload): someone else
   got there first, and the two edits need a human to compare. Neither is a
-  tag with rules the grid cannot express (`PH off`, `Dec 24 off`, ...):
-  the grid's value would replace it wholesale and silently drop them.
+  tag the grid could not have shown the visitor whole: rules it cannot
+  express (`PH off`, `Dec 24 off`, ...) or a day with more than the two
+  ranges it has room for. The grid's value would replace such a tag
+  wholesale and silently drop what the visitor never saw.
   `--force --id N` overrides either for one submission, `--drop N` gives
   up on it.
 - A value OSM already holds (or one that means the same hours, e.g. the tag
@@ -207,7 +209,9 @@ def _read_rule(rule: str) -> tuple[set[int], list[tuple[int, int]] | None] | Non
         if end <= start:  # closes after midnight (or at it: "11:00-00:00")
             end += 1440
         ranges.append((start, end))
-    return which, sorted(ranges)  # by start, as parseRanges in web/hours.js
+    # By start only, and stable, exactly as parseRanges in web/hours.js: the
+    # overlap rule is order-sensitive, so the two must feed it the same order.
+    return which, sorted(ranges, key=lambda r: r[0])
 
 
 def _add_ranges(have: list[tuple[int, int]], more: list[tuple[int, int]]) -> list | None:
