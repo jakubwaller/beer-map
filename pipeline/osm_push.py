@@ -282,35 +282,45 @@ def grid_can_hold(value: str) -> bool:
     return days is not None and all(len(d) <= 2 for d in days)
 
 
-# Until PR #63 went live, web/hours.js read a comma-joined rule over a day
-# its group had already named as an override, and dropped the earlier hours
-# from the grid it prefilled. A report filed before then on such a tag came
-# from a grid that lacked hours the tag has, and the push at the time refused
-# it. Keep refusing those: the reading changed, what the visitor saw did not.
-_GRID_ADDS_SINCE = "2026-09-05"
-
-
-def _adds_to_named_days(value: str) -> bool:
-    """Whether any `;` group of the tag has a comma-joined rule over a day the
-    group already named — the tags whose reading PR #63 changed."""
+def _override_reading(value: str) -> tuple | None:
+    """The tag as web/hours.js read it before PR #63: every rule, comma-joined
+    or not, overriding the days it names."""
+    days: list[list[tuple[int, int]]] = [[] for _ in range(7)]
     for group in _rules(value):
-        named: set[int] = set()
         for rule in group:
             read = _read_rule(rule.strip())
             if read is None:
-                return False  # unreadable anyway; grid_can_hold says so
-            if named & read[0]:
-                return True
-            named |= read[0]
-    return False
+                return None
+            which, ranges = read
+            for d in which:
+                days[d] = [] if ranges is None else list(ranges)
+    return tuple(tuple(sorted(d)) for d in days)
 
 
-def grid_showed_whole(current: str, filed: str) -> bool:
-    """Whether the grid the visitor filled in was prefilled with all of
-    OSM's tag — as the grid read it when the report was filed."""
-    if not grid_can_hold(current):
-        return False
-    return filed >= _GRID_ADDS_SINCE or not _adds_to_named_days(current)
+def not_shown_whole(current: str, target: str) -> str | None:
+    """Why the grid the visitor filled in cannot have shown them all of OSM's
+    tag — or None when it did. Three reasons. Rules the grid cannot express
+    (`PH off`, seasons). A day with more than the two ranges it has room for
+    (web/app.js leaves the grid blank for a third). And, on a tag whose
+    reading PR #63 changed (a comma-joined rule over a day its group already
+    named), a grid prefilled by the old reading, which dropped the earlier
+    hours: told apart by the days where the two readings differ — a grid from
+    the new reading still carries it there, so `target` must match it on
+    every such day. That refuses a deliberate edit of exactly those days too,
+    which the log says and `--force` overrides."""
+    new = normalize_hours(current)
+    if new is None:
+        return "with rules the grid cannot express"
+    if any(len(d) > 2 for d in new):
+        return "with more ranges on a day than the grid holds"
+    old = _override_reading(current)
+    if old is None or old == new:
+        return None
+    tgt = normalize_hours(target)
+    if tgt is None or any(t != n for t, n, o in zip(tgt, new, old) if n != o):
+        return ("whose comma-joined rules an older grid showed as overrides; "
+                "the report differs from the tag exactly there")
+    return None
 
 
 def same_hours(a: str | None, b: str | None) -> bool:
@@ -474,12 +484,12 @@ def push(conn, api: OsmApi, subs: list[dict] | None = None, dry_run: bool = Fals
                 f"OSM has {current!r}, the report says {target!r}. {how}")
             counts["conflict"] += 1
             continue
-        # The grid holds two ranges a day and prefills nothing for a third
-        # (web/app.js), so a tag the reader can read may still be one the
-        # grid could not show the visitor — or could not at the time.
-        if current and not grid_showed_whole(current, filed) and not force:
-            log(f"#{sid} {osm_id}: OSM has {current!r}, with rules the grid cannot express; "
-                f"uploading {target!r} would drop them. {how}")
+        # A tag the grid could not have shown the visitor whole must not be
+        # replaced by what they typed into it.
+        why = not_shown_whole(current, target) if current else None
+        if why and not force:
+            log(f"#{sid} {osm_id}: OSM has {current!r}, {why}; "
+                f"uploading {target!r} would drop hours. {how}")
             counts["conflict"] += 1
             continue
 

@@ -22,12 +22,18 @@ that has not been pushed yet and, per venue:
    report (unless what OSM holds is our own previous upload) — someone else
    got there first and the two edits need a human to compare; refuses it
    likewise if OSM's tag is one the weekday grid could not have shown the
-   visitor whole — rules it cannot express (`PH off`, `Dec 24 off`,
-   seasonal months) or a day with more than the two ranges it has room for
-   (`Mo-Su 08:00-10:00, Mo-Su 12:00-14:00, Mo-Su 18:00-22:00`) — because the
-   grid's value would replace the whole tag and silently drop what the
-   visitor never saw (`--force --id N` to replace anyway, `--drop N` to give
-   up);
+   visitor whole, because the grid's value would replace the whole tag and
+   silently drop what the visitor never saw (`--force --id N` to replace
+   anyway, `--drop N` to give up). The log names the reason: rules the grid
+   cannot express (`PH off`, `Dec 24 off`, seasonal months); a day with more
+   than the two ranges it has room for (`Mo-Su 08:00-10:00, Mo-Su
+   12:00-14:00, Mo-Su 18:00-22:00`); or, on a tag with a comma-joined rule
+   over days already named (`Tu-Su 11:30-14:00, Tu-Sa 17:30-23:00`), a
+   report that matches the *older* grid, which showed such a rule as an
+   override and so lacked the lunch hours — the report differs from the
+   tag exactly on those days. That last one also catches a visitor who
+   deliberately edited those days from the new grid; the dry run shows
+   both values, and `--force` is the call;
 4. opens one changeset for that venue, uploads the element whole with only
    `opening_hours` changed and the fetched `version`, closes the changeset.
    A concurrent edit in the seconds between fetch and upload answers 409

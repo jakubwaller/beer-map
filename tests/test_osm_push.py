@@ -8,7 +8,7 @@ from pipeline.db import (
 )
 from pipeline.models import Venue
 from pipeline.osm_push import (
-    OsmApi, _rules, changeset_tags, grid_can_hold, grid_showed_whole, normalize_hours,
+    OsmApi, _rules, changeset_tags, grid_can_hold, normalize_hours, not_shown_whole,
     parse_osm_id, plan, push,
     read_element, same_hours, with_opening_hours,
 )
@@ -273,32 +273,34 @@ def test_a_day_with_three_ranges_is_beyond_the_grid_and_left_to_a_human():
     counts = push(conn, _api(fake), log=lines.append, pause_s=0)
     assert counts["conflict"] == 1 and fake.paths("PUT") == []
     assert get_submission(conn, sid)["osm_changeset"] is None
-    assert "cannot express" in lines[-1]
+    assert "more ranges" in lines[-1]
 
 
-def test_a_report_filed_before_the_grid_read_additions_is_left_to_a_human():
-    # Filed on 2026-09-01 the grid was prefilled without Tu-Sa's lunch hours;
-    # the reading changed since, what the visitor saw did not.
+def test_a_grid_prefilled_by_the_old_override_reading_is_left_to_a_human():
+    # Before PR #63 the grid showed this tag without Tu-Sa's lunch hours. A
+    # report that lacks them exactly there came from that grid — whether
+    # filed then or from a bundle still cached — and is not an edit.
     tag = "Tu-Su 11:30-14:00, Tu-Sa 17:30-23:00"
-    assert grid_showed_whole(tag, "2026-09-05T00:00:00")
-    assert not grid_showed_whole(tag, "2026-09-04T23:59:59")
-    assert grid_showed_whole("Su-Th 18:00-01:00, Fr,Sa 18:00-02:00", "2026-09-01T12:00:00")
-    assert grid_showed_whole("Mo-Fr 10:00-22:00; Sa,Su 12:00-20:00", "2026-09-01T12:00:00")
-    assert not grid_showed_whole("Mo-Fr 10:00-22:00; PH off", "2026-09-06T12:00:00")
+    old_grid = "Mo off; Tu-Sa 17:30-23:00; Su 11:30-14:00"
+    assert "older grid" in not_shown_whole(tag, old_grid)
+    assert "older grid" in not_shown_whole(tag, "Mo off; Tu-Sa 17:30-23:00; Su 12:00-14:00")
+    # From the new grid, Tu-Sa carry both ranges; editing Sunday is the visitor's.
+    assert not_shown_whole(tag, "Mo off; Tu-Sa 11:30-14:00,17:30-23:00; Su 12:00-14:00") is None
+    # Editing Tu-Sa themselves is indistinguishable from the old grid: refused, --force.
+    assert "older grid" in not_shown_whole(tag, "Mo off; Tu-Sa 11:30-14:00,18:00-23:00; Su 11:30-14:00")
+    # Tags both readings agree on are unaffected.
+    assert not_shown_whole("Su-Th 18:00-01:00, Fr,Sa 18:00-02:00", "Mo-Su 12:00-13:00") is None
+    assert not_shown_whole("Mo-Fr 10:00-22:00; Sa,Su 12:00-20:00", "Mo-Su 12:00-13:00") is None
+    assert "cannot express" in not_shown_whole("Mo-Fr 10:00-22:00; PH off", "Mo-Su 12:00-13:00")
+    assert "more ranges" in not_shown_whole("Mo-Fr 09:00-11:00,12:00-15:00,18:00-23:00", "Mo-Su 12:00-13:00")
 
     conn = _conn()
-    sid = _approved(conn, "Mo off; Tu-Sa 17:30-23:00; Su 11:30-14:00", created="2026-09-01T12:00:00")
+    _approved(conn, old_grid)
     fake = FakeOsm(xml=NODE_XML.replace('v="Mo-Su 11:00-24:00"', f'v="{tag}"'))
     lines = []
     counts = push(conn, _api(fake), log=lines.append, pause_s=0)
     assert counts["conflict"] == 1 and fake.paths("PUT") == []
-    assert "cannot express" in lines[-1]
-    # The same edit filed once the grid showed both rules is the visitor's
-    # deliberate choice, and goes up.
-    sid2 = _approved(conn, "Mo off; Tu-Sa 17:30-23:00; Su 11:30-14:00", created="2026-09-06T12:00:00")
-    counts = push(conn, _api(fake), log=lines.append, pause_s=0)
-    assert counts["uploaded"] == 1
-    assert get_submission(conn, sid2)["osm_changeset"] == 123
+    assert "older grid" in lines[-1] and "--force" in lines[-1]
 
 
 def test_a_200_with_an_unreadable_body_is_a_failure_not_a_crash():
