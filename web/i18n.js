@@ -124,7 +124,7 @@ export const MESSAGES = {
     "kofi.short": "☕ Kaffee",
     "kofi.aria": "Kaffee spendieren (Ko-fi)",
     "kofi.cta": "☕ Kaffee spendieren",
-    "kofi.free": "Zapfkompass ist kostenlos und werbefrei.",
+    "kofi.free": "Entstanden aus der Suche nach Tankbier: frisch und unpasteurisiert schmeckt es wie in der Brauerei, in Tschechien gibt es das fast überall, anderswo muss man es suchen. Zapfkompass ist kostenlos und werbefrei.",
 
     "add.p1": "Klick auf eine Kneipe direkt auf der Karte — dort kannst du eine Marke und Ausschankart (Fass/Tank) melden.",
     "add.p2strong": "Fehlt ein Ort komplett?",
@@ -276,7 +276,7 @@ export const MESSAGES = {
     "kofi.short": "☕ Káva",
     "kofi.aria": "Kup mi kávu (Ko-fi)",
     "kofi.cta": "☕ Kup mi kávu",
-    "kofi.free": "Zapfkompass je zdarma a bez reklam.",
+    "kofi.free": "Vznikl z hledání tankového piva: čerstvé a nepasterované chutná jako v pivovaru, v Česku je skoro všude, v cizině se hledá těžko. Zapfkompass je zdarma a bez reklam.",
 
     "add.p1": "Klikněte na hospodu přímo na mapě — tam můžete nahlásit značku a způsob výčepu (sud/tank).",
     "add.p2strong": "Chybí místo úplně?",
@@ -426,7 +426,7 @@ export const MESSAGES = {
     "kofi.short": "☕ Coffee",
     "kofi.aria": "Buy me a coffee (Ko-fi)",
     "kofi.cta": "☕ Buy me a coffee",
-    "kofi.free": "Zapfkompass is free and ad-free.",
+    "kofi.free": "Born from hunting for tank beer: fresh and unpasteurised, it tastes the way it does at the brewery, it is almost everywhere in Czechia and hard to find anywhere else. Zapfkompass is free and ad-free.",
 
     "add.p1": "Click a pub directly on the map — there you can report a brand and serving type (keg/tank).",
     "add.p2strong": "Is a place missing entirely?",
