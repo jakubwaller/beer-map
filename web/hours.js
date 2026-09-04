@@ -86,22 +86,39 @@ function parseRanges(str) {
 // ("Su-Th 18:00-01:00, Fr,Sa 18:00-02:00"). A comma only starts a new rule when
 // what came before is already complete (it contains a time) and what follows
 // names a day — which leaves genuine lists, "12:00-15:00,17:30-22:00" and
-// "Mo-Su,PH 11:00-23:00", intact.
+// "Mo-Su,PH 11:00-23:00", intact. Rules come back grouped by ';', because the
+// two separators mean different things: ';' overrides the days it names, ','
+// adds to them ("Tu-Su 11:30-14:00, Tu-Sa 17:30-23:00" keeps the lunch hours
+// on Tu-Sa). pipeline/osm_push.py reads tags the same way, on purpose: the
+// grid this parser prefills is what a visitor saves, and the push compares
+// that against the tag — a reading that differs there turns an untouched grid
+// into an edit.
 function splitRules(text) {
-  const rules = [];
+  const groups = [];
   for (const chunk of text.split(";")) {
+    const group = [];
     let buf = "";
     for (const part of chunk.split(",")) {
       if (buf && /\d/.test(buf) && /^\s*[A-Za-z]{2}\b/.test(part)) {
-        rules.push(buf);
+        group.push(buf);
         buf = part;
       } else {
         buf = buf ? `${buf},${part}` : part;
       }
     }
-    if (buf.trim()) rules.push(buf);
+    if (buf.trim()) group.push(buf);
+    if (group.length) groups.push(group);
   }
-  return rules;
+  return groups;
+}
+
+// Two lists of ranges as one, a restated range ("Mo-Fr 09:00-17:00, We
+// 09:00-17:00") counted once.
+function addRanges(a, b) {
+  const seen = new Set();
+  return [...a, ...b]
+    .filter(([s, e]) => !seen.has(`${s}-${e}`) && seen.add(`${s}-${e}`))
+    .sort((x, y) => x[0] - y[0]);
 }
 
 /** Parse a raw tag into `{ days: [[ [start,end], … ] × 7], raw }`, Monday
@@ -111,33 +128,39 @@ export function parseOpeningHours(raw) {
   if (!text) return null;
   const days = [[], [], [], [], [], [], []];
   let parsed = false;
-  for (const rule of splitRules(text)) {
-    const r = rule.trim();
-    if (!r) continue;
-    if (/^24\/7$/i.test(r)) {
-      for (let i = 0; i < 7; i++) days[i] = [[0, DAY]];
+  for (const group of splitRules(text)) {
+    const given = new Map();  // day -> the ranges this ';' group gives it
+    for (const rule of group) {
+      const r = rule.trim();
+      if (!r) continue;
+      if (/^24\/7$/i.test(r)) {
+        for (let i = 0; i < 7; i++) given.set(i, [[0, DAY]]);
+        parsed = true;
+        continue;
+      }
+      let sel, ranges;
+      const off = r.match(/^([^\d]*?)\s*(?:off|closed|geschlossen)$/i);
+      if (off) {
+        sel = off[1];
+        ranges = [];
+      } else {
+        const firstDigit = r.search(/\d/);
+        if (firstDigit < 0) return null;  // neither a time range nor a closure
+        sel = r.slice(0, firstDigit);
+        ranges = parseRanges(r.slice(firstDigit));
+        if (!ranges) return null;
+      }
+      const idx = parseDays(sel.trim().replace(/,$/, ""));
+      if (!idx) return null;
+      // Holiday-only rules ("PH off", "PH 12:00-18:00") leave the weekly grid
+      // alone rather than failing the whole tag.
+      if (!idx.length) continue;
+      // ',' adds to a day the group already named; an 'off' still closes it.
+      for (const d of idx)
+        given.set(d, ranges.length && given.has(d) ? addRanges(given.get(d), ranges) : ranges);
       parsed = true;
-      continue;
     }
-    let sel, ranges;
-    const off = r.match(/^([^\d]*?)\s*(?:off|closed|geschlossen)$/i);
-    if (off) {
-      sel = off[1];
-      ranges = [];
-    } else {
-      const firstDigit = r.search(/\d/);
-      if (firstDigit < 0) return null;  // neither a time range nor a closure
-      sel = r.slice(0, firstDigit);
-      ranges = parseRanges(r.slice(firstDigit));
-      if (!ranges) return null;
-    }
-    const idx = parseDays(sel.trim().replace(/,$/, ""));
-    if (!idx) return null;
-    // Holiday-only rules ("PH off", "PH 12:00-18:00") leave the weekly grid
-    // alone rather than failing the whole tag.
-    if (!idx.length) continue;
-    for (const d of idx) days[d] = ranges;  // a later rule overrides those days
-    parsed = true;
+    for (const [d, r] of given) days[d] = r;  // ';' overrides those days
   }
   return parsed ? { days, raw: text } : null;
 }

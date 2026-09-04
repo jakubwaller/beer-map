@@ -218,14 +218,13 @@ def normalize_hours(value: str | None) -> tuple | None:
     "Mo,Tu,Su …" — valid syntax and common (the first live report, 2026-09-03,
     hit exactly that spelling and was refused as inexpressible).
 
-    `;` overrides the days it names; `,` adds a rule, which this reader takes
-    only on days its group has not named yet — the split-day spellings
-    ("Su-Th 18:00-01:00, Fr,Sa 18:00-02:00"), where adding and overriding
-    mean the same. A comma-joined rule over days the group already gave
-    ("Tu-Su 11:30-14:00, Tu-Sa 17:30-23:00") is out of scope: web/hours.js
-    reads such a tag as an override, so the grid the visitor was shown
-    already lacked the first rule's hours, and an upload of it would delete
-    them from OSM. A human compares those."""
+    `;` overrides the days it names, `,` adds to them: "Tu-Su 11:30-14:00,
+    Tu-Sa 17:30-23:00" keeps the lunch hours on Tu-Sa, a restated range
+    counts once, and a comma-joined `off` still closes its day. This is the
+    reading of web/hours.js, deliberately: the grid it prefills is what a
+    visitor saves, and this reader is what that grid is compared against —
+    read the tag differently and an untouched grid comes back as an edit,
+    one that deletes from OSM whatever the two readings disagree on."""
     if not value:
         return None
     if " ".join(value.split()) == "24/7":
@@ -238,10 +237,8 @@ def normalize_hours(value: str | None) -> tuple | None:
             if read is None:
                 return None
             which, ranges = read
-            if any(d in given for d in which):
-                return None
             for d in which:
-                given[d] = list(ranges or [])
+                given[d] = [] if ranges is None else sorted(set(given.get(d, []) + ranges))
         for d, r in given.items():
             days[d] = r
     return tuple(tuple(sorted(d)) for d in days)

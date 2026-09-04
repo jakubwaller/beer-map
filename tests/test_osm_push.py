@@ -151,17 +151,16 @@ def test_normalize_hours_reads_spaced_lists_and_commas_used_as_semicolons():
     # Holidays in the day list stay out of scope, however they are spaced.
     assert normalize_hours("Mo-Su,PH 11:00-23:00") is None
     assert normalize_hours("Mo-Su, PH 11:00-23:00") is None
-    # ',' adds a rule, ';' overrides — they only coincide on disjoint days.
-    # On a day the group already named, web/hours.js shows the visitor the
-    # override reading, so the grid they saved already lacks the first rule's
-    # hours: out of scope, a human compares (whatever the second rule says).
+    # ',' adds a rule, ';' overrides — read as web/hours.js prefills the grid,
+    # so an untouched grid compares equal to the tag it came from.
     assert normalize_hours("Mo-Su 11:00-14:00; Mo-Su 18:00-23:00") == \
         normalize_hours("Mo-Su 18:00-23:00")
-    for overlap in ("Tu-Su 11:30-14:00, Tu-Sa 17:30-23:00", "Mo-Su 11:00-14:00, Mo-Su 18:00-23:00",
-                    "Mo-Su 11:00-23:00, Su 12:00-20:00", "Mo-Fr 09:00-17:00, We 09:00-17:00",
-                    "Mo-Su 10:00-20:00, Su off"):
-        assert normalize_hours(overlap) is None, overlap
-    assert normalize_hours("Mo-Su 10:00-20:00; Su off") == normalize_hours("Mo-Sa 10:00-20:00")
+    assert same_hours("Tu-Su 11:30-14:00, Tu-Sa 17:30-23:00",
+                      "Mo off; Tu-Sa 11:30-14:00,17:30-23:00; Su 11:30-14:00")
+    assert same_hours("Mo-Su 11:00-14:00, Mo-Su 18:00-23:00", "Mo-Su 11:00-14:00,18:00-23:00")
+    assert same_hours("Mo-Fr 09:00-17:00, We 09:00-17:00", "Mo-Fr 09:00-17:00")  # restated, not doubled
+    assert same_hours("Mo-Su 10:00-20:00, Su off", "Mo-Sa 10:00-20:00")
+    assert same_hours("Mo-Su 10:00-20:00; Su off", "Mo-Sa 10:00-20:00")
     # The splitter needs no tidying first: a raw tag splits the same way.
     assert _rules("Su-Th 18:00-01:00, Fr,Sa 18:00-02:00; Mo off") == \
         [["Su-Th 18:00-01:00", "Fr,Sa 18:00-02:00"], ["Mo off"]]
@@ -229,19 +228,16 @@ def test_a_spaced_weekday_list_on_osm_is_plain_weekday_rules_not_a_conflict():
     assert get_submission(conn, sid)["osm_changeset"] == 123
 
 
-def test_a_comma_added_rule_over_days_already_named_is_left_to_a_human():
-    # The grid the visitor saw was prefilled by web/hours.js, which reads the
-    # second rule as an override — so the saved grid lacks the Tu-Sa lunch
-    # hours, and uploading it would delete them from OSM.
+def test_an_untouched_grid_over_a_comma_added_rule_is_no_edit():
+    # web/hours.js prefills the grid with both rules' hours; saved untouched,
+    # it comes back as the same hours — nothing to upload, nothing lost.
     conn = _conn()
-    sid = _approved(conn, "Tu-Sa 17:30-23:00; Su 11:30-14:00")
+    sid = _approved(conn, "Mo off; Tu-Sa 11:30-14:00,17:30-23:00; Su 11:30-14:00")
     fake = FakeOsm(xml=NODE_XML.replace('v="Mo-Su 11:00-24:00"',
                                         'v="Tu-Su 11:30-14:00, Tu-Sa 17:30-23:00"'))
-    lines = []
-    counts = push(conn, _api(fake), log=lines.append, pause_s=0)
-    assert counts["conflict"] == 1 and fake.paths("PUT") == []
-    assert get_submission(conn, sid)["osm_changeset"] is None
-    assert "cannot express" in lines[-1]
+    counts = push(conn, _api(fake), log=lambda s: None, pause_s=0)
+    assert counts["unchanged"] == 1 and fake.paths("PUT") == []
+    assert get_submission(conn, sid)["osm_changeset"] == 0
 
 
 def test_a_200_with_an_unreadable_body_is_a_failure_not_a_crash():

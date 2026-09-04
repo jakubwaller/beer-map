@@ -52,6 +52,22 @@ test("a comma used where the grammar wants a semicolon still parses", () => {
                    [[720, 900], [1050, 1320]]);
 });
 
+test("a comma adds a rule where a semicolon would override", () => {
+  const s = parseOpeningHours("Tu-Su 11:30-14:00, Tu-Sa 17:30-23:00");
+  assert.deepEqual(s.days[0], []);                          // Mo
+  assert.deepEqual(s.days[1], [[690, 840], [1050, 1380]]);  // Tu keeps its lunch hours
+  assert.deepEqual(s.days[6], [[690, 840]]);                // Su
+  assert.deepEqual(parseOpeningHours("Tu-Su 11:30-14:00; Tu-Sa 17:30-23:00").days[1],
+                   [[1050, 1380]]);
+  // A restated range is not doubled, and a comma-joined 'off' still closes.
+  assert.deepEqual(parseOpeningHours("Mo-Fr 09:00-17:00, We 09:00-17:00").days[2], [[540, 1020]]);
+  assert.deepEqual(parseOpeningHours("Mo-Su 10:00-20:00, Su off").days[6], []);
+  // The grid the editor prefills carries both ranges, so saving it untouched
+  // is no edit — pipeline/osm_push.py reads the tag the same way.
+  assert.equal(gridToOpeningHours(scheduleToGrid(s)),
+               "Mo off; Tu-Sa 11:30-14:00,17:30-23:00; Su 11:30-14:00");
+});
+
 test("open-ended times ('18:00+') parse as a start without a close", () => {
   const s = parseOpeningHours("Mo-Sa 18:00+");
   assert.deepEqual(s.days[0], [[1080, null]]);
