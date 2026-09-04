@@ -86,22 +86,53 @@ function parseRanges(str) {
 // ("Su-Th 18:00-01:00, Fr,Sa 18:00-02:00"). A comma only starts a new rule when
 // what came before is already complete (it contains a time) and what follows
 // names a day — which leaves genuine lists, "12:00-15:00,17:30-22:00" and
-// "Mo-Su,PH 11:00-23:00", intact.
+// "Mo-Su,PH 11:00-23:00", intact. Rules come back grouped by ';', because the
+// two separators mean different things: ';' overrides the days it names, ','
+// adds to them ("Tu-Su 11:30-14:00, Tu-Sa 17:30-23:00" keeps the lunch hours
+// on Tu-Sa; see addRanges for the additions that are read and the ones that
+// are not). pipeline/osm_push.py reads tags the same way, on purpose: the
+// grid this parser prefills is what a visitor saves, and the push compares
+// that against the tag — a reading that differs there turns an untouched grid
+// into an edit.
 function splitRules(text) {
-  const rules = [];
+  const groups = [];
   for (const chunk of text.split(";")) {
+    const group = [];
     let buf = "";
     for (const part of chunk.split(",")) {
       if (buf && /\d/.test(buf) && /^\s*[A-Za-z]{2}\b/.test(part)) {
-        rules.push(buf);
+        group.push(buf);
         buf = part;
       } else {
         buf = buf ? `${buf},${part}` : part;
       }
     }
-    if (buf.trim()) rules.push(buf);
+    if (buf.trim()) group.push(buf);
+    if (group.length) groups.push(group);
   }
-  return rules;
+  return groups;
+}
+
+// The ranges a comma-joined rule adds to a day its group already named —
+// pipeline/osm_push.py applies the same rule. A range the day already has
+// ("Mo-Fr 09:00-17:00, We 09:00-17:00") counts once. One that covers whatever
+// it overlaps ("Mo-Fr 15:00-01:00, Fr,Sa 15:00-03:00": Friday's is extended)
+// replaces it — adding and overriding agree there. Any other overlap is
+// ambiguous: "Mo-Su 11:00-23:00, Su 12:00-20:00" adds hours by the grammar but
+// is as often meant as the override a ';' would be, and comes back null so the
+// tag stays unread rather than showing a Sunday that may or may not be open
+// at 11:30. The whole tag, not just that day: the week view has no way to
+// mark one day as unknown, and "open now" must not answer for it.
+function addRanges(have, more) {
+  const inf = (e) => (e === null ? Infinity : e);
+  let out = have.slice();
+  for (const r of more) {
+    if (out.some(([s, e]) => s === r[0] && e === r[1])) continue;
+    const hit = out.filter(([s, e]) => r[0] < inf(e) && s < inf(r[1]));
+    if (hit.some(([s, e]) => r[0] > s || inf(r[1]) < inf(e))) return null;
+    out = out.filter((x) => !hit.includes(x)).concat([r]);
+  }
+  return out.sort((x, y) => x[0] - y[0]);
 }
 
 /** Parse a raw tag into `{ days: [[ [start,end], … ] × 7], raw }`, Monday
@@ -111,33 +142,42 @@ export function parseOpeningHours(raw) {
   if (!text) return null;
   const days = [[], [], [], [], [], [], []];
   let parsed = false;
-  for (const rule of splitRules(text)) {
-    const r = rule.trim();
-    if (!r) continue;
-    if (/^24\/7$/i.test(r)) {
-      for (let i = 0; i < 7; i++) days[i] = [[0, DAY]];
+  for (const group of splitRules(text)) {
+    const given = new Map();  // day -> the ranges this ';' group gives it
+    for (const rule of group) {
+      const r = rule.trim();
+      if (!r) continue;
+      if (/^24\/7$/i.test(r)) {
+        for (let i = 0; i < 7; i++) given.set(i, [[0, DAY]]);
+        parsed = true;
+        continue;
+      }
+      let sel, ranges;
+      const off = r.match(/^([^\d]*?)\s*(?:off|closed|geschlossen)$/i);
+      if (off) {
+        sel = off[1];
+        ranges = [];
+      } else {
+        const firstDigit = r.search(/\d/);
+        if (firstDigit < 0) return null;  // neither a time range nor a closure
+        sel = r.slice(0, firstDigit);
+        ranges = parseRanges(r.slice(firstDigit));
+        if (!ranges) return null;
+      }
+      const idx = parseDays(sel.trim().replace(/,$/, ""));
+      if (!idx) return null;
+      // Holiday-only rules ("PH off", "PH 12:00-18:00") leave the weekly grid
+      // alone rather than failing the whole tag.
+      if (!idx.length) continue;
+      // ',' adds to a day the group already named; an 'off' still closes it.
+      for (const d of idx) {
+        const r = ranges.length && given.has(d) ? addRanges(given.get(d), ranges) : ranges;
+        if (!r) return null;
+        given.set(d, r);
+      }
       parsed = true;
-      continue;
     }
-    let sel, ranges;
-    const off = r.match(/^([^\d]*?)\s*(?:off|closed|geschlossen)$/i);
-    if (off) {
-      sel = off[1];
-      ranges = [];
-    } else {
-      const firstDigit = r.search(/\d/);
-      if (firstDigit < 0) return null;  // neither a time range nor a closure
-      sel = r.slice(0, firstDigit);
-      ranges = parseRanges(r.slice(firstDigit));
-      if (!ranges) return null;
-    }
-    const idx = parseDays(sel.trim().replace(/,$/, ""));
-    if (!idx) return null;
-    // Holiday-only rules ("PH off", "PH 12:00-18:00") leave the weekly grid
-    // alone rather than failing the whole tag.
-    if (!idx.length) continue;
-    for (const d of idx) days[d] = ranges;  // a later rule overrides those days
-    parsed = true;
+    for (const [d, r] of given) days[d] = r;  // ';' overrides those days
   }
   return parsed ? { days, raw: text } : null;
 }

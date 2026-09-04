@@ -21,8 +21,10 @@ citizen:
 - An element edited on OSM *after* the visitor filed the report is not
   touched (unless what OSM holds is our own previous upload): someone else
   got there first, and the two edits need a human to compare. Neither is a
-  tag with rules the grid cannot express (`PH off`, `Dec 24 off`, ...):
-  the grid's value would replace it wholesale and silently drop them.
+  tag the grid could not have shown the visitor whole: rules it cannot
+  express (`PH off`, `Dec 24 off`, ...) or a day with more than the two
+  ranges it has room for. The grid's value would replace such a tag
+  wholesale and silently drop what the visitor never saw.
   `--force --id N` overrides either for one submission, `--drop N` gives
   up on it.
 - A value OSM already holds (or one that means the same hours, e.g. the tag
@@ -202,12 +204,31 @@ def _read_rule(rule: str) -> tuple[set[int], list[tuple[int, int]] | None] | Non
     for r in spec.split(","):
         a, _, b = r.partition("-")
         start, end = _minutes(a), _minutes(b)
-        if start is None or end is None:
+        if start is None or end is None or start >= 1440:
             return None
-        if end == 0:
-            end = 1440
+        if end <= start:  # closes after midnight (or at it: "11:00-00:00")
+            end += 1440
         ranges.append((start, end))
-    return which, ranges
+    # By start only, and stable, exactly as parseRanges in web/hours.js: the
+    # overlap rule is order-sensitive, so the two must feed it the same order.
+    return which, sorted(ranges, key=lambda r: r[0])
+
+
+def _add_ranges(have: list[tuple[int, int]], more: list[tuple[int, int]]) -> list | None:
+    """The ranges a comma-joined rule adds to a day its group already named —
+    the same rule as addRanges in web/hours.js. One the day already has counts
+    once. One that covers whatever it overlaps ("Mo-Fr 15:00-01:00, Fr,Sa
+    15:00-03:00": Friday's is extended) replaces it — adding and overriding
+    agree there. Any other overlap is ambiguous, and None."""
+    out = list(have)
+    for r in more:
+        if r in out:
+            continue
+        hit = [x for x in out if r[0] < x[1] and x[0] < r[1]]
+        if any(r[0] > x[0] or r[1] < x[1] for x in hit):
+            return None
+        out = [x for x in out if x not in hit] + [r]
+    return sorted(out, key=lambda r: r[0])  # by start only, stable, as addRanges
 
 
 def normalize_hours(value: str | None) -> tuple | None:
@@ -218,14 +239,16 @@ def normalize_hours(value: str | None) -> tuple | None:
     "Mo,Tu,Su …" — valid syntax and common (the first live report, 2026-09-03,
     hit exactly that spelling and was refused as inexpressible).
 
-    `;` overrides the days it names; `,` adds a rule, which this reader takes
-    only on days its group has not named yet — the split-day spellings
-    ("Su-Th 18:00-01:00, Fr,Sa 18:00-02:00"), where adding and overriding
-    mean the same. A comma-joined rule over days the group already gave
-    ("Tu-Su 11:30-14:00, Tu-Sa 17:30-23:00") is out of scope: web/hours.js
-    reads such a tag as an override, so the grid the visitor was shown
-    already lacked the first rule's hours, and an upload of it would delete
-    them from OSM. A human compares those."""
+    `;` overrides the days it names, `,` adds to them: "Tu-Su 11:30-14:00,
+    Tu-Sa 17:30-23:00" keeps the lunch hours on Tu-Sa, a restated range
+    counts once, a comma-joined `off` still closes its day, one that extends
+    a range ("Mo-Fr 15:00-01:00, Fr,Sa 15:00-03:00") replaces it, and any
+    other overlap in time ("Mo-Su 11:00-23:00, Su 12:00-20:00" — as often
+    meant as an override) is out of scope. This is the reading of
+    web/hours.js, deliberately: the grid it prefills is what a visitor saves,
+    and this reader is what that grid is compared against — read the tag
+    differently and an untouched grid comes back as an edit, one that
+    deletes from OSM whatever the two readings disagree on."""
     if not value:
         return None
     if " ".join(value.split()) == "24/7":
@@ -238,13 +261,60 @@ def normalize_hours(value: str | None) -> tuple | None:
             if read is None:
                 return None
             which, ranges = read
-            if any(d in given for d in which):
-                return None
             for d in which:
-                given[d] = list(ranges or [])
+                if ranges is None:
+                    given[d] = []
+                    continue
+                joined = _add_ranges(given[d], ranges) if d in given else list(ranges)
+                if joined is None:
+                    return None
+                given[d] = joined
         for d, r in given.items():
             days[d] = r
     return tuple(tuple(sorted(d)) for d in days)
+
+
+def _override_reading(value: str) -> tuple | None:
+    """The tag as web/hours.js read it before PR #63: every rule, comma-joined
+    or not, overriding the days it names."""
+    days: list[list[tuple[int, int]]] = [[] for _ in range(7)]
+    for group in _rules(value):
+        for rule in group:
+            read = _read_rule(rule.strip())
+            if read is None:
+                return None
+            which, ranges = read
+            for d in which:
+                days[d] = [] if ranges is None else list(ranges)
+    return tuple(tuple(sorted(d)) for d in days)
+
+
+def not_shown_whole(current: str, target: str) -> str | None:
+    """Why the grid the visitor filled in cannot have shown them all of OSM's
+    tag — or None when it did. Three reasons. Rules the grid cannot express
+    (`PH off`, seasons). A day with more than the two ranges it has room for
+    (web/app.js leaves the grid blank for a third). And, on a tag whose
+    reading PR #63 changed (a comma-joined rule over a day its group already
+    named), a grid prefilled by the old reading, which dropped the earlier
+    hours: told apart by the days where the two readings differ — a grid from
+    the new reading still carries it there, so `target` must match it on
+    every such day. That refuses a deliberate edit of exactly those days too,
+    which the log says and `--force` overrides."""
+    new = normalize_hours(current)
+    if new is None:
+        return "with rules the grid cannot express"
+    if any(len(d) > 2 for d in new):
+        return "with more ranges on a day than the grid holds"
+    old = _override_reading(current)
+    if old is None or old == new:
+        return None
+    tgt = normalize_hours(target)
+    if tgt is None:  # not from the grid, whose output is always readable
+        return "and a report the reader cannot compare with it"
+    if any(t != n for t, n, o in zip(tgt, new, old) if n != o):
+        return ("whose comma-joined rules an older grid showed as overrides; "
+                "the report differs from the tag exactly there")
+    return None
 
 
 def same_hours(a: str | None, b: str | None) -> bool:
@@ -408,9 +478,12 @@ def push(conn, api: OsmApi, subs: list[dict] | None = None, dry_run: bool = Fals
                 f"OSM has {current!r}, the report says {target!r}. {how}")
             counts["conflict"] += 1
             continue
-        if current and normalize_hours(current) is None and not force:
-            log(f"#{sid} {osm_id}: OSM has {current!r}, with rules the grid cannot express; "
-                f"uploading {target!r} would drop them. {how}")
+        # A tag the grid could not have shown the visitor whole must not be
+        # replaced by what they typed into it.
+        why = not_shown_whole(current, target) if current else None
+        if why and not force:
+            log(f"#{sid} {osm_id}: OSM has {current!r}, {why}; "
+                f"uploading {target!r} would drop hours. {how}")
             counts["conflict"] += 1
             continue
 

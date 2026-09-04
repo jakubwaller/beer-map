@@ -52,6 +52,33 @@ test("a comma used where the grammar wants a semicolon still parses", () => {
                    [[720, 900], [1050, 1320]]);
 });
 
+test("a comma adds a rule where a semicolon would override", () => {
+  const s = parseOpeningHours("Tu-Su 11:30-14:00, Tu-Sa 17:30-23:00");
+  assert.deepEqual(s.days[0], []);                          // Mo
+  assert.deepEqual(s.days[1], [[690, 840], [1050, 1380]]);  // Tu keeps its lunch hours
+  assert.deepEqual(s.days[6], [[690, 840]]);                // Su
+  assert.deepEqual(parseOpeningHours("Tu-Su 11:30-14:00; Tu-Sa 17:30-23:00").days[1],
+                   [[1050, 1380]]);
+  // A restated range is not doubled, and a comma-joined 'off' still closes.
+  assert.deepEqual(parseOpeningHours("Mo-Fr 09:00-17:00, We 09:00-17:00").days[2], [[540, 1020]]);
+  assert.deepEqual(parseOpeningHours("Mo-Su 10:00-20:00, Su off").days[6], []);
+  // One that extends a range replaces it — adding and overriding agree.
+  const late = parseOpeningHours("Mo-Fr 15:00-01:00, Fr,Sa 15:00-03:00");
+  assert.deepEqual(late.days[0], [[900, 1500]]);
+  assert.deepEqual(late.days[4], [[900, 1620]]);
+  assert.deepEqual(parseOpeningHours("Mo-Sa 20:00-23:00, Sa 18:00+").days[5], [[1080, null]]);
+  // Any other overlap may be meant as an override: unread.
+  assert.equal(parseOpeningHours("Mo-Su 11:00-23:00, Su 12:00-20:00"), null);
+  assert.equal(parseOpeningHours("Mo-Su 11:00-14:00, Su 12:00-20:00"), null);
+  assert.equal(parseOpeningHours("Mo-Sa 18:00+, Sa 20:00-23:00"), null);
+  assert.deepEqual(parseOpeningHours("Mo-Su 11:00-23:00; Su 12:00-20:00").days[6], [[720, 1200]]);
+  assert.deepEqual(parseOpeningHours("Tu 11:30-14:00, Tu 14:00-18:00").days[1], [[690, 840], [840, 1080]]);
+  // The grid the editor prefills carries both ranges, so saving it untouched
+  // is no edit — pipeline/osm_push.py reads the tag the same way.
+  assert.equal(gridToOpeningHours(scheduleToGrid(s)),
+               "Mo off; Tu-Sa 11:30-14:00,17:30-23:00; Su 11:30-14:00");
+});
+
 test("open-ended times ('18:00+') parse as a start without a close", () => {
   const s = parseOpeningHours("Mo-Sa 18:00+");
   assert.deepEqual(s.days[0], [[1080, null]]);
