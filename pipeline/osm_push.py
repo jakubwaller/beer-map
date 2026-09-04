@@ -158,43 +158,92 @@ def _day_set(sel: str) -> set[int] | None:
     return days
 
 
+def _rules(value: str) -> list[list[str]]:
+    """Split a tag into its rules: one group per `;`, holding the rules a `,`
+    joins inside it. `;` is the separator, but mappers routinely write `,`
+    for it ("Su-Th 18:00-01:00, Fr,Sa 18:00-02:00") — the same reading as
+    splitRules in web/hours.js: a comma starts a new rule only when what
+    came before already holds a time and what follows names a day, which
+    leaves genuine lists ("12:00-15:00,17:30-22:00", "Mo-Su,PH 11:00-23:00")
+    intact. Whitespace around commas is dropped first, so a raw tag reads
+    the same as a tidied one."""
+    value = re.sub(r"\s*,\s*", ",", " ".join(value.split()))
+    groups: list[list[str]] = []
+    for chunk in value.split(";"):
+        group: list[str] = []
+        buf = ""
+        for part in chunk.split(","):
+            if buf and re.search(r"\d", buf) and re.match(r"[A-Za-z]{2}\b", part):
+                group.append(buf.strip())
+                buf = part
+            else:
+                buf = f"{buf},{part}" if buf else part
+        if buf.strip():
+            group.append(buf.strip())
+        if group:
+            groups.append(group)
+    return groups
+
+
+def _read_rule(rule: str) -> tuple[set[int], list[tuple[int, int]] | None] | None:
+    """One rule -> (days, ranges); ranges None means `off`/`closed`, the whole
+    thing None means beyond the subset."""
+    head, _, rest = rule.partition(" ")
+    if _SEL_RE.match(head):
+        which = _day_set(head)
+        spec = rest.strip()
+    else:  # no selector: the rule covers every day
+        which, spec = set(range(7)), rule
+    if which is None or not spec:
+        return None
+    if spec in ("off", "closed"):
+        return which, None
+    ranges: list[tuple[int, int]] = []
+    for r in spec.split(","):
+        a, _, b = r.partition("-")
+        start, end = _minutes(a), _minutes(b)
+        if start is None or end is None:
+            return None
+        if end == 0:
+            end = 1440
+        ranges.append((start, end))
+    return which, ranges
+
+
 def normalize_hours(value: str | None) -> tuple | None:
     """A tag -> seven tuples of (start, end) minute pairs, or None when the
     tag uses anything beyond weekdays, clock ranges, `off`/`closed` and 24/7.
     A range ending at 00:00 is read as ending at 24:00, so both spellings of
-    "until midnight" compare equal."""
+    "until midnight" compare equal. "Mo, Tu, Su 17:00-00:00" reads like
+    "Mo,Tu,Su …" — valid syntax and common (the first live report, 2026-09-03,
+    hit exactly that spelling and was refused as inexpressible).
+
+    `;` overrides the days it names; `,` adds a rule, which this reader takes
+    only on days its group has not named yet — the split-day spellings
+    ("Su-Th 18:00-01:00, Fr,Sa 18:00-02:00"), where adding and overriding
+    mean the same. A comma-joined rule over days the group already gave
+    ("Tu-Su 11:30-14:00, Tu-Sa 17:30-23:00") is out of scope: web/hours.js
+    reads such a tag as an override, so the grid the visitor was shown
+    already lacked the first rule's hours, and an upload of it would delete
+    them from OSM. A human compares those."""
     if not value:
         return None
-    value = " ".join(value.split())
-    if value == "24/7":
+    if " ".join(value.split()) == "24/7":
         return tuple(((0, 1440),) for _ in range(7))
     days: list[list[tuple[int, int]]] = [[] for _ in range(7)]
-    for rule in value.split(";"):
-        rule = rule.strip()
-        if not rule:
-            continue
-        head, _, rest = rule.partition(" ")
-        if _SEL_RE.match(head):
-            which = _day_set(head)
-            spec = rest.strip()
-        else:  # no selector: the rule covers every day
-            which, spec = set(range(7)), rule
-        if which is None or not spec:
-            return None
-        if spec in ("off", "closed"):
-            ranges: list[tuple[int, int]] = []
-        else:
-            ranges = []
-            for r in spec.split(","):
-                a, _, b = r.partition("-")
-                start, end = _minutes(a), _minutes(b)
-                if start is None or end is None:
-                    return None
-                if end == 0:
-                    end = 1440
-                ranges.append((start, end))
-        for d in which:
-            days[d] = list(ranges)
+    for group in _rules(value):
+        given: dict[int, list[tuple[int, int]]] = {}
+        for rule in group:
+            read = _read_rule(rule.strip())
+            if read is None:
+                return None
+            which, ranges = read
+            if any(d in given for d in which):
+                return None
+            for d in which:
+                given[d] = list(ranges or [])
+        for d, r in given.items():
+            days[d] = r
     return tuple(tuple(sorted(d)) for d in days)
 
 
