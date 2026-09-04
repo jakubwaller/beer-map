@@ -202,25 +202,28 @@ def _read_rule(rule: str) -> tuple[set[int], list[tuple[int, int]] | None] | Non
     for r in spec.split(","):
         a, _, b = r.partition("-")
         start, end = _minutes(a), _minutes(b)
-        if start is None or end is None:
+        if start is None or end is None or start >= 1440:
             return None
-        if end == 0:
-            end = 1440
+        if end <= start:  # closes after midnight (or at it: "11:00-00:00")
+            end += 1440
         ranges.append((start, end))
     return which, ranges
 
 
 def _add_ranges(have: list[tuple[int, int]], more: list[tuple[int, int]]) -> list | None:
-    """The ranges a comma-joined rule adds to a day its group already named:
-    one the day already has counts once, one overlapping it in time is
-    ambiguous (None) — the same rule as addRanges in web/hours.js."""
+    """The ranges a comma-joined rule adds to a day its group already named —
+    the same rule as addRanges in web/hours.js. One the day already has counts
+    once. One that covers whatever it overlaps ("Mo-Fr 15:00-01:00, Fr,Sa
+    15:00-03:00": Friday's is extended) replaces it — adding and overriding
+    agree there. Any other overlap is ambiguous, and None."""
     out = list(have)
     for r in more:
         if r in out:
             continue
-        if any(r[0] < e and s < r[1] for s, e in out):
+        hit = [x for x in out if r[0] < x[1] and x[0] < r[1]]
+        if any(r[0] > x[0] or r[1] < x[1] for x in hit):
             return None
-        out.append(r)
+        out = [x for x in out if x not in hit] + [r]
     return sorted(out)
 
 
@@ -234,8 +237,9 @@ def normalize_hours(value: str | None) -> tuple | None:
 
     `;` overrides the days it names, `,` adds to them: "Tu-Su 11:30-14:00,
     Tu-Sa 17:30-23:00" keeps the lunch hours on Tu-Sa, a restated range
-    counts once, a comma-joined `off` still closes its day, and an addition
-    that overlaps in time ("Mo-Su 11:00-23:00, Su 12:00-20:00" — as often
+    counts once, a comma-joined `off` still closes its day, one that extends
+    a range ("Mo-Fr 15:00-01:00, Fr,Sa 15:00-03:00") replaces it, and any
+    other overlap in time ("Mo-Su 11:00-23:00, Su 12:00-20:00" — as often
     meant as an override) is out of scope. This is the reading of
     web/hours.js, deliberately: the grid it prefills is what a visitor saves,
     and this reader is what that grid is compared against — read the tag
@@ -254,7 +258,10 @@ def normalize_hours(value: str | None) -> tuple | None:
                 return None
             which, ranges = read
             for d in which:
-                joined = [] if ranges is None else _add_ranges(given.get(d, []), ranges)
+                if ranges is None:
+                    given[d] = []
+                    continue
+                joined = _add_ranges(given[d], ranges) if d in given else list(ranges)
                 if joined is None:
                     return None
                 given[d] = joined

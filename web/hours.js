@@ -113,18 +113,23 @@ function splitRules(text) {
   return groups;
 }
 
-// The ranges a comma-joined rule adds to a day its group already named. A
-// range the day already has ("Mo-Fr 09:00-17:00, We 09:00-17:00") counts once;
-// one that overlaps it in time is ambiguous — "Mo-Su 11:00-23:00, Su
-// 12:00-20:00" adds hours by the grammar but is as often meant as the override
-// a ';' would be — and comes back null, so the tag stays unread rather than
-// showing a Sunday that may or may not be open at 11:30.
+// The ranges a comma-joined rule adds to a day its group already named —
+// pipeline/osm_push.py applies the same rule. A range the day already has
+// ("Mo-Fr 09:00-17:00, We 09:00-17:00") counts once. One that covers whatever
+// it overlaps ("Mo-Fr 15:00-01:00, Fr,Sa 15:00-03:00": Friday's is extended)
+// replaces it — adding and overriding agree there. Any other overlap is
+// ambiguous: "Mo-Su 11:00-23:00, Su 12:00-20:00" adds hours by the grammar but
+// is as often meant as the override a ';' would be, and comes back null so the
+// tag stays unread rather than showing a Sunday that may or may not be open
+// at 11:30.
 function addRanges(have, more) {
-  const out = have.slice();
+  const inf = (e) => (e === null ? Infinity : e);
+  let out = have.slice();
   for (const r of more) {
     if (out.some(([s, e]) => s === r[0] && e === r[1])) continue;
-    if (out.some(([s, e]) => r[0] < (e ?? Infinity) && s < (r[1] ?? Infinity))) return null;
-    out.push(r);
+    const hit = out.filter(([s, e]) => r[0] < inf(e) && s < inf(r[1]));
+    if (hit.some(([s, e]) => r[0] > s || inf(r[1]) < inf(e))) return null;
+    out = out.filter((x) => !hit.includes(x)).concat([r]);
   }
   return out.sort((x, y) => x[0] - y[0]);
 }
