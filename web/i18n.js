@@ -276,7 +276,7 @@ export const MESSAGES = {
     "kofi.short": "☕ Káva",
     "kofi.aria": "Kup mi kávu (Ko-fi)",
     "kofi.cta": "☕ Kup mi kávu",
-    "kofi.free": "Vzniklo z hledání tankového piva: čerstvé a nepasterované chutná jako v pivovaru, v Česku je skoro všude, v cizině se hledá těžko. Zapfkompass je zdarma a bez reklam.",
+    "kofi.free": "Vznikl z hledání tankového piva: čerstvé a nepasterované chutná jako v pivovaru, v Česku je skoro všude, v cizině se hledá těžko. Zapfkompass je zdarma a bez reklam.",
 
     "add.p1": "Klikněte na hospodu přímo na mapě — tam můžete nahlásit značku a způsob výčepu (sud/tank).",
     "add.p2strong": "Chybí místo úplně?",
