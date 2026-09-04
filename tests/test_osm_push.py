@@ -8,7 +8,7 @@ from pipeline.db import (
 )
 from pipeline.models import Venue
 from pipeline.osm_push import (
-    OsmApi, _rules, changeset_tags, grid_can_hold, normalize_hours, not_shown_whole,
+    OsmApi, _rules, changeset_tags, normalize_hours, not_shown_whole,
     parse_osm_id, plan, push,
     read_element, same_hours, with_opening_hours,
 )
@@ -175,11 +175,6 @@ def test_normalize_hours_reads_spaced_lists_and_commas_used_as_semicolons():
     assert normalize_hours("Mo 10:00-11:00, Mo 10:00-12:00,09:00-13:00") is None
     # ...and ties on the start keep their written order, as there too.
     assert normalize_hours("Mo 08:00-09:00, Mo 10:00-12:00,10:00-11:00") is None
-    # The grid holds two ranges a day; a third is beyond it.
-    assert grid_can_hold("Mo-Fr 09:00-11:00,12:00-15:00")
-    assert not grid_can_hold("Mo-Fr 09:00-11:00,12:00-15:00,18:00-23:00")
-    assert not grid_can_hold("Mo-Su 09:00-11:00, Mo-Su 12:00-15:00, Mo-Su 18:00-23:00")
-    assert not grid_can_hold("Mo-Fr 10:00-22:00; PH off")
     assert same_hours("Mo-Su 11:00-23:00; Su 12:00-20:00", "Mo-Sa 11:00-23:00; Su 12:00-20:00")
     assert same_hours("Mo-Su 10:00-20:00, Su off", "Mo-Sa 10:00-20:00")
     assert same_hours("Mo-Su 10:00-20:00; Su off", "Mo-Sa 10:00-20:00")
@@ -293,6 +288,9 @@ def test_a_grid_prefilled_by_the_old_override_reading_is_left_to_a_human():
     assert not_shown_whole("Mo-Fr 10:00-22:00; Sa,Su 12:00-20:00", "Mo-Su 12:00-13:00") is None
     assert "cannot express" in not_shown_whole("Mo-Fr 10:00-22:00; PH off", "Mo-Su 12:00-13:00")
     assert "more ranges" in not_shown_whole("Mo-Fr 09:00-11:00,12:00-15:00,18:00-23:00", "Mo-Su 12:00-13:00")
+    assert "more ranges" in not_shown_whole("Mo-Su 09:00-11:00, Mo-Su 12:00-15:00, Mo-Su 18:00-23:00", "Mo-Su 12:00-13:00")
+    assert not_shown_whole("Mo-Fr 09:00-11:00,12:00-15:00", "Mo-Su 12:00-13:00") is None
+    assert "cannot compare" in not_shown_whole(tag, "Mo-Su sunrise-sunset")
 
     conn = _conn()
     _approved(conn, old_grid)

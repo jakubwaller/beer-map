@@ -274,14 +274,6 @@ def normalize_hours(value: str | None) -> tuple | None:
     return tuple(tuple(sorted(d)) for d in days)
 
 
-def grid_can_hold(value: str) -> bool:
-    """Whether the weekday grid could have shown a visitor this tag whole:
-    readable, and no day with more than the two ranges the grid has room
-    for (web/app.js leaves the grid blank for a third)."""
-    days = normalize_hours(value)
-    return days is not None and all(len(d) <= 2 for d in days)
-
-
 def _override_reading(value: str) -> tuple | None:
     """The tag as web/hours.js read it before PR #63: every rule, comma-joined
     or not, overriding the days it names."""
@@ -317,7 +309,9 @@ def not_shown_whole(current: str, target: str) -> str | None:
     if old is None or old == new:
         return None
     tgt = normalize_hours(target)
-    if tgt is None or any(t != n for t, n, o in zip(tgt, new, old) if n != o):
+    if tgt is None:  # not from the grid, whose output is always readable
+        return "and a report the reader cannot compare with it"
+    if any(t != n for t, n, o in zip(tgt, new, old) if n != o):
         return ("whose comma-joined rules an older grid showed as overrides; "
                 "the report differs from the tag exactly there")
     return None
