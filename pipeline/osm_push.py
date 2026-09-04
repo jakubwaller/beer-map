@@ -210,6 +210,20 @@ def _read_rule(rule: str) -> tuple[set[int], list[tuple[int, int]] | None] | Non
     return which, ranges
 
 
+def _add_ranges(have: list[tuple[int, int]], more: list[tuple[int, int]]) -> list | None:
+    """The ranges a comma-joined rule adds to a day its group already named:
+    one the day already has counts once, one overlapping it in time is
+    ambiguous (None) — the same rule as addRanges in web/hours.js."""
+    out = list(have)
+    for r in more:
+        if r in out:
+            continue
+        if any(r[0] < e and s < r[1] for s, e in out):
+            return None
+        out.append(r)
+    return sorted(out)
+
+
 def normalize_hours(value: str | None) -> tuple | None:
     """A tag -> seven tuples of (start, end) minute pairs, or None when the
     tag uses anything beyond weekdays, clock ranges, `off`/`closed` and 24/7.
@@ -220,11 +234,13 @@ def normalize_hours(value: str | None) -> tuple | None:
 
     `;` overrides the days it names, `,` adds to them: "Tu-Su 11:30-14:00,
     Tu-Sa 17:30-23:00" keeps the lunch hours on Tu-Sa, a restated range
-    counts once, and a comma-joined `off` still closes its day. This is the
-    reading of web/hours.js, deliberately: the grid it prefills is what a
-    visitor saves, and this reader is what that grid is compared against —
-    read the tag differently and an untouched grid comes back as an edit,
-    one that deletes from OSM whatever the two readings disagree on."""
+    counts once, a comma-joined `off` still closes its day, and an addition
+    that overlaps in time ("Mo-Su 11:00-23:00, Su 12:00-20:00" — as often
+    meant as an override) is out of scope. This is the reading of
+    web/hours.js, deliberately: the grid it prefills is what a visitor saves,
+    and this reader is what that grid is compared against — read the tag
+    differently and an untouched grid comes back as an edit, one that
+    deletes from OSM whatever the two readings disagree on."""
     if not value:
         return None
     if " ".join(value.split()) == "24/7":
@@ -238,7 +254,10 @@ def normalize_hours(value: str | None) -> tuple | None:
                 return None
             which, ranges = read
             for d in which:
-                given[d] = [] if ranges is None else sorted(set(given.get(d, []) + ranges))
+                joined = [] if ranges is None else _add_ranges(given.get(d, []), ranges)
+                if joined is None:
+                    return None
+                given[d] = joined
         for d, r in given.items():
             days[d] = r
     return tuple(tuple(sorted(d)) for d in days)

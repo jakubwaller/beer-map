@@ -62,6 +62,11 @@ test("a comma adds a rule where a semicolon would override", () => {
   // A restated range is not doubled, and a comma-joined 'off' still closes.
   assert.deepEqual(parseOpeningHours("Mo-Fr 09:00-17:00, We 09:00-17:00").days[2], [[540, 1020]]);
   assert.deepEqual(parseOpeningHours("Mo-Su 10:00-20:00, Su off").days[6], []);
+  // An addition that overlaps in time may be meant as an override: unread.
+  assert.equal(parseOpeningHours("Mo-Su 11:00-23:00, Su 12:00-20:00"), null);
+  assert.equal(parseOpeningHours("Mo-Sa 18:00+, Sa 20:00-23:00"), null);
+  assert.deepEqual(parseOpeningHours("Mo-Su 11:00-23:00; Su 12:00-20:00").days[6], [[720, 1200]]);
+  assert.deepEqual(parseOpeningHours("Tu 11:30-14:00, Tu 14:00-18:00").days[1], [[690, 840], [840, 1080]]);
   // The grid the editor prefills carries both ranges, so saving it untouched
   // is no edit — pipeline/osm_push.py reads the tag the same way.
   assert.equal(gridToOpeningHours(scheduleToGrid(s)),

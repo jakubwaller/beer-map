@@ -89,7 +89,8 @@ function parseRanges(str) {
 // "Mo-Su,PH 11:00-23:00", intact. Rules come back grouped by ';', because the
 // two separators mean different things: ';' overrides the days it names, ','
 // adds to them ("Tu-Su 11:30-14:00, Tu-Sa 17:30-23:00" keeps the lunch hours
-// on Tu-Sa). pipeline/osm_push.py reads tags the same way, on purpose: the
+// on Tu-Sa; see addRanges for the additions that are read and the ones that
+// are not). pipeline/osm_push.py reads tags the same way, on purpose: the
 // grid this parser prefills is what a visitor saves, and the push compares
 // that against the tag — a reading that differs there turns an untouched grid
 // into an edit.
@@ -112,13 +113,20 @@ function splitRules(text) {
   return groups;
 }
 
-// Two lists of ranges as one, a restated range ("Mo-Fr 09:00-17:00, We
-// 09:00-17:00") counted once.
-function addRanges(a, b) {
-  const seen = new Set();
-  return [...a, ...b]
-    .filter(([s, e]) => !seen.has(`${s}-${e}`) && seen.add(`${s}-${e}`))
-    .sort((x, y) => x[0] - y[0]);
+// The ranges a comma-joined rule adds to a day its group already named. A
+// range the day already has ("Mo-Fr 09:00-17:00, We 09:00-17:00") counts once;
+// one that overlaps it in time is ambiguous — "Mo-Su 11:00-23:00, Su
+// 12:00-20:00" adds hours by the grammar but is as often meant as the override
+// a ';' would be — and comes back null, so the tag stays unread rather than
+// showing a Sunday that may or may not be open at 11:30.
+function addRanges(have, more) {
+  const out = have.slice();
+  for (const r of more) {
+    if (out.some(([s, e]) => s === r[0] && e === r[1])) continue;
+    if (out.some(([s, e]) => r[0] < (e ?? Infinity) && s < (r[1] ?? Infinity))) return null;
+    out.push(r);
+  }
+  return out.sort((x, y) => x[0] - y[0]);
 }
 
 /** Parse a raw tag into `{ days: [[ [start,end], … ] × 7], raw }`, Monday
@@ -156,8 +164,11 @@ export function parseOpeningHours(raw) {
       // alone rather than failing the whole tag.
       if (!idx.length) continue;
       // ',' adds to a day the group already named; an 'off' still closes it.
-      for (const d of idx)
-        given.set(d, ranges.length && given.has(d) ? addRanges(given.get(d), ranges) : ranges);
+      for (const d of idx) {
+        const r = ranges.length && given.has(d) ? addRanges(given.get(d), ranges) : ranges;
+        if (!r) return null;
+        given.set(d, r);
+      }
       parsed = true;
     }
     for (const [d, r] of given) days[d] = r;  // ';' overrides those days

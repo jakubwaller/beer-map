@@ -159,6 +159,9 @@ def test_normalize_hours_reads_spaced_lists_and_commas_used_as_semicolons():
                       "Mo off; Tu-Sa 11:30-14:00,17:30-23:00; Su 11:30-14:00")
     assert same_hours("Mo-Su 11:00-14:00, Mo-Su 18:00-23:00", "Mo-Su 11:00-14:00,18:00-23:00")
     assert same_hours("Mo-Fr 09:00-17:00, We 09:00-17:00", "Mo-Fr 09:00-17:00")  # restated, not doubled
+    assert same_hours("Tu 11:30-14:00, Tu 14:00-18:00", "Tu 11:30-14:00,14:00-18:00")
+    assert normalize_hours("Mo-Su 11:00-23:00, Su 12:00-20:00") is None  # add or override? unread
+    assert same_hours("Mo-Su 11:00-23:00; Su 12:00-20:00", "Mo-Sa 11:00-23:00; Su 12:00-20:00")
     assert same_hours("Mo-Su 10:00-20:00, Su off", "Mo-Sa 10:00-20:00")
     assert same_hours("Mo-Su 10:00-20:00; Su off", "Mo-Sa 10:00-20:00")
     # The splitter needs no tidying first: a raw tag splits the same way.
