@@ -121,7 +121,8 @@ function splitRules(text) {
 // ambiguous: "Mo-Su 11:00-23:00, Su 12:00-20:00" adds hours by the grammar but
 // is as often meant as the override a ';' would be, and comes back null so the
 // tag stays unread rather than showing a Sunday that may or may not be open
-// at 11:30.
+// at 11:30. The whole tag, not just that day: the week view has no way to
+// mark one day as unknown, and "open now" must not answer for it.
 function addRanges(have, more) {
   const inf = (e) => (e === null ? Infinity : e);
   let out = have.slice();

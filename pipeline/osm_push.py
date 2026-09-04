@@ -228,7 +228,7 @@ def _add_ranges(have: list[tuple[int, int]], more: list[tuple[int, int]]) -> lis
         if any(r[0] > x[0] or r[1] < x[1] for x in hit):
             return None
         out = [x for x in out if x not in hit] + [r]
-    return sorted(out)
+    return sorted(out, key=lambda r: r[0])  # by start only, stable, as addRanges
 
 
 def normalize_hours(value: str | None) -> tuple | None:
@@ -280,6 +280,37 @@ def grid_can_hold(value: str) -> bool:
     for (web/app.js leaves the grid blank for a third)."""
     days = normalize_hours(value)
     return days is not None and all(len(d) <= 2 for d in days)
+
+
+# Until PR #63 went live, web/hours.js read a comma-joined rule over a day
+# its group had already named as an override, and dropped the earlier hours
+# from the grid it prefilled. A report filed before then on such a tag came
+# from a grid that lacked hours the tag has, and the push at the time refused
+# it. Keep refusing those: the reading changed, what the visitor saw did not.
+_GRID_ADDS_SINCE = "2026-09-05"
+
+
+def _adds_to_named_days(value: str) -> bool:
+    """Whether any `;` group of the tag has a comma-joined rule over a day the
+    group already named — the tags whose reading PR #63 changed."""
+    for group in _rules(value):
+        named: set[int] = set()
+        for rule in group:
+            read = _read_rule(rule.strip())
+            if read is None:
+                return False  # unreadable anyway; grid_can_hold says so
+            if named & read[0]:
+                return True
+            named |= read[0]
+    return False
+
+
+def grid_showed_whole(current: str, filed: str) -> bool:
+    """Whether the grid the visitor filled in was prefilled with all of
+    OSM's tag — as the grid read it when the report was filed."""
+    if not grid_can_hold(current):
+        return False
+    return filed >= _GRID_ADDS_SINCE or not _adds_to_named_days(current)
 
 
 def same_hours(a: str | None, b: str | None) -> bool:
@@ -445,8 +476,8 @@ def push(conn, api: OsmApi, subs: list[dict] | None = None, dry_run: bool = Fals
             continue
         # The grid holds two ranges a day and prefills nothing for a third
         # (web/app.js), so a tag the reader can read may still be one the
-        # grid could not show the visitor.
-        if current and not grid_can_hold(current) and not force:
+        # grid could not show the visitor — or could not at the time.
+        if current and not grid_showed_whole(current, filed) and not force:
             log(f"#{sid} {osm_id}: OSM has {current!r}, with rules the grid cannot express; "
                 f"uploading {target!r} would drop them. {how}")
             counts["conflict"] += 1

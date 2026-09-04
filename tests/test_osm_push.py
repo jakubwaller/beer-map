@@ -8,7 +8,8 @@ from pipeline.db import (
 )
 from pipeline.models import Venue
 from pipeline.osm_push import (
-    OsmApi, _rules, changeset_tags, grid_can_hold, normalize_hours, parse_osm_id, plan, push,
+    OsmApi, _rules, changeset_tags, grid_can_hold, grid_showed_whole, normalize_hours,
+    parse_osm_id, plan, push,
     read_element, same_hours, with_opening_hours,
 )
 
@@ -273,6 +274,31 @@ def test_a_day_with_three_ranges_is_beyond_the_grid_and_left_to_a_human():
     assert counts["conflict"] == 1 and fake.paths("PUT") == []
     assert get_submission(conn, sid)["osm_changeset"] is None
     assert "cannot express" in lines[-1]
+
+
+def test_a_report_filed_before_the_grid_read_additions_is_left_to_a_human():
+    # Filed on 2026-09-01 the grid was prefilled without Tu-Sa's lunch hours;
+    # the reading changed since, what the visitor saw did not.
+    tag = "Tu-Su 11:30-14:00, Tu-Sa 17:30-23:00"
+    assert grid_showed_whole(tag, "2026-09-05T00:00:00")
+    assert not grid_showed_whole(tag, "2026-09-04T23:59:59")
+    assert grid_showed_whole("Su-Th 18:00-01:00, Fr,Sa 18:00-02:00", "2026-09-01T12:00:00")
+    assert grid_showed_whole("Mo-Fr 10:00-22:00; Sa,Su 12:00-20:00", "2026-09-01T12:00:00")
+    assert not grid_showed_whole("Mo-Fr 10:00-22:00; PH off", "2026-09-06T12:00:00")
+
+    conn = _conn()
+    sid = _approved(conn, "Mo off; Tu-Sa 17:30-23:00; Su 11:30-14:00", created="2026-09-01T12:00:00")
+    fake = FakeOsm(xml=NODE_XML.replace('v="Mo-Su 11:00-24:00"', f'v="{tag}"'))
+    lines = []
+    counts = push(conn, _api(fake), log=lines.append, pause_s=0)
+    assert counts["conflict"] == 1 and fake.paths("PUT") == []
+    assert "cannot express" in lines[-1]
+    # The same edit filed once the grid showed both rules is the visitor's
+    # deliberate choice, and goes up.
+    sid2 = _approved(conn, "Mo off; Tu-Sa 17:30-23:00; Su 11:30-14:00", created="2026-09-06T12:00:00")
+    counts = push(conn, _api(fake), log=lines.append, pause_s=0)
+    assert counts["uploaded"] == 1
+    assert get_submission(conn, sid2)["osm_changeset"] == 123
 
 
 def test_a_200_with_an_unreadable_body_is_a_failure_not_a_crash():
