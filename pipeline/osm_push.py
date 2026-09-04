@@ -207,7 +207,7 @@ def _read_rule(rule: str) -> tuple[set[int], list[tuple[int, int]] | None] | Non
         if end <= start:  # closes after midnight (or at it: "11:00-00:00")
             end += 1440
         ranges.append((start, end))
-    return which, ranges
+    return which, sorted(ranges)  # by start, as parseRanges in web/hours.js
 
 
 def _add_ranges(have: list[tuple[int, int]], more: list[tuple[int, int]]) -> list | None:
@@ -268,6 +268,14 @@ def normalize_hours(value: str | None) -> tuple | None:
         for d, r in given.items():
             days[d] = r
     return tuple(tuple(sorted(d)) for d in days)
+
+
+def grid_can_hold(value: str) -> bool:
+    """Whether the weekday grid could have shown a visitor this tag whole:
+    readable, and no day with more than the two ranges the grid has room
+    for (web/app.js leaves the grid blank for a third)."""
+    days = normalize_hours(value)
+    return days is not None and all(len(d) <= 2 for d in days)
 
 
 def same_hours(a: str | None, b: str | None) -> bool:
@@ -431,7 +439,10 @@ def push(conn, api: OsmApi, subs: list[dict] | None = None, dry_run: bool = Fals
                 f"OSM has {current!r}, the report says {target!r}. {how}")
             counts["conflict"] += 1
             continue
-        if current and normalize_hours(current) is None and not force:
+        # The grid holds two ranges a day and prefills nothing for a third
+        # (web/app.js), so a tag the reader can read may still be one the
+        # grid could not show the visitor.
+        if current and not grid_can_hold(current) and not force:
             log(f"#{sid} {osm_id}: OSM has {current!r}, with rules the grid cannot express; "
                 f"uploading {target!r} would drop them. {how}")
             counts["conflict"] += 1

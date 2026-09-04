@@ -8,7 +8,7 @@ from pipeline.db import (
 )
 from pipeline.models import Venue
 from pipeline.osm_push import (
-    OsmApi, _rules, changeset_tags, normalize_hours, parse_osm_id, plan, push,
+    OsmApi, _rules, changeset_tags, grid_can_hold, normalize_hours, parse_osm_id, plan, push,
     read_element, same_hours, with_opening_hours,
 )
 
@@ -169,6 +169,14 @@ def test_normalize_hours_reads_spaced_lists_and_commas_used_as_semicolons():
     assert not same_hours("Mo 17:00-01:00", "Mo 17:00-23:00")
     # Overlap inside one rule's own list is not policed, same as the frontend.
     assert same_hours("Fr 11:00-14:00,10:00-21:00", "Fr 10:00-21:00,11:00-14:00")
+    # ...but a rule's list is read in start order, as the frontend reads it:
+    # in written order 10-12 would replace 10-11 and 9-13 then replace that.
+    assert normalize_hours("Mo 10:00-11:00, Mo 10:00-12:00,09:00-13:00") is None
+    # The grid holds two ranges a day; a third is beyond it.
+    assert grid_can_hold("Mo-Fr 09:00-11:00,12:00-15:00")
+    assert not grid_can_hold("Mo-Fr 09:00-11:00,12:00-15:00,18:00-23:00")
+    assert not grid_can_hold("Mo-Su 09:00-11:00, Mo-Su 12:00-15:00, Mo-Su 18:00-23:00")
+    assert not grid_can_hold("Mo-Fr 10:00-22:00; PH off")
     assert same_hours("Mo-Su 11:00-23:00; Su 12:00-20:00", "Mo-Sa 11:00-23:00; Su 12:00-20:00")
     assert same_hours("Mo-Su 10:00-20:00, Su off", "Mo-Sa 10:00-20:00")
     assert same_hours("Mo-Su 10:00-20:00; Su off", "Mo-Sa 10:00-20:00")
@@ -249,6 +257,20 @@ def test_an_untouched_grid_over_a_comma_added_rule_is_no_edit():
     counts = push(conn, _api(fake), log=lambda s: None, pause_s=0)
     assert counts["unchanged"] == 1 and fake.paths("PUT") == []
     assert get_submission(conn, sid)["osm_changeset"] == 0
+
+
+def test_a_day_with_three_ranges_is_beyond_the_grid_and_left_to_a_human():
+    # web/app.js shows a blank grid for such a tag; whatever the visitor
+    # typed into it is not a correction of hours they never saw.
+    conn = _conn()
+    sid = _approved(conn, "Mo-Su 08:00-10:00,18:00-22:00")
+    fake = FakeOsm(xml=NODE_XML.replace('v="Mo-Su 11:00-24:00"',
+                                        'v="Mo-Su 08:00-10:00, Mo-Su 12:00-14:00, Mo-Su 18:00-22:00"'))
+    lines = []
+    counts = push(conn, _api(fake), log=lines.append, pause_s=0)
+    assert counts["conflict"] == 1 and fake.paths("PUT") == []
+    assert get_submission(conn, sid)["osm_changeset"] is None
+    assert "cannot express" in lines[-1]
 
 
 def test_a_200_with_an_unreadable_body_is_a_failure_not_a_crash():
