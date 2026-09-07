@@ -300,6 +300,11 @@ header {
   white-space: nowrap;
 }
 .header-actions nav button:hover { color: var(--accent-strong); }
+/* "Über das Projekt" has a phone-sized twin ("Über"): two spans, one shown per
+   breakpoint. A separate short string rather than a suffix to chop, because
+   Czech's "O projektu" has no usable prefix and went without a short form —
+   which pushed its CTA onto a second row and cost phones a strip of map. */
+.nav-short { display: none; }
 
 .cta {
   flex: 0 0 auto;
@@ -918,12 +923,14 @@ button:disabled { opacity: .55; cursor: default; }
   header { padding: 10px 14px; gap: 10px 14px; }
   .chip-bar { padding-left: 14px; padding-right: 14px; }
   /* The map is the scarce thing on a phone: the CTA has to share the nav's row
-     instead of claiming one of its own. Dropping the long half of the "Über"
-     label and shrinking the button buys enough width for both to fit; the
+     instead of claiming one of its own. Swapping the "about" label for its
+     short twin and shrinking the button buys enough width for both to fit in
+     every language (Czech is the widest: ~337px of a 375px phone's 347); the
      flex-wrap stays as a fallback for very narrow screens. */
   .header-actions { gap: 10px 12px; flex-wrap: wrap; }
   .header-actions nav { gap: 14px; font-size: 13px; }
   .nav-long { display: none; }
+  .nav-short { display: inline; }
   .cta { padding: 8px 13px; font-size: 13px; }
   .cta span[aria-hidden] { font-size: 15px; }
   #lang-select { font-size: 11px; }
