@@ -21,8 +21,8 @@ export const MESSAGES = {
     "a11y.lang": "Sprache wählen",
 
     "nav.stats": "Statistik",
-    "nav.about": "Über",
-    "nav.aboutLong": " das Projekt",
+    "nav.about": "Über das Projekt",
+    "nav.aboutShort": "Über",
     "nav.contact": "Kontakt",
     "nav.cta": "Bier melden",
 
@@ -171,7 +171,7 @@ export const MESSAGES = {
 
     "nav.stats": "Statistika",
     "nav.about": "O projektu",
-    "nav.aboutLong": "",
+    "nav.aboutShort": "Info",
     "nav.contact": "Kontakt",
     "nav.cta": "Nahlásit pivo",
 
@@ -323,8 +323,8 @@ export const MESSAGES = {
     "a11y.lang": "Choose language",
 
     "nav.stats": "Stats",
-    "nav.about": "About",
-    "nav.aboutLong": " the project",
+    "nav.about": "About the project",
+    "nav.aboutShort": "About",
     "nav.contact": "Contact",
     "nav.cta": "Report beer",
 

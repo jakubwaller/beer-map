@@ -14,6 +14,18 @@ test("every language covers the same set of keys", () => {
   }
 });
 
+// Phones show the short "about" label so the nav and the CTA share one row.
+// Czech once shipped an empty short form, which put the CTA on a row of its
+// own and cost the map a strip; every language needs a real one.
+test("every language has a short 'about' label that is shorter than the long one", () => {
+  for (const lang of LANGS) {
+    const short = MESSAGES[lang]["nav.aboutShort"];
+    const long = MESSAGES[lang]["nav.about"];
+    assert.ok(short && short.trim(), `empty nav.aboutShort in "${lang}"`);
+    assert.ok(short.length < long.length, `nav.aboutShort not shorter in "${lang}"`);
+  }
+});
+
 test("plural keys always have a .other fallback form", () => {
   for (const lang of LANGS) {
     for (const key of Object.keys(MESSAGES[lang])) {
