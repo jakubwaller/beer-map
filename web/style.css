@@ -924,9 +924,10 @@ button:disabled { opacity: .55; cursor: default; }
   .chip-bar { padding-left: 14px; padding-right: 14px; }
   /* The map is the scarce thing on a phone: the CTA has to share the nav's row
      instead of claiming one of its own. Swapping the "about" label for its
-     short twin and shrinking the button buys enough width for both to fit in
-     every language (Czech is the widest: ~337px of a 375px phone's 347); the
-     flex-wrap stays as a fallback for very narrow screens. */
+     short twin and shrinking the button buys enough width for both on phones
+     from 360px up, in every language (Czech is the widest: 337px of a 375px
+     phone's 347, 318 of a 360's 332). At 320px all three languages overflow
+     by 4-26px and take the flex-wrap fallback. */
   .header-actions { gap: 10px 12px; flex-wrap: wrap; }
   .header-actions nav { gap: 14px; font-size: 13px; }
   .nav-long { display: none; }
