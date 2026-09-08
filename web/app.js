@@ -6,6 +6,7 @@ import { openState, statusText, formatWeek, venueSchedule, venuesOpenNow,
   from "./hours.js?v=__ASSET_VERSION__";
 import { initLang, getLang, setLang, t, tn }
   from "./i18n.js?v=__ASSET_VERSION__";
+import { nearestTarget, lerpStops } from "./hittest.js?v=__ASSET_VERSION__";
 
 initLang();
 
@@ -309,10 +310,16 @@ function openBrandPicker() {
 // ones inside the viewport — the ~30k no-data venues render as a circle
 // layer, see below).
 const CELL_PX = 46;
+// Drawn radius of a single venue dot — `.map-marker` is 16px across, borders
+// included. The tap handler measures fingers against it.
+const MARKER_R = 8;
 // Off-screen margin (px) that still gets markers: keeps clusters at the edge
 // honest and covers small pans until the next moveend rebuild.
 const VIEW_PAD = 80;
 let liveMarkers = [];
+// The same dots as tap targets — {lon, lat, r} plus what a tap on one does.
+// Rebuilt with the markers; see "Taps: the nearest dot wins" below.
+let tapTargets = [];
 
 function clusterSize(count) {
   return count < 10 ? 32 : count < 30 ? 40 : count < 100 ? 48 : 56;
@@ -339,6 +346,7 @@ function refreshMarkers() {
   if (!dataReady || !styleReady) return;
   for (const m of liveMarkers) m.remove();
   liveMarkers = [];
+  tapTargets = [];
 
   // Cull to the viewport before creating any DOM. The dataset is Germany-wide
   // (~3k branded venues), so at city zoom nearly all of it projects far
@@ -365,24 +373,31 @@ function refreshMarkers() {
     const lon = bucket.reduce((s, v) => s + v.lon, 0) / bucket.length;
     const lat = bucket.reduce((s, v) => s + v.lat, 0) / bucket.length;
     const pt = map.project([lon, lat]);
-    let el;
+    let el, act;
     if (bucket.length > 1) {
       el = makeClusterEl(bucket.length);
       const half = clusterSize(bucket.length) / 2;
       dotBoxes.push([pt.x - half, pt.y - half, pt.x + half, pt.y + half]);
-      el.onclick = (e) => {
-        e.stopPropagation();   // ...so close the dropdown by hand: at maxZoom
-        closeSuggestions();    // easeTo only pans and emits no zoomstart either
+      act = () => {
+        // The suggestion list closes on an outside click or on a user zoom.
+        // A direct hit stops the event before the document sees it, and at
+        // maxZoom easeTo only pans and fires no zoomstart — so close it here.
+        closeSuggestions();
         map.easeTo({ center: [lon, lat], zoom: Math.min(map.getZoom() + 2.2, 18) });
       };
+      tapTargets.push({ lon, lat, r: half, act });
     } else {
       const v = bucket[0];
       el = makeVenueEl();
       dotBoxes.push([pt.x - 10, pt.y - 10, pt.x + 10, pt.y + 10]);
-      // stopPropagation: don't let the click fall through to the gray-dot layer.
-      el.onclick = (e) => { e.stopPropagation(); openVenueModal(v); };
+      act = () => openVenueModal(v);
+      tapTargets.push({ lon, lat, r: MARKER_R, act });
       singles.push({ v, pt, el });
     }
+    // A hit on the dot itself is answered straight away; stopPropagation keeps
+    // it from also reaching the map handler below, which would resolve to this
+    // same dot (distance zero) and act twice.
+    el.onclick = (e) => { e.stopPropagation(); act(); };
     liveMarkers.push(new maplibregl.Marker({ element: el }).setLngLat([lon, lat]).addTo(map));
   }
 
@@ -438,6 +453,10 @@ const GRAY_LAYER = "gray-venues";
 // Below this zoom the gray layer neither renders nor loads: a country-wide
 // gray blanket would be noise, and the tile fan-out unbounded.
 const GRAY_MIN_ZOOM = 10;
+// Drawn radius per zoom — 4px across at zoom 10. Data rather than a literal
+// inside the paint spec because the tap handler needs the same number to tell
+// how far a finger landed from the edge of a dot.
+const GRAY_RADIUS_STOPS = [[10, 2], [13, 3.5], [16, 6]];
 const GRAY_TILE_Z = 10;
 const grayTilesLoaded = new Set();  // fetched or in-flight tile keys
 let graySourceStale = true;         // venue set / filters changed since last setData
@@ -456,17 +475,13 @@ function addGrayLayer() {
     id: GRAY_LAYER, type: "circle", source: GRAY_SOURCE,
     layout: { visibility: "none" },
     paint: {
-      "circle-radius": ["interpolate", ["linear"], ["zoom"], 10, 2, 13, 3.5, 16, 6],
+      "circle-radius": ["interpolate", ["linear"], ["zoom"], ...GRAY_RADIUS_STOPS.flat()],
       "circle-color": "#a89f93",
       "circle-opacity": 0.6,
       "circle-stroke-width": 1,
       "circle-stroke-color": "#fff",
       "circle-stroke-opacity": 0.5,
     },
-  });
-  map.on("click", GRAY_LAYER, (e) => {
-    const v = grayVenues[e.features[0].properties.idx];
-    if (v) openVenueModal(v);
   });
   map.on("mouseenter", GRAY_LAYER, () => { map.getCanvas().style.cursor = "pointer"; });
   map.on("mouseleave", GRAY_LAYER, () => { map.getCanvas().style.cursor = ""; });
@@ -523,6 +538,63 @@ async function loadGrayTiles() {
   graySourceStale = true;
   applyFilters();          // count + gray layer now include the new arrivals
 }
+
+// ---- Taps: the nearest dot wins ----
+// Venue dots are DOM markers and the brandless rest is a WebGL circle layer,
+// but a finger knows no such distinction, so both are hit-tested together and
+// the dot nearest the tap opens. Before this a tap had to land on the glyph
+// itself — 16px across, or 4px for a gray dot at zoom 10 — which on a phone
+// took several goes.
+
+// How far outside a dot a tap still counts as meaning that dot. A fingertip is
+// a blunt instrument where a mouse pointer is a single pixel, so the
+// forgiveness that rescues a phone tap would feel grabby with a mouse.
+const TAP_SLOP = window.matchMedia("(pointer: coarse)").matches ? 22 : 6;
+
+// Marker positions are projected at tap time rather than stored with the
+// target: markers are rebuilt on `moveend`, so a tap that lands while the map
+// is still gliding would otherwise be judged against where the dots were when
+// it last came to rest.
+const markerTargets = () => tapTargets.map((t) => {
+  const p = map.project([t.lon, t.lat]);
+  return { x: p.x, y: p.y, r: t.r, act: t.act };
+});
+
+// The gray dots have no DOM to hang a target on, so the renderer names them:
+// everything it drew inside the slop box around the tap.
+function grayTargets(point) {
+  if (!styleReady || !grayLayerVisible()) return [];
+  const r = lerpStops(GRAY_RADIUS_STOPS, map.getZoom());
+  const box = [[point.x - TAP_SLOP, point.y - TAP_SLOP],
+               [point.x + TAP_SLOP, point.y + TAP_SLOP]];
+  const out = [];
+  for (const f of map.queryRenderedFeatures(box, { layers: [GRAY_LAYER] })) {
+    const v = grayVenues[f.properties.idx];
+    if (!v) continue;
+    const p = map.project(f.geometry.coordinates);
+    out.push({ x: p.x, y: p.y, r, act: () => openVenueModal(v) });
+  }
+  return out;
+}
+
+// Where the finger came down, in map coordinates. A tap that smears a few
+// pixels drags the map along under it, so by the time the click arrives every
+// dot has shifted: what the user aimed at is the place the map had under the
+// finger when it landed, not the pixel the finger lifted from. Kept fresh for
+// a second so a mouse click on a hybrid device can never inherit it.
+let touchAim = null;
+map.on("touchstart", (e) => {
+  touchAim = e.points.length === 1 ? { lngLat: e.lngLat, at: Date.now() } : null;
+});
+
+map.on("click", (e) => {
+  const aimed = touchAim && Date.now() - touchAim.at < 1000;
+  const point = aimed ? map.project(touchAim.lngLat) : e.point;
+  touchAim = null;
+  const targets = markerTargets().concat(grayTargets(point));
+  const hit = nearestTarget(targets, point, TAP_SLOP);
+  if (hit) hit.act();
+});
 
 // ---- Zoom controls ----
 document.getElementById("zoom-in").addEventListener("click", () => map.zoomIn());
