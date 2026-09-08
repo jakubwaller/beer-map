@@ -9,6 +9,14 @@
 // Pure and in screen pixels (y down), so it unit-tests without a map.
 
 /**
+ * How far `point` lies outside a target's glyph — 0 anywhere inside it.
+ * Callers use the zero to tell "landed on the dot" from "landed near it".
+ */
+export function edgeGap(t, point) {
+  return Math.max(0, Math.hypot(t.x - point.x, t.y - point.y) - (t.r || 0));
+}
+
+/**
  * The target nearest `point`, or null when none is within `slop` pixels of it.
  *
  * Distance is measured to the glyph's edge rather than its centre: a 56px
@@ -22,7 +30,7 @@ export function nearestTarget(targets, point, slop) {
   let best = null;
   let bestDist = Infinity;
   for (const t of targets) {
-    const gap = Math.max(0, Math.hypot(t.x - point.x, t.y - point.y) - (t.r || 0));
+    const gap = edgeGap(t, point);
     if (gap <= slop && gap < bestDist) { best = t; bestDist = gap; }
   }
   return best;

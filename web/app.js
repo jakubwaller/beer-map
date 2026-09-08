@@ -6,7 +6,7 @@ import { openState, statusText, formatWeek, venueSchedule, venuesOpenNow,
   from "./hours.js?v=__ASSET_VERSION__";
 import { initLang, getLang, setLang, t, tn }
   from "./i18n.js?v=__ASSET_VERSION__";
-import { nearestTarget, lerpStops } from "./hittest.js?v=__ASSET_VERSION__";
+import { nearestTarget, edgeGap, lerpStops } from "./hittest.js?v=__ASSET_VERSION__";
 
 initLang();
 
@@ -396,8 +396,10 @@ function refreshMarkers() {
     }
     // A hit on the dot itself is answered straight away; stopPropagation keeps
     // it from also reaching the map handler below, which would resolve to this
-    // same dot (distance zero) and act twice.
-    el.onclick = (e) => { e.stopPropagation(); act(); };
+    // same dot (distance zero) and act twice. That handler is also where a
+    // tap's aim is spent, so spend it here — an aim left lying around is one a
+    // later mouse click can inherit.
+    el.onclick = (e) => { e.stopPropagation(); spendTouchAim(); act(); };
     liveMarkers.push(new maplibregl.Marker({ element: el }).setLngLat([lon, lat]).addTo(map));
   }
 
@@ -548,8 +550,11 @@ async function loadGrayTiles() {
 
 // How far outside a dot a tap still counts as meaning that dot. A fingertip is
 // a blunt instrument where a mouse pointer is a single pixel, so the
-// forgiveness that rescues a phone tap would feel grabby with a mouse.
-const TAP_SLOP = window.matchMedia("(pointer: coarse)").matches ? 22 : 6;
+// forgiveness that rescues a phone tap would feel grabby with a mouse. Which
+// one it is gets decided per click, not per device: a laptop with a
+// touchscreen has both, and reports itself as the mouse.
+const TOUCH_SLOP = 22;
+const MOUSE_SLOP = 6;
 
 // Marker positions are projected at tap time rather than stored with the
 // target: markers are rebuilt on `moveend`, so a tap that lands while the map
@@ -562,11 +567,10 @@ const markerTargets = () => tapTargets.map((t) => {
 
 // The gray dots have no DOM to hang a target on, so the renderer names them:
 // everything it drew inside the slop box around the tap.
-function grayTargets(point) {
+function grayTargets(point, slop) {
   if (!styleReady || !grayLayerVisible()) return [];
   const r = lerpStops(GRAY_RADIUS_STOPS, map.getZoom());
-  const box = [[point.x - TAP_SLOP, point.y - TAP_SLOP],
-               [point.x + TAP_SLOP, point.y + TAP_SLOP]];
+  const box = [[point.x - slop, point.y - slop], [point.x + slop, point.y + slop]];
   const out = [];
   for (const f of map.queryRenderedFeatures(box, { layers: [GRAY_LAYER] })) {
     const v = grayVenues[f.properties.idx];
@@ -580,20 +584,48 @@ function grayTargets(point) {
 // Where the finger came down, in map coordinates. A tap that smears a few
 // pixels drags the map along under it, so by the time the click arrives every
 // dot has shifted: what the user aimed at is the place the map had under the
-// finger when it landed, not the pixel the finger lifted from. Kept fresh for
-// a second so a mouse click on a hybrid device can never inherit it.
+// finger when it landed, not the pixel the finger lifted from.
 let touchAim = null;
+
+// The aim of the click being handled, or null if a mouse made it — which is
+// also how the two slops tell themselves apart. Every click spends the aim,
+// including the ones a marker answers itself; a touch gesture that ends in no
+// click at all (a pan, a pinch) leaves one behind, and the second of grace is
+// what bounds how long it can sit there.
+function spendTouchAim() {
+  const aim = touchAim;
+  touchAim = null;
+  return aim && Date.now() - aim.at < 1000 ? map.project(aim.lngLat) : null;
+}
+
+// A double tap is how you zoom in with one thumb, and its first tap arrives
+// here as an ordinary click. A finger that came down *on* a dot means that dot
+// and opens it at once, as it always has; one that came down merely near a dot
+// waits to see whether a second tap follows, and drops the venue if it does —
+// otherwise zooming into a city centre, where the gray dots are ~30px apart,
+// would open a pub nearly every time. MapLibre's own double-tap window is
+// 500ms, but holding a modal back that long reads as a dead map; a slower
+// double tap than this opens the venue instead of zooming, which is what a
+// double tap on a dot has always done anyway.
+const NEAR_TAP_HOLD_MS = 300;
+let heldTap = null;
+const dropHeldTap = () => { clearTimeout(heldTap); heldTap = null; };
+
 map.on("touchstart", (e) => {
+  dropHeldTap();
   touchAim = e.points.length === 1 ? { lngLat: e.lngLat, at: Date.now() } : null;
 });
+map.on("mousedown", dropHeldTap);
+map.on("dblclick", dropHeldTap);
 
 map.on("click", (e) => {
-  const aimed = touchAim && Date.now() - touchAim.at < 1000;
-  const point = aimed ? map.project(touchAim.lngLat) : e.point;
-  touchAim = null;
-  const targets = markerTargets().concat(grayTargets(point));
-  const hit = nearestTarget(targets, point, TAP_SLOP);
-  if (hit) hit.act();
+  const aim = spendTouchAim();
+  const point = aim || e.point;
+  const slop = aim ? TOUCH_SLOP : MOUSE_SLOP;
+  const hit = nearestTarget(markerTargets().concat(grayTargets(point, slop)), point, slop);
+  if (!hit) return;
+  if (!aim || edgeGap(hit, point) === 0) hit.act();
+  else heldTap = setTimeout(() => { heldTap = null; hit.act(); }, NEAR_TAP_HOLD_MS);
 });
 
 // ---- Zoom controls ----

@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { nearestTarget, lerpStops } from "./hittest.js";
+import { nearestTarget, edgeGap, lerpStops } from "./hittest.js";
 
 const target = (x, y, r, id) => ({ x, y, r, id });
 
@@ -34,6 +34,14 @@ test("nearestTarget: a tap inside a big cluster beats a nearer small dot", () =>
 
 test("nearestTarget: a missing radius counts as a point", () => {
   assert.equal(nearestTarget([{ x: 0, y: 0 }], { x: 10, y: 0 }, 22).x, 0);
+});
+
+test("edgeGap: zero inside the glyph, the distance to its edge outside", () => {
+  const t = target(100, 100, 8);
+  assert.equal(edgeGap(t, { x: 100, y: 100 }), 0);
+  assert.equal(edgeGap(t, { x: 108, y: 100 }), 0);   // on the edge
+  assert.equal(edgeGap(t, { x: 120, y: 100 }), 12);
+  assert.equal(edgeGap({ x: 0, y: 0 }, { x: 3, y: 4 }), 5);  // no radius
 });
 
 test("lerpStops: interpolates between stops and clamps outside them", () => {
