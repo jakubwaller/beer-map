@@ -587,15 +587,19 @@ function grayTargets(point, slop) {
 // finger when it landed, not the pixel the finger lifted from.
 let touchAim = null;
 
-// The aim of the click being handled, or null if a mouse made it — which is
-// also how the two slops tell themselves apart. Every click spends the aim,
-// including the ones a marker answers itself; a touch gesture that ends in no
-// click at all (a pan, a pinch) leaves one behind, and the second of grace is
-// what bounds how long it can sit there.
+// The aim of the click being handled, or null if a mouse made it — one answer
+// standing in for two questions, since the aim's presence is also what picks
+// the slop. Every click spends it, including the ones a marker answers itself;
+// a touch gesture that ends in no click at all (a pan, a pinch) leaves one
+// behind, and the window is what bounds how long a mouse click on a hybrid
+// device could inherit it. Wide enough that a hesitant press — a finger that
+// hovers, lands and takes its time lifting, which is exactly the tap this
+// whole section is for — still counts as the finger it was.
+const AIM_TTL_MS = 3000;
 function spendTouchAim() {
   const aim = touchAim;
   touchAim = null;
-  return aim && Date.now() - aim.at < 1000 ? map.project(aim.lngLat) : null;
+  return aim && Date.now() - aim.at < AIM_TTL_MS ? map.project(aim.lngLat) : null;
 }
 
 // A double tap is how you zoom in with one thumb, and its first tap arrives
@@ -611,12 +615,15 @@ const NEAR_TAP_HOLD_MS = 300;
 let heldTap = null;
 const dropHeldTap = () => { clearTimeout(heldTap); heldTap = null; };
 
+// On the document rather than the map, so that any new press abandons the held
+// venue: the second tap of a double tap, but equally a hand that has moved on
+// to the search box or a brand chip and should not have a modal drop on it
+// 300ms later.
+document.addEventListener("pointerdown", dropHeldTap);
+
 map.on("touchstart", (e) => {
-  dropHeldTap();
   touchAim = e.points.length === 1 ? { lngLat: e.lngLat, at: Date.now() } : null;
 });
-map.on("mousedown", dropHeldTap);
-map.on("dblclick", dropHeldTap);
 
 map.on("click", (e) => {
   const aim = spendTouchAim();

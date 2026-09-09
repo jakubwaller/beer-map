@@ -83,7 +83,7 @@ A tap is resolved by proximity, not by landing on the glyph: every drawn dot reg
 
 - Measure to the dot's **edge**, so a 56px cluster does not lose the tap to a small dot nearer its centre.
 - Aim at where the finger came **down** — the `touchstart` lngLat, re-projected when the click arrives. A tap that smears a few pixels drags the map along under it, and the release pixel then names the neighbouring pub.
-- **Hold** a near miss for `NEAR_TAP_HOLD_MS` and drop it if a second tap follows: a double tap is how you zoom in, and its first tap arrives here as an ordinary click. A tap that landed *on* a dot is never held — it is unambiguous, and holding it would make the common case feel slow.
+- **Hold** a near miss for `NEAR_TAP_HOLD_MS` and drop it if any new press follows (a document-level `pointerdown`, so a hand moving on to the search box or a chip counts): a double tap is how you zoom in, and its first tap arrives here as an ordinary click. A tap that landed *on* a dot is never held — it is unambiguous, and holding it would make the common case feel slow.
 
 Three filters combine: the serving group (all/draught/fass/tank), a brand, and the "Jetzt geöffnet" toggle. Open-now drops every venue whose `opening_hours` is missing or outside the parser's scope — "we don't know" is not a yes — and re-checks itself every minute, since it is the one filter that goes stale while the map just sits there. Only ~9 of the ~1500 brands fit the chip bar; the rest live behind the "Alle Marken" chip, whose picker searches all of them and puts the chosen one in front of the bar so it stays visible and switch-off-able.
 
