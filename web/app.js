@@ -601,28 +601,42 @@ function spendTouchAim() {
 }
 
 // A double tap is how you zoom in with one thumb, and its first tap arrives
-// here as an ordinary click. A finger that came down *on* a dot means that dot
-// and opens it at once, as it always has; one that came down merely near a dot
-// waits to see whether a second tap follows, and drops the venue if it does —
+// here as an ordinary click. So a tap that came down merely *near* a dot waits
+// to see whether a second one follows, and drops the venue if it does —
 // otherwise zooming into a city centre, where the gray dots are ~30px apart,
-// would open a pub nearly every time. MapLibre's own double-tap window is
-// 500ms, but holding a modal back that long reads as a dead map; a slower
-// double tap than this opens the venue instead of zooming, which is what a
-// double tap on a dot has always done anyway.
-// 300ms is the double-tap timeout both phone platforms use, and what the
-// browsers' own double-tap zoom waits. MapLibre's tap recogniser is more
-// generous at 500, so a double tap dawdling in between opens the venue instead
-// of zooming — a worse trade than making every near miss on a phone sit half a
-// second before anything happens.
+// would open a pub nearly every time.
+//
+// The wait is 300ms: the double-tap timeout both phone platforms use, and what
+// the browsers' own double-tap zoom waits. MapLibre's tap recogniser is more
+// generous at 500, so a double tap dawdling between the two opens the venue
+// instead of zooming. That residual is deliberate — waiting half a second to
+// close it would leave every near miss on a phone feeling like a dead map,
+// which is the very complaint this section answers.
 const NEAR_TAP_HOLD_MS = 300;
 let heldTap = null;
 const dropHeldTap = () => { clearTimeout(heldTap); heldTap = null; };
 
-// On the document rather than the map, so that any new press abandons the held
-// venue: the second tap of a double tap, but equally a hand that has moved on
-// to the search box or a brand chip and should not have a modal drop on it
-// 300ms later.
-document.addEventListener("pointerdown", dropHeldTap);
+// Which pointer pressed, and the cancel for a held venue, from one listener.
+// On the document rather than the map, so that any new press abandons the hold:
+// the second tap of a double tap, but equally a hand that has moved on to the
+// search box or a brand chip and should not have a modal drop on it 300ms
+// later. `pointerdown` is also a true PointerEvent, and fires ahead of the
+// touch events, which makes it the honest answer to "was that a finger" — the
+// click's own label is not that on every engine, and a wrong answer there
+// would quietly hand a phone the mouse's slop back with nothing to show for it.
+let pressKind = "";
+let pressStoppedMotion = false;
+document.addEventListener("pointerdown", (ev) => {
+  dropHeldTap();
+  pressKind = ev.pointerType || "";
+  // A press that lands on a map still gliding — inertia after a fling, or a
+  // flyTo — is there to stop it, and MapLibre duly halts the camera on the
+  // touch that follows. But that touch is also an ordinary tap, so without
+  // this the map answers it by opening whichever pub slid under the finger.
+  // `pointerdown` runs ahead of the touch events, so the camera is still in
+  // motion at the moment it is asked.
+  pressStoppedMotion = map.isMoving();
+});
 // Belt and braces for the same gesture: an engine that lets the second tap of
 // a double tap through as a click would re-arm the hold behind the zoom, and
 // nothing else is left to cancel that one.
@@ -633,24 +647,24 @@ map.on("touchstart", (e) => {
 });
 
 map.on("click", (e) => {
-  // A tap whose job was to dismiss the suggestion list has done its job — the
-  // document-level listener below closes it, and with the slop this wide there
-  // is barely a spot in a city that is not near *some* dot, so opening a venue
-  // on top of the dismissal is not what the finger asked for.
-  if (!resultsEl.hidden) return;
-  const aim = spendTouchAim();
-  // Which pointer made this click. Browsers deliver a click as a PointerEvent
-  // and label a tap's `touch`; where the label is missing, an aim still waiting
-  // to be spent is the fallback answer. Asking the event, rather than reading
-  // it off the aim, is what keeps a mouse click on a touchscreen laptop from
-  // inheriting the aim of a finger that panned the map a moment earlier.
-  const kind = e.originalEvent && e.originalEvent.pointerType;
+  const aim = spendTouchAim();   // spent even when this click ends up doing
+                                 // nothing, or the next one inherits it
+  if (pressStoppedMotion) return;
+  const kind = pressKind || (e.originalEvent && e.originalEvent.pointerType);
   const finger = kind ? kind !== "mouse" : Boolean(aim);
   const point = finger && aim ? aim : e.point;
   const slop = finger ? TOUCH_SLOP : MOUSE_SLOP;
   const hit = nearestTarget(markerTargets().concat(grayTargets(point, slop)), point, slop);
   if (!hit) return;
-  if (!finger || edgeGap(hit, point) === 0) hit.act();
+  // Coming down squarely on a dot is unambiguous and acts at once — the same
+  // answer the dot's own marker gives when it catches the click itself. Coming
+  // down merely near one is the ambiguous case: it may be half a double tap,
+  // or a tap whose only job was to dismiss the suggestion list, and with the
+  // slop this wide there is barely a spot in a city that is not near *some*
+  // dot — so let the dismissal have it.
+  const squarely = !finger || edgeGap(hit, point) === 0;
+  if (!squarely && !resultsEl.hidden) return;
+  if (squarely) hit.act();
   else heldTap = setTimeout(() => { heldTap = null; hit.act(); }, NEAR_TAP_HOLD_MS);
 });
 
