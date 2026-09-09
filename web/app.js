@@ -402,8 +402,7 @@ function refreshMarkers() {
     // press that was only stopping a glide go by.
     el.onclick = (e) => {
       e.stopPropagation();
-      spendTouchAim();
-      if (!pressStoppedMotion) act();
+      if (!spendPress().stoppedMotion) act();
     };
     liveMarkers.push(new maplibregl.Marker({ element: el }).setLngLat([lon, lat]).addTo(map));
   }
@@ -573,7 +572,11 @@ const markerTargets = () => tapTargets.map((t) => {
 // The gray dots have no DOM to hang a target on, so the renderer names them:
 // everything it drew inside the slop box around the tap.
 function grayTargets(point, slop) {
-  if (!styleReady || !grayLayerVisible()) return [];
+  // No visibility test of its own: a hidden layer yields no rendered features
+  // anyway, and recomputing whether it *ought* to be visible would disagree
+  // with the screen mid-animation — the layer's visibility is only rewritten
+  // at moveend, so a dot still drawn during a zoom-out would stop answering.
+  if (!styleReady) return [];
   const r = lerpStops(GRAY_RADIUS_STOPS, map.getZoom());
   const box = [[point.x - slop, point.y - slop], [point.x + slop, point.y + slop]];
   const out = [];
@@ -603,6 +606,18 @@ function spendTouchAim() {
   const aim = touchAim;
   touchAim = null;
   return aim && Date.now() - aim.at < AIM_TTL_MS ? map.project(aim.lngLat) : null;
+}
+
+// Everything the press that caused a click had to say, read once and cleared:
+// what pressed, whether it was only stopping a glide, and where it aimed. A
+// click that arrives without a press of its own — nothing does that today, but
+// a synthetic one would — then gets the neutral answer rather than inheriting
+// the last finger's.
+function spendPress() {
+  const spent = { kind: pressKind, stoppedMotion: pressStoppedMotion, aim: spendTouchAim() };
+  pressKind = "";
+  pressStoppedMotion = false;
+  return spent;
 }
 
 // Is the camera moving because the user moved it? A gesture's move carries the
@@ -665,10 +680,11 @@ map.on("touchstart", (e) => {
 });
 
 map.on("click", (e) => {
-  const aim = spendTouchAim();   // spent even when this click ends up doing
-                                 // nothing, or the next one inherits it
-  if (pressStoppedMotion) return;
-  const kind = pressKind || (e.originalEvent && e.originalEvent.pointerType);
+  // Spent first thing, whatever this click goes on to do — an unspent press is
+  // one the next click inherits.
+  const { kind: pressed, stoppedMotion, aim } = spendPress();
+  if (stoppedMotion) return;
+  const kind = pressed || (e.originalEvent && e.originalEvent.pointerType);
   const finger = kind ? kind !== "mouse" : Boolean(aim);
   const point = finger && aim ? aim : e.point;
   const slop = finger ? TOUCH_SLOP : MOUSE_SLOP;
