@@ -26,10 +26,12 @@ test("nearestTarget: the nearest dot wins, not the first one listed", () => {
 });
 
 test("nearestTarget: a tap inside a big cluster beats a nearer small dot", () => {
-  // Finger 20px from the centre of a 28px-radius cluster — inside it — and
-  // 12px from a dot's centre. By centre distance the dot would win.
-  const t = [target(100, 100, 28, "cluster"), target(112, 116, 8, "dot")];
-  assert.equal(nearestTarget(t, { x: 112, y: 116 }, 22).id, "cluster");
+  // Finger 24px from the centre of a 28px-radius cluster — inside it, gap 0 —
+  // and 11px from a small dot's centre, 3px outside its edge. By centre
+  // distance the dot wins by more than twice; by edge distance it does not.
+  // The dot is listed first, so the tie-break by order cannot explain a pass.
+  const t = [target(135, 100, 8, "dot"), target(100, 100, 28, "cluster")];
+  assert.equal(nearestTarget(t, { x: 124, y: 100 }, 22).id, "cluster");
 });
 
 test("nearestTarget: a missing radius counts as a point", () => {

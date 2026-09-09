@@ -402,7 +402,11 @@ function refreshMarkers() {
     // press that was only stopping a glide go by.
     el.onclick = (e) => {
       e.stopPropagation();
-      if (!spendPress().stoppedMotion) act();
+      // Stopping the event costs the document listener its chance to close the
+      // suggestion list, which `act()` does for itself. A tap that only halted
+      // a glide does not act, so it has to close the list on its way out.
+      if (spendPress().stoppedMotion) closeSuggestions();
+      else act();
     };
     liveMarkers.push(new maplibregl.Marker({ element: el }).setLngLat([lon, lat]).addTo(map));
   }
@@ -584,9 +588,15 @@ const MAP_CHROME = "#topbar, #zoom-ctrl, #locate, #toast, #attribution";
 function tapCandidates(point, slop) {
   const w = map.getContainer().clientWidth;
   const h = map.getContainer().clientHeight;
+  // Both in the container's frame: `getBoundingClientRect` is the viewport's,
+  // `map.project` the container's, and they only agree while #map is pinned to
+  // the whole page.
+  const base = map.getContainer().getBoundingClientRect();
   const chrome = [...document.querySelectorAll(MAP_CHROME)]
     .map((el) => el.getBoundingClientRect())
-    .filter((c) => c.width > 0 && c.height > 0);   // whatever is hidden measures zero
+    .filter((c) => c.width > 0 && c.height > 0)    // whatever is hidden measures zero
+    .map((c) => ({ left: c.left - base.left, right: c.right - base.left,
+                   top: c.top - base.top, bottom: c.bottom - base.top }));
   const visible = ({ x, y, r = 0 }) =>
     x + r >= 0 && x - r <= w && y + r >= 0 && y - r <= h &&
     !chrome.some((c) => x >= c.left && x <= c.right && y >= c.top && y <= c.bottom);
@@ -734,13 +744,14 @@ map.on("mousemove", (e) => {
   // Mid-move there is nothing to say, but the last thing said has to be taken
   // back: an inline `pointer` left on the canvas outranks MapLibre's `grabbing`
   // for the whole drag.
-  if (map.isMoving()) { map.getCanvas().style.cursor = ""; return; }
+  if (map.isMoving()) { map.getCanvas().style.cursor = ""; hoverAt = null; return; }
   const first = hoverAt === null;
   hoverAt = e.point;
   if (!first) return;
   requestAnimationFrame(() => {
     const point = hoverAt;
     hoverAt = null;
+    if (!point || map.isMoving()) return;   // a drag started inside the frame
     const hit = nearestTarget(tapCandidates(point, MOUSE_SLOP), point, MOUSE_SLOP);
     map.getCanvas().style.cursor = hit ? "pointer" : "";
   });
@@ -751,7 +762,6 @@ map.on("click", (e) => {
   // one the next click inherits.
   const { kind: pressed, stoppedMotion, aim } = spendPress();
   const doubled = Date.now() - lastClickAt < NEAR_TAP_HOLD_MS;
-  lastClickAt = Date.now();
   if (stoppedMotion) return;
   const kind = pressed || (e.originalEvent && e.originalEvent.pointerType);
   const finger = kind ? kind === "touch" : Boolean(aim);
@@ -767,6 +777,10 @@ map.on("click", (e) => {
   // dot — so let the dismissal have it.
   const squarely = !finger || edgeGap(hit, point) === 0;
   if (!squarely && !resultsEl.hidden) return;
+  // Stamped here rather than on the way in: a click that stopped a glide or
+  // only dismissed the list was never answered as a tap, and counting it makes
+  // the next one look like the second half of a double tap and go missing.
+  lastClickAt = Date.now();
   if (squarely) hit.act();
   else if (!doubled) heldTap = setTimeout(() => { heldTap = null; hit.act(); }, NEAR_TAP_HOLD_MS);
 });
