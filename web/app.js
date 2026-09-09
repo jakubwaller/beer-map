@@ -585,8 +585,8 @@ function tapCandidates(point, slop) {
   const w = map.getContainer().clientWidth;
   const h = map.getContainer().clientHeight;
   const chrome = [...document.querySelectorAll(MAP_CHROME)]
-    .filter((el) => el.offsetParent)          // skips whatever is hidden
-    .map((el) => el.getBoundingClientRect());
+    .map((el) => el.getBoundingClientRect())
+    .filter((c) => c.width > 0 && c.height > 0);   // whatever is hidden measures zero
   const visible = ({ x, y, r = 0 }) =>
     x + r >= 0 && x - r <= w && y + r >= 0 && y - r <= h &&
     !chrome.some((c) => x >= c.left && x <= c.right && y >= c.top && y <= c.bottom);
@@ -726,14 +726,24 @@ map.on("touchstart", (e) => {
 // The cursor has to mean the same thing the click does, so it asks the same
 // question rather than the layer's exact geometry: a dot six pixels off the
 // pointer opens on a click, and an arrow standing over it reads as an accident.
+// Coalesced to one answer per frame: a mouse can report far more moves than
+// that, and each answer costs a projection of every marker plus a measure of
+// the chrome. The cursor cannot be read faster than it is drawn anyway.
+let hoverAt = null;
 map.on("mousemove", (e) => {
   // Mid-move there is nothing to say, but the last thing said has to be taken
   // back: an inline `pointer` left on the canvas outranks MapLibre's `grabbing`
-  // for the whole drag. Beyond that, re-projecting every dot per frame of a pan
-  // is work whose answer nobody reads.
+  // for the whole drag.
   if (map.isMoving()) { map.getCanvas().style.cursor = ""; return; }
-  const hit = nearestTarget(tapCandidates(e.point, MOUSE_SLOP), e.point, MOUSE_SLOP);
-  map.getCanvas().style.cursor = hit ? "pointer" : "";
+  const first = hoverAt === null;
+  hoverAt = e.point;
+  if (!first) return;
+  requestAnimationFrame(() => {
+    const point = hoverAt;
+    hoverAt = null;
+    const hit = nearestTarget(tapCandidates(point, MOUSE_SLOP), point, MOUSE_SLOP);
+    map.getCanvas().style.cursor = hit ? "pointer" : "";
+  });
 });
 
 map.on("click", (e) => {
