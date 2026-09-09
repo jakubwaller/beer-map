@@ -570,20 +570,29 @@ const markerTargets = () => tapTargets.map((t) => {
   return { x: p.x, y: p.y, r: t.r, act: t.act };
 });
 
+// What paints over the map: the bar, the zoom and locate buttons, the toast,
+// the attribution line. Measured per click rather than once, because the bar
+// grows a row on a narrow phone and the toast comes and goes.
+const MAP_CHROME = "#topbar, #zoom-ctrl, #locate, #toast, #attribution";
+
 // Everything a click could resolve to, in screen pixels — minus whatever the
-// user cannot see. A dot behind the top bar or past the edge of the screen
-// cannot be aimed at, and a venue opening from under the chrome reads as one
-// arriving out of nowhere. (Markers exist out there at all because
-// refreshMarkers keeps them to VIEW_PAD past the viewport, so clusters at the
-// edge stay honest.)
+// user cannot see. A dot under the chrome or past the edge of the screen
+// cannot be aimed at, and a venue opening from under a button reads as one
+// arriving out of nowhere. (Dots are out there at all because refreshMarkers
+// keeps markers to VIEW_PAD past the viewport, so clusters at the edge stay
+// honest.)
 function tapCandidates(point, slop) {
-  const covered = topbar.offsetHeight;
   const w = map.getContainer().clientWidth;
   const h = map.getContainer().clientHeight;
-  const onScreen = ({ x, y, r = 0 }) =>
-    y + r >= covered && y - r <= h && x + r >= 0 && x - r <= w;
-  return markerTargets().concat(grayTargets(point, slop)).filter(onScreen);
+  const chrome = [...document.querySelectorAll(MAP_CHROME)]
+    .filter((el) => el.offsetParent)          // skips whatever is hidden
+    .map((el) => el.getBoundingClientRect());
+  const visible = ({ x, y, r = 0 }) =>
+    x + r >= 0 && x - r <= w && y + r >= 0 && y - r <= h &&
+    !chrome.some((c) => x >= c.left && x <= c.right && y >= c.top && y <= c.bottom);
+  return markerTargets().concat(grayTargets(point, slop)).filter(visible);
 }
+
 
 // The gray dots have no DOM to hang a target on, so the renderer names them:
 // everything it drew inside the slop box around the tap.
@@ -663,6 +672,11 @@ map.on("moveend", () => { userMoving = false; });
 // which is the very complaint this section answers.
 const NEAR_TAP_HOLD_MS = 300;
 let heldTap = null;
+// When the last click was answered. A second one this soon after it is the
+// other half of a double tap, whatever the engine chose to dispatch: not every
+// one sends `dblclick`, and on the ones that suppress the second tap's click
+// entirely this never comes up.
+let lastClickAt = 0;
 const dropHeldTap = () => { clearTimeout(heldTap); heldTap = null; };
 
 // Which pointer pressed, and the cancel for a held venue, from one listener.
@@ -726,6 +740,8 @@ map.on("click", (e) => {
   // Spent first thing, whatever this click goes on to do — an unspent press is
   // one the next click inherits.
   const { kind: pressed, stoppedMotion, aim } = spendPress();
+  const doubled = Date.now() - lastClickAt < NEAR_TAP_HOLD_MS;
+  lastClickAt = Date.now();
   if (stoppedMotion) return;
   const kind = pressed || (e.originalEvent && e.originalEvent.pointerType);
   const finger = kind ? kind === "touch" : Boolean(aim);
@@ -742,7 +758,7 @@ map.on("click", (e) => {
   const squarely = !finger || edgeGap(hit, point) === 0;
   if (!squarely && !resultsEl.hidden) return;
   if (squarely) hit.act();
-  else heldTap = setTimeout(() => { heldTap = null; hit.act(); }, NEAR_TAP_HOLD_MS);
+  else if (!doubled) heldTap = setTimeout(() => { heldTap = null; hit.act(); }, NEAR_TAP_HOLD_MS);
 });
 
 // ---- Zoom controls ----
