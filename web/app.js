@@ -463,6 +463,9 @@ const GRAY_MIN_ZOOM = 10;
 // inside the paint spec because the tap handler needs the same number to tell
 // how far a finger landed from the edge of a dot.
 const GRAY_RADIUS_STOPS = [[10, 2], [13, 3.5], [16, 6]];
+// The white rim, drawn outward from the fill, so it is part of what a finger
+// sees and aims at — and so part of the radius the tap handler measures to.
+const GRAY_STROKE = 1;
 const GRAY_TILE_Z = 10;
 const grayTilesLoaded = new Set();  // fetched or in-flight tile keys
 let graySourceStale = true;         // venue set / filters changed since last setData
@@ -484,13 +487,11 @@ function addGrayLayer() {
       "circle-radius": ["interpolate", ["linear"], ["zoom"], ...GRAY_RADIUS_STOPS.flat()],
       "circle-color": "#a89f93",
       "circle-opacity": 0.6,
-      "circle-stroke-width": 1,
+      "circle-stroke-width": GRAY_STROKE,
       "circle-stroke-color": "#fff",
       "circle-stroke-opacity": 0.5,
     },
   });
-  map.on("mouseenter", GRAY_LAYER, () => { map.getCanvas().style.cursor = "pointer"; });
-  map.on("mouseleave", GRAY_LAYER, () => { map.getCanvas().style.cursor = ""; });
 }
 
 const grayLayerVisible = () => grayVisible() && map.getZoom() >= GRAY_MIN_ZOOM;
@@ -577,7 +578,7 @@ function grayTargets(point, slop) {
   // with the screen mid-animation — the layer's visibility is only rewritten
   // at moveend, so a dot still drawn during a zoom-out would stop answering.
   if (!styleReady) return [];
-  const r = lerpStops(GRAY_RADIUS_STOPS, map.getZoom());
+  const r = lerpStops(GRAY_RADIUS_STOPS, map.getZoom()) + GRAY_STROKE;
   const box = [[point.x - slop, point.y - slop], [point.x + slop, point.y + slop]];
   const out = [];
   for (const f of map.queryRenderedFeatures(box, { layers: [GRAY_LAYER] })) {
@@ -677,6 +678,14 @@ map.on("dblclick", dropHeldTap);
 
 map.on("touchstart", (e) => {
   touchAim = e.points.length === 1 ? { lngLat: e.lngLat, at: Date.now() } : null;
+});
+
+// The cursor has to mean the same thing the click does, so it asks the same
+// question rather than the layer's exact geometry: a dot six pixels off the
+// pointer opens on a click, and an arrow standing over it reads as an accident.
+map.on("mousemove", (e) => {
+  const targets = markerTargets().concat(grayTargets(e.point, MOUSE_SLOP));
+  map.getCanvas().style.cursor = nearestTarget(targets, e.point, MOUSE_SLOP) ? "pointer" : "";
 });
 
 map.on("click", (e) => {
