@@ -570,15 +570,19 @@ const markerTargets = () => tapTargets.map((t) => {
   return { x: p.x, y: p.y, r: t.r, act: t.act };
 });
 
-// Everything a click could resolve to, in screen pixels. Dots behind the top
-// bar are left out: they cannot be aimed at, and a venue opening from under
-// the chrome reads as one arriving out of nowhere. (Markers are kept up to
-// VIEW_PAD past the viewport edge so clusters stay honest, which is how they
-// get under there in the first place.)
+// Everything a click could resolve to, in screen pixels — minus whatever the
+// user cannot see. A dot behind the top bar or past the edge of the screen
+// cannot be aimed at, and a venue opening from under the chrome reads as one
+// arriving out of nowhere. (Markers exist out there at all because
+// refreshMarkers keeps them to VIEW_PAD past the viewport, so clusters at the
+// edge stay honest.)
 function tapCandidates(point, slop) {
   const covered = topbar.offsetHeight;
-  return markerTargets().concat(grayTargets(point, slop))
-    .filter((t) => t.y + (t.r || 0) >= covered);
+  const w = map.getContainer().clientWidth;
+  const h = map.getContainer().clientHeight;
+  const onScreen = ({ x, y, r = 0 }) =>
+    y + r >= covered && y - r <= h && x + r >= 0 && x - r <= w;
+  return markerTargets().concat(grayTargets(point, slop)).filter(onScreen);
 }
 
 // The gray dots have no DOM to hang a target on, so the renderer names them:
@@ -681,12 +685,13 @@ document.addEventListener("pointerdown", (ev) => {
   // runs ahead of the touch events, so the camera is still in motion at the
   // moment it is asked.
   //
-  // Only the user's own motion, and only a finger: a mouse press does not stop
-  // a camera (MapLibre's pan handler wakes at the drag threshold, not at
-  // mousedown), and a tap during a cluster's easeTo or a flyTo to a search hit
+  // Only the user's own motion, and only a finger: neither a mouse nor a
+  // stylus stops a camera (MapLibre's pan handler wakes at the drag threshold,
+  // and a pen fires no touch events at all), and a tap during a cluster's
+  // easeTo or a flyTo to a search hit
   // is stopping nothing — it is aiming at a dot, and dropping it would be one
   // more lost tap on the very path this section exists to fix.
-  pressStoppedMotion = pressKind !== "mouse" && userMoving && map.isMoving();
+  pressStoppedMotion = pressKind === "touch" && userMoving && map.isMoving();
 });
 // Belt and braces for the same gesture: an engine that lets the second tap of
 // a double tap through as a click would re-arm the hold behind the zoom, and
@@ -694,6 +699,10 @@ document.addEventListener("pointerdown", (ev) => {
 map.on("dblclick", dropHeldTap);
 // And a camera that starts moving inside those 300ms has taken the map out
 // from under the tap that is waiting — a wheel zoom, an arrow key, a flyTo.
+// `resize()` fires this pair too without moving the camera anywhere (a phone
+// rotating, an Android keyboard closing), which costs that tap its venue. It
+// fails safe, nothing wrong opens, and telling the two apart means comparing
+// the camera frame by frame — not worth it for a tap the user repeats.
 map.on("movestart", dropHeldTap);
 
 map.on("touchstart", (e) => {
@@ -704,10 +713,11 @@ map.on("touchstart", (e) => {
 // question rather than the layer's exact geometry: a dot six pixels off the
 // pointer opens on a click, and an arrow standing over it reads as an accident.
 map.on("mousemove", (e) => {
-  // Nothing to say mid-move: MapLibre owns the cursor during a drag (and would
-  // fight this one for it), and re-projecting every dot per frame of a pan is
-  // work whose answer nobody reads.
-  if (map.isMoving()) return;
+  // Mid-move there is nothing to say, but the last thing said has to be taken
+  // back: an inline `pointer` left on the canvas outranks MapLibre's `grabbing`
+  // for the whole drag. Beyond that, re-projecting every dot per frame of a pan
+  // is work whose answer nobody reads.
+  if (map.isMoving()) { map.getCanvas().style.cursor = ""; return; }
   const hit = nearestTarget(tapCandidates(e.point, MOUSE_SLOP), e.point, MOUSE_SLOP);
   map.getCanvas().style.cursor = hit ? "pointer" : "";
 });
@@ -718,7 +728,7 @@ map.on("click", (e) => {
   const { kind: pressed, stoppedMotion, aim } = spendPress();
   if (stoppedMotion) return;
   const kind = pressed || (e.originalEvent && e.originalEvent.pointerType);
-  const finger = kind ? kind !== "mouse" : Boolean(aim);
+  const finger = kind ? kind === "touch" : Boolean(aim);
   const point = finger && aim ? aim : e.point;
   const slop = finger ? TOUCH_SLOP : MOUSE_SLOP;
   const hit = nearestTarget(tapCandidates(point, slop), point, slop);
