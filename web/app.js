@@ -587,14 +587,12 @@ function grayTargets(point, slop) {
 // finger when it landed, not the pixel the finger lifted from.
 let touchAim = null;
 
-// The aim of the click being handled, or null if a mouse made it — one answer
-// standing in for two questions, since the aim's presence is also what picks
-// the slop. Every click spends it, including the ones a marker answers itself;
-// a touch gesture that ends in no click at all (a pan, a pinch) leaves one
-// behind, and the window is what bounds how long a mouse click on a hybrid
-// device could inherit it. Wide enough that a hesitant press — a finger that
-// hovers, lands and takes its time lifting, which is exactly the tap this
-// whole section is for — still counts as the finger it was.
+// The aim of the click being handled. Every click spends it, including the
+// ones a marker answers itself; a touch gesture that ends in no click at all
+// (a pan, a pinch) leaves one behind, and the window bounds how long that one
+// can sit there. Wide, because a hesitant press — a finger that hovers, lands
+// and takes its time lifting, which is exactly the tap this section exists for
+// — must not outlive its own aim.
 const AIM_TTL_MS = 3000;
 function spendTouchAim() {
   const aim = touchAim;
@@ -611,6 +609,11 @@ function spendTouchAim() {
 // 500ms, but holding a modal back that long reads as a dead map; a slower
 // double tap than this opens the venue instead of zooming, which is what a
 // double tap on a dot has always done anyway.
+// 300ms is the double-tap timeout both phone platforms use, and what the
+// browsers' own double-tap zoom waits. MapLibre's tap recogniser is more
+// generous at 500, so a double tap dawdling in between opens the venue instead
+// of zooming — a worse trade than making every near miss on a phone sit half a
+// second before anything happens.
 const NEAR_TAP_HOLD_MS = 300;
 let heldTap = null;
 const dropHeldTap = () => { clearTimeout(heldTap); heldTap = null; };
@@ -620,18 +623,34 @@ const dropHeldTap = () => { clearTimeout(heldTap); heldTap = null; };
 // to the search box or a brand chip and should not have a modal drop on it
 // 300ms later.
 document.addEventListener("pointerdown", dropHeldTap);
+// Belt and braces for the same gesture: an engine that lets the second tap of
+// a double tap through as a click would re-arm the hold behind the zoom, and
+// nothing else is left to cancel that one.
+map.on("dblclick", dropHeldTap);
 
 map.on("touchstart", (e) => {
   touchAim = e.points.length === 1 ? { lngLat: e.lngLat, at: Date.now() } : null;
 });
 
 map.on("click", (e) => {
+  // A tap whose job was to dismiss the suggestion list has done its job — the
+  // document-level listener below closes it, and with the slop this wide there
+  // is barely a spot in a city that is not near *some* dot, so opening a venue
+  // on top of the dismissal is not what the finger asked for.
+  if (!resultsEl.hidden) return;
   const aim = spendTouchAim();
-  const point = aim || e.point;
-  const slop = aim ? TOUCH_SLOP : MOUSE_SLOP;
+  // Which pointer made this click. Browsers deliver a click as a PointerEvent
+  // and label a tap's `touch`; where the label is missing, an aim still waiting
+  // to be spent is the fallback answer. Asking the event, rather than reading
+  // it off the aim, is what keeps a mouse click on a touchscreen laptop from
+  // inheriting the aim of a finger that panned the map a moment earlier.
+  const kind = e.originalEvent && e.originalEvent.pointerType;
+  const finger = kind ? kind !== "mouse" : Boolean(aim);
+  const point = finger && aim ? aim : e.point;
+  const slop = finger ? TOUCH_SLOP : MOUSE_SLOP;
   const hit = nearestTarget(markerTargets().concat(grayTargets(point, slop)), point, slop);
   if (!hit) return;
-  if (!aim || edgeGap(hit, point) === 0) hit.act();
+  if (!finger || edgeGap(hit, point) === 0) hit.act();
   else heldTap = setTimeout(() => { heldTap = null; hit.act(); }, NEAR_TAP_HOLD_MS);
 });
 
