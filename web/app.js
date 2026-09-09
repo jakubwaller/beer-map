@@ -570,6 +570,17 @@ const markerTargets = () => tapTargets.map((t) => {
   return { x: p.x, y: p.y, r: t.r, act: t.act };
 });
 
+// Everything a click could resolve to, in screen pixels. Dots behind the top
+// bar are left out: they cannot be aimed at, and a venue opening from under
+// the chrome reads as one arriving out of nowhere. (Markers are kept up to
+// VIEW_PAD past the viewport edge so clusters stay honest, which is how they
+// get under there in the first place.)
+function tapCandidates(point, slop) {
+  const covered = topbar.offsetHeight;
+  return markerTargets().concat(grayTargets(point, slop))
+    .filter((t) => t.y + (t.r || 0) >= covered);
+}
+
 // The gray dots have no DOM to hang a target on, so the renderer names them:
 // everything it drew inside the slop box around the tap.
 function grayTargets(point, slop) {
@@ -624,6 +635,12 @@ function spendPress() {
 // Is the camera moving because the user moved it? A gesture's move carries the
 // original event with it, its inertia included; a programmatic flyTo or easeTo
 // carries none.
+//
+// One hole, knowingly left: MapLibre skips `movestart` for a camera that is
+// already moving, so a programmatic ease started *during* inertia inherits the
+// flag. Fling, hit "+" mid-glide, tap a dot during the zoom that follows, and
+// that tap is swallowed. Closing it would mean clearing the flag at every
+// camera call in this file, which is the kind of bookkeeping that rots.
 let userMoving = false;
 map.on("movestart", (e) => { userMoving = Boolean(e.originalEvent); });
 map.on("moveend", () => { userMoving = false; });
@@ -675,6 +692,9 @@ document.addEventListener("pointerdown", (ev) => {
 // a double tap through as a click would re-arm the hold behind the zoom, and
 // nothing else is left to cancel that one.
 map.on("dblclick", dropHeldTap);
+// And a camera that starts moving inside those 300ms has taken the map out
+// from under the tap that is waiting — a wheel zoom, an arrow key, a flyTo.
+map.on("movestart", dropHeldTap);
 
 map.on("touchstart", (e) => {
   touchAim = e.points.length === 1 ? { lngLat: e.lngLat, at: Date.now() } : null;
@@ -684,8 +704,12 @@ map.on("touchstart", (e) => {
 // question rather than the layer's exact geometry: a dot six pixels off the
 // pointer opens on a click, and an arrow standing over it reads as an accident.
 map.on("mousemove", (e) => {
-  const targets = markerTargets().concat(grayTargets(e.point, MOUSE_SLOP));
-  map.getCanvas().style.cursor = nearestTarget(targets, e.point, MOUSE_SLOP) ? "pointer" : "";
+  // Nothing to say mid-move: MapLibre owns the cursor during a drag (and would
+  // fight this one for it), and re-projecting every dot per frame of a pan is
+  // work whose answer nobody reads.
+  if (map.isMoving()) return;
+  const hit = nearestTarget(tapCandidates(e.point, MOUSE_SLOP), e.point, MOUSE_SLOP);
+  map.getCanvas().style.cursor = hit ? "pointer" : "";
 });
 
 map.on("click", (e) => {
@@ -697,7 +721,7 @@ map.on("click", (e) => {
   const finger = kind ? kind !== "mouse" : Boolean(aim);
   const point = finger && aim ? aim : e.point;
   const slop = finger ? TOUCH_SLOP : MOUSE_SLOP;
-  const hit = nearestTarget(markerTargets().concat(grayTargets(point, slop)), point, slop);
+  const hit = nearestTarget(tapCandidates(point, slop), point, slop);
   if (!hit) return;
   // Coming down squarely on a dot is unambiguous and acts at once — the same
   // answer the dot's own marker gives when it catches the click itself. Coming
