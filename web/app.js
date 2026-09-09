@@ -396,10 +396,15 @@ function refreshMarkers() {
     }
     // A hit on the dot itself is answered straight away; stopPropagation keeps
     // it from also reaching the map handler below, which would resolve to this
-    // same dot (distance zero) and act twice. That handler is also where a
-    // tap's aim is spent, so spend it here — an aim left lying around is one a
-    // later mouse click can inherit.
-    el.onclick = (e) => { e.stopPropagation(); spendTouchAim(); act(); };
+    // same dot (distance zero) and act twice. Which means the two things that
+    // handler does before acting have to happen here as well: spend the tap's
+    // aim (one left lying around is one a later click can inherit), and let a
+    // press that was only stopping a glide go by.
+    el.onclick = (e) => {
+      e.stopPropagation();
+      spendTouchAim();
+      if (!pressStoppedMotion) act();
+    };
     liveMarkers.push(new maplibregl.Marker({ element: el }).setLngLat([lon, lat]).addTo(map));
   }
 
@@ -600,6 +605,13 @@ function spendTouchAim() {
   return aim && Date.now() - aim.at < AIM_TTL_MS ? map.project(aim.lngLat) : null;
 }
 
+// Is the camera moving because the user moved it? A gesture's move carries the
+// original event with it, its inertia included; a programmatic flyTo or easeTo
+// carries none.
+let userMoving = false;
+map.on("movestart", (e) => { userMoving = Boolean(e.originalEvent); });
+map.on("moveend", () => { userMoving = false; });
+
 // A double tap is how you zoom in with one thumb, and its first tap arrives
 // here as an ordinary click. So a tap that came down merely *near* a dot waits
 // to see whether a second one follows, and drops the venue if it does —
@@ -629,13 +641,19 @@ let pressStoppedMotion = false;
 document.addEventListener("pointerdown", (ev) => {
   dropHeldTap();
   pressKind = ev.pointerType || "";
-  // A press that lands on a map still gliding — inertia after a fling, or a
-  // flyTo — is there to stop it, and MapLibre duly halts the camera on the
-  // touch that follows. But that touch is also an ordinary tap, so without
-  // this the map answers it by opening whichever pub slid under the finger.
-  // `pointerdown` runs ahead of the touch events, so the camera is still in
-  // motion at the moment it is asked.
-  pressStoppedMotion = map.isMoving();
+  // A finger that lands on a map still gliding from the user's own fling is
+  // there to stop it, and MapLibre duly halts the camera on the touch that
+  // follows. But that touch is also an ordinary tap, so without this the map
+  // answers it by opening whichever pub slid under the finger. `pointerdown`
+  // runs ahead of the touch events, so the camera is still in motion at the
+  // moment it is asked.
+  //
+  // Only the user's own motion, and only a finger: a mouse press does not stop
+  // a camera (MapLibre's pan handler wakes at the drag threshold, not at
+  // mousedown), and a tap during a cluster's easeTo or a flyTo to a search hit
+  // is stopping nothing — it is aiming at a dot, and dropping it would be one
+  // more lost tap on the very path this section exists to fix.
+  pressStoppedMotion = pressKind !== "mouse" && userMoving && map.isMoving();
 });
 // Belt and braces for the same gesture: an engine that lets the second tap of
 // a double tap through as a click would re-arm the hold behind the zoom, and
