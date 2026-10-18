@@ -458,14 +458,15 @@ def test_client_ip_ipv6_keys_on_64_and_maps_v4():
     assert client_ip("172.69.1.1", "::ffff:9.9.9.9") == "9.9.9.9"
 
 
-def test_ip_key_dropped_after_rate_window(client):
+def test_ip_key_dropped_after_an_hour(client):
     from datetime import datetime, timedelta
+    from pipeline.db import expire_ip_keys
     c, _ = client
     c.post("/api/submit", json={"venue_osm_id": "node/1", "brand": "Astra",
                                 "serving": "fass", "kind": "add"},
            headers={"X-Forwarded-For": "9.9.9.9"})
     conn = get_connection(config.DB_PATH)
-    submissions.within_rate_limit(conn, "h:x", datetime.now())
-    assert list_submissions(conn, "pending")[0]["submitter_ip"] != ""  # inside the window
-    submissions.within_rate_limit(conn, "h:x", datetime.now() + timedelta(seconds=config.RATE_WINDOW_S + 5))
+    expire_ip_keys(conn)
+    assert list_submissions(conn, "pending")[0]["submitter_ip"] != ""  # inside the hour
+    expire_ip_keys(conn, datetime.now() + timedelta(hours=2))
     assert list_submissions(conn, "pending")[0]["submitter_ip"] == ""

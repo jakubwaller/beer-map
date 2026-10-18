@@ -3,6 +3,7 @@ from __future__ import annotations
 import re
 import sqlite3
 import unicodedata
+from datetime import datetime, timedelta
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS venues (
@@ -122,6 +123,7 @@ def init_db(conn) -> None:
     if conn.execute(f"SELECT 1 FROM submissions WHERE {sent_id} LIMIT 1").fetchone():
         conn.execute(f"UPDATE submissions SET venue_osm_id='' WHERE {sent_id}")
     scrub_plaintext_ips(conn)
+    expire_ip_keys(conn)
     _backfill_search_keys(conn)
     conn.commit()
 
@@ -138,6 +140,17 @@ def _backfill_search_keys(conn) -> int:
         "UPDATE venues SET search_key=? WHERE id=?",
         [(_search_key(r["name"], r["address"]), r["id"]) for r in rows])
     return len(rows)
+
+
+def expire_ip_keys(conn, now=None) -> None:
+    """Blank hashed `submitter_ip` values older than an hour (the rate window).
+
+    Probe first: init_db runs per request and must not take the write lock.
+    """
+    cutoff = ((now or datetime.now()) - timedelta(hours=1)).isoformat()
+    stale = "submitter_ip <> '' AND created_at < ?"
+    if conn.execute(f"SELECT 1 FROM submissions WHERE {stale} LIMIT 1", (cutoff,)).fetchone():
+        conn.execute(f"UPDATE submissions SET submitter_ip='' WHERE {stale}", (cutoff,))
 
 
 def scrub_plaintext_ips(conn) -> int:
