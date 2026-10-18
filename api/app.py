@@ -222,7 +222,7 @@ def _from_own_site(request: Request) -> bool:
         return fetch_site == "same-origin"
     source = request.headers.get("origin") or request.headers.get("referer") or ""
     own = config.PUBLIC_URL.rstrip("/")
-    return source == own or source.startswith(own + "/")
+    return bool(own) and (source == own or source.startswith(own + "/"))
 
 
 def _require_admin(request: Request,

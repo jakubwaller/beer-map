@@ -102,6 +102,13 @@ def test_admin_write_without_fetch_metadata_needs_own_origin(client, monkeypatch
                      headers={"Referer": "https://zapfkompass.de/admin"}).json() == {"ok": True}
 
 
+def test_admin_write_origin_check_refuses_when_public_url_is_empty(client, monkeypatch):
+    c, _ = client
+    monkeypatch.setattr(config, "PUBLIC_URL", "")
+    assert TestClient(c.app).post("/api/admin/approve-all",
+                                  auth=("admin", "secret")).status_code == 403
+
+
 def test_admin_page_shows_venue_name(client):
     c, _ = client
     _submit(c)

@@ -116,6 +116,11 @@ def init_db(conn) -> None:
         if column not in cols:
             conn.execute(f"ALTER TABLE {table} ADD COLUMN {column} {decl}")
     _migrate_venue_brand_pk(conn)
+    # Old add_venue rows kept a client-sent venue_osm_id; it names no venue of
+    # theirs. Probe first: init_db runs per request and must not take the write lock.
+    sent_id = "kind='add_venue' AND COALESCE(venue_osm_id, '') <> ''"
+    if conn.execute(f"SELECT 1 FROM submissions WHERE {sent_id} LIMIT 1").fetchone():
+        conn.execute(f"UPDATE submissions SET venue_osm_id='' WHERE {sent_id}")
     scrub_plaintext_ips(conn)
     _backfill_search_keys(conn)
     conn.commit()

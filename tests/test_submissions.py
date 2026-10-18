@@ -312,6 +312,13 @@ def test_add_venue_with_empty_slug_gets_an_id(monkeypatch):
     assert get_submission(conn, sid)["assigned_osm_id"] == f"community/-{sid}"
 
 
+def test_init_db_blanks_client_sent_venue_osm_id_on_add_venue_rows():
+    conn = _seed()
+    sid = _approved(conn, kind="add_venue", venue_osm_id="node/1", venue_name="Craft Eck", brand="")
+    init_db(conn)
+    assert get_submission(conn, sid)["venue_osm_id"] == ""
+
+
 def test_add_venue_never_trusts_a_client_supplied_venue_osm_id(monkeypatch):
     # Old add_venue rows kept whatever venue_osm_id the client sent; it must not
     # steer the upsert onto a real venue.
