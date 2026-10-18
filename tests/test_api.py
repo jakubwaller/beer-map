@@ -438,3 +438,35 @@ def test_add_venue_ignores_a_client_supplied_venue_osm_id(client):
     c.post("/api/submit", json={"kind": "add_venue", "name": "Craft Eck", "venue_osm_id": "node/1",
                                 "address": "Musterstraße 5, 20357 Hamburg"})
     assert list_submissions(get_connection(config.DB_PATH), "pending")[0]["venue_osm_id"] == ""
+
+
+def test_client_ip_trusts_cf_header_only_from_cloudflare():
+    from api.app import client_ip
+    assert client_ip("172.69.1.1", "9.9.9.9") == "9.9.9.9"       # CF edge: visitor
+    assert client_ip("2606:4700::1", "9.9.9.9") == "9.9.9.9"
+    assert client_ip("203.0.113.5", "9.9.9.9") == "203.0.113.5"  # not CF: forged header ignored
+    assert client_ip("172.69.1.1", "") == "172.69.1.1"
+    assert client_ip("172.69.1.1", "junk") == "172.69.1.1"
+    assert client_ip("unknown", "9.9.9.9") == "unknown"
+
+
+def test_client_ip_ipv6_keys_on_64_and_maps_v4():
+    from api.app import client_ip
+    a = client_ip("172.69.1.1", "2001:db8:1:2:aaaa::1")
+    assert a == client_ip("172.69.1.1", "2001:db8:1:2:bbbb::9") == "2001:db8:1:2::"
+    assert a != client_ip("172.69.1.1", "2001:db8:1:3::1")
+    assert client_ip("172.69.1.1", "::ffff:9.9.9.9") == "9.9.9.9"
+
+
+def test_ip_key_dropped_after_an_hour(client):
+    from datetime import datetime, timedelta
+    from pipeline.db import expire_ip_keys
+    c, _ = client
+    c.post("/api/submit", json={"venue_osm_id": "node/1", "brand": "Astra",
+                                "serving": "fass", "kind": "add"},
+           headers={"X-Forwarded-For": "9.9.9.9"})
+    conn = get_connection(config.DB_PATH)
+    expire_ip_keys(conn)
+    assert list_submissions(conn, "pending")[0]["submitter_ip"] != ""  # inside the hour
+    expire_ip_keys(conn, datetime.now() + timedelta(hours=2))
+    assert list_submissions(conn, "pending")[0]["submitter_ip"] == ""
