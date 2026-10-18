@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 
 from .db import fetch_venues_with_brands
@@ -22,8 +23,10 @@ def _feature(r, with_brands: bool) -> dict:
 
 def _write(path: Path, features: list) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps({"type": "FeatureCollection", "features": features},
-                               ensure_ascii=False), encoding="utf-8")
+    tmp = path.with_name(path.name + ".tmp")  # replace is atomic: no visitor sees a half-written file
+    tmp.write_text(json.dumps({"type": "FeatureCollection", "features": features},
+                              ensure_ascii=False), encoding="utf-8")
+    os.replace(tmp, path)
 
 
 def export_geojson(conn, out_path: str) -> int:
