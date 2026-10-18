@@ -21,7 +21,8 @@ def client(tmp_path, monkeypatch):
     conn.commit()
     conn.close()
     from api.app import create_app
-    return TestClient(create_app()), str(out)
+    # Browsers send Sec-Fetch-Site on every request; admin writes require same-origin.
+    return TestClient(create_app(), headers={"Sec-Fetch-Site": "same-origin"}), str(out)
 
 
 def _submit(c, **kw):
@@ -69,6 +70,36 @@ def test_admin_requires_auth_and_approve_exports(client):
     assert brands[0]["brand"] == "Pilsner Urquell"
     assert brands[0]["source"] == "community"
     assert brands[0]["serving"] == "tank"
+
+
+def test_admin_write_from_another_site_is_refused(client):
+    # Cached basic credentials ride along on a cross-site POST; only the admin page may write.
+    c, _ = client
+    _submit(c)
+    sid = list_submissions(get_connection(config.DB_PATH), "pending")[0]["id"]
+    for url in (f"/api/admin/{sid}/approve", f"/api/admin/{sid}/reject", "/api/admin/approve-all"):
+        r = c.post(url, auth=("admin", "secret"), headers={"Sec-Fetch-Site": "cross-site"})
+        assert r.status_code == 403
+    assert len(list_submissions(get_connection(config.DB_PATH), "pending")) == 1
+    r = c.post(f"/api/admin/{sid}/approve", auth=("admin", "secret"),
+               headers={"Sec-Fetch-Site": "same-origin"})
+    assert r.json() == {"ok": True}
+
+
+def test_admin_write_without_fetch_metadata_needs_own_origin(client, monkeypatch):
+    # Older browsers send no Sec-Fetch-Site: then Origin or Referer must be this site.
+    c, _ = client
+    monkeypatch.setattr(config, "PUBLIC_URL", "https://zapfkompass.de")
+    bare = TestClient(c.app)  # no default Sec-Fetch-Site
+    _submit(c)
+    sid = list_submissions(get_connection(config.DB_PATH), "pending")[0]["id"]
+    url, auth = f"/api/admin/{sid}/reject", ("admin", "secret")
+    assert bare.post(url, auth=auth).status_code == 403
+    assert bare.post(url, auth=auth, headers={"Origin": "https://evil.example"}).status_code == 403
+    assert bare.post(url, auth=auth,
+                     headers={"Origin": "https://zapfkompass.de.evil.example"}).status_code == 403
+    assert bare.post(url, auth=auth,
+                     headers={"Referer": "https://zapfkompass.de/admin"}).json() == {"ok": True}
 
 
 def test_admin_page_shows_venue_name(client):
