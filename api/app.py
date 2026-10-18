@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import html
+import ipaddress
 import math
 import os
 import re
@@ -23,6 +24,34 @@ from pipeline.db import (fetch_gray_in_bbox, get_connection, init_db,
 from pipeline.export import _feature
 
 from . import admin_links, notify
+
+# Cloudflare's published ranges (https://www.cloudflare.com/ips/). Update if they change.
+_CLOUDFLARE_NETS = [ipaddress.ip_network(n) for n in (
+    "173.245.48.0/20", "103.21.244.0/22", "103.22.200.0/22", "103.31.4.0/22",
+    "141.101.64.0/18", "108.162.192.0/18", "190.93.240.0/20",
+    "188.114.96.0/20", "197.234.240.0/22", "198.41.128.0/17",
+    "162.158.0.0/15", "104.16.0.0/13", "104.24.0.0/14", "172.64.0.0/13",
+    "131.0.72.0/22",
+    "2400:cb00::/32", "2606:4700::/32", "2803:f800::/32", "2405:b500::/32",
+    "2405:8100::/32", "2a06:98c0::/29", "2c0f:f248::/32",
+)]
+
+
+def client_ip(peer: str, cf_connecting_ip: str) -> str:
+    """The visitor's IP for rate limiting.
+
+    `peer` is the address Caddy saw (request.client.host); behind Cloudflare
+    that is a shared edge. CF-Connecting-IP is believed only when the peer is
+    inside Cloudflare's ranges, otherwise a client could forge it.
+    """
+    try:
+        ip = ipaddress.ip_address(cf_connecting_ip.strip())
+        if any(ipaddress.ip_address(peer) in n for n in _CLOUDFLARE_NETS):
+            return str(ip)
+    except ValueError:
+        pass
+    return peer
+
 
 _basic = HTTPBasic(auto_error=False)
 _ADMIN_COOKIE = "beermap_admin"
@@ -305,10 +334,10 @@ def create_app() -> FastAPI:
                 "SELECT 1 FROM venues WHERE osm_id=?",
                 (sub.venue_osm_id,)).fetchone() is None:
             raise HTTPException(400, "unknown venue")
-        # request.client.host is set from X-Forwarded-For by ProxyHeadersMiddleware,
-        # which only trusts the immediate peer (Caddy — the sole ingress). A client
-        # cannot spoof it because it never connects to this app directly.
-        ip = request.client.host if request.client else "unknown"
+        # request.client.host is the peer Caddy saw (via ProxyHeadersMiddleware);
+        # client_ip() swaps in the visitor when that peer is a Cloudflare edge.
+        peer = request.client.host if request.client else "unknown"
+        ip = client_ip(peer, request.headers.get("cf-connecting-ip", ""))
         # Hashed immediately: the rate limiter only needs a stable per-client
         # key, so the raw address is never persisted.
         ip_key = submissions.hash_ip(ip)

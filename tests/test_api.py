@@ -438,3 +438,13 @@ def test_add_venue_ignores_a_client_supplied_venue_osm_id(client):
     c.post("/api/submit", json={"kind": "add_venue", "name": "Craft Eck", "venue_osm_id": "node/1",
                                 "address": "Musterstraße 5, 20357 Hamburg"})
     assert list_submissions(get_connection(config.DB_PATH), "pending")[0]["venue_osm_id"] == ""
+
+
+def test_client_ip_trusts_cf_header_only_from_cloudflare():
+    from api.app import client_ip
+    assert client_ip("172.69.1.1", "9.9.9.9") == "9.9.9.9"       # CF edge: visitor
+    assert client_ip("2606:4700::1", "9.9.9.9") == "9.9.9.9"
+    assert client_ip("203.0.113.5", "9.9.9.9") == "203.0.113.5"  # not CF: forged header ignored
+    assert client_ip("172.69.1.1", "") == "172.69.1.1"
+    assert client_ip("172.69.1.1", "junk") == "172.69.1.1"
+    assert client_ip("unknown", "9.9.9.9") == "unknown"
