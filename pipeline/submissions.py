@@ -100,6 +100,10 @@ def hash_ip(ip: str) -> str:
 
 def within_rate_limit(conn, ip: str, now: datetime) -> bool:
     since = (now - timedelta(seconds=config.RATE_WINDOW_S)).isoformat()
+    # The key is only needed for the window; drop it afterwards (Datenschutz says 1 h).
+    conn.execute("UPDATE submissions SET submitter_ip='' WHERE submitter_ip<>'' AND created_at < ?",
+                 (since,))
+    conn.commit()
     return count_submissions_since(conn, ip, since) < config.RATE_LIMIT
 
 

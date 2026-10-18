@@ -456,3 +456,16 @@ def test_client_ip_ipv6_keys_on_64_and_maps_v4():
     assert a == client_ip("172.69.1.1", "2001:db8:1:2:bbbb::9") == "2001:db8:1:2::"
     assert a != client_ip("172.69.1.1", "2001:db8:1:3::1")
     assert client_ip("172.69.1.1", "::ffff:9.9.9.9") == "9.9.9.9"
+
+
+def test_ip_key_dropped_after_rate_window(client):
+    from datetime import datetime, timedelta
+    c, _ = client
+    c.post("/api/submit", json={"venue_osm_id": "node/1", "brand": "Astra",
+                                "serving": "fass", "kind": "add"},
+           headers={"X-Forwarded-For": "9.9.9.9"})
+    conn = get_connection(config.DB_PATH)
+    submissions.within_rate_limit(conn, "h:x", datetime.now())
+    assert list_submissions(conn, "pending")[0]["submitter_ip"] != ""  # inside the window
+    submissions.within_rate_limit(conn, "h:x", datetime.now() + timedelta(seconds=config.RATE_WINDOW_S + 5))
+    assert list_submissions(conn, "pending")[0]["submitter_ip"] == ""
