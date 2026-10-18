@@ -26,7 +26,8 @@ from datetime import date, datetime, timedelta
 
 from . import osm
 from .config import _AMENITY, COUNTRY_BBOX, COUNTRY_CODES, DB_PATH, normalize_brand
-from .db import get_connection, init_db, upsert_brand, upsert_edge, upsert_venue
+from .db import (get_connection, init_db, prune_stale_osm_edges, upsert_brand,
+                 upsert_edge, upsert_venue)
 
 # Tiles whose every span is at or below this give up instead of splitting
 # further; 1.0° tiles quarter at most twice (1.0 -> 0.5 -> 0.25).
@@ -139,6 +140,7 @@ def sweep_country(db_path=DB_PATH, bbox=COUNTRY_BBOX, tile_deg=1.0, resume=False
             bid = upsert_brand(conn, normalize_brand(ed.brand))
             upsert_edge(conn, id_by_osm[ed.venue_osm_id], bid, ed.source, today,
                         serving=ed.serving)
+        prune_stale_osm_edges(conn, id_by_osm.values(), today)
         conn.execute(
             "INSERT INTO country_tiles (tile, fetched_at, venues) VALUES (?, ?, ?) "
             "ON CONFLICT(tile) DO UPDATE SET "

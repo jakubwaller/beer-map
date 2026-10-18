@@ -203,6 +203,17 @@ def upsert_edge(conn, venue_id, brand_id, source, seen, serving="unknown",
     )
 
 
+def prune_stale_osm_edges(conn, venue_ids, today: str) -> None:
+    """Drop osm edges not seen today on venues fetched today: a mapper removed the tag.
+    Scoped to `venue_ids` so a failed fetch (nothing fetched) prunes nothing."""
+    ids = list(venue_ids)
+    for i in range(0, len(ids), 500):  # SQLite caps bound variables
+        chunk = ids[i:i + 500]
+        conn.execute(
+            "DELETE FROM venue_brand WHERE source='osm' AND last_seen < ? "
+            f"AND venue_id IN ({','.join('?' * len(chunk))})", [today, *chunk])
+
+
 def renormalize_brands(conn, normalize, skip=frozenset()) -> int:
     """Re-apply brand normalization to rows already in the DB. Ingest runs
     `normalize_brand` on new edges only, so rows written before an alias (or
