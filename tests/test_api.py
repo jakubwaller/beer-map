@@ -448,3 +448,11 @@ def test_client_ip_trusts_cf_header_only_from_cloudflare():
     assert client_ip("172.69.1.1", "") == "172.69.1.1"
     assert client_ip("172.69.1.1", "junk") == "172.69.1.1"
     assert client_ip("unknown", "9.9.9.9") == "unknown"
+
+
+def test_client_ip_ipv6_keys_on_64_and_maps_v4():
+    from api.app import client_ip
+    a = client_ip("172.69.1.1", "2001:db8:1:2:aaaa::1")
+    assert a == client_ip("172.69.1.1", "2001:db8:1:2:bbbb::9") == "2001:db8:1:2::"
+    assert a != client_ip("172.69.1.1", "2001:db8:1:3::1")
+    assert client_ip("172.69.1.1", "::ffff:9.9.9.9") == "9.9.9.9"

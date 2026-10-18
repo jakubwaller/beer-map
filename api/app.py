@@ -38,15 +38,23 @@ _CLOUDFLARE_NETS = [ipaddress.ip_network(n) for n in (
 
 
 def client_ip(peer: str, cf_connecting_ip: str) -> str:
-    """The visitor's IP for rate limiting.
+    """The visitor's key for rate limiting.
 
     `peer` is the address Caddy saw (request.client.host); behind Cloudflare
     that is a shared edge. CF-Connecting-IP is believed only when the peer is
-    inside Cloudflare's ranges, otherwise a client could forge it.
+    inside Cloudflare's ranges, otherwise a client could forge it. IPv6 is
+    keyed on its /64 (one subscriber owns the whole /64, so single addresses
+    would be free to rotate); IPv4-mapped IPv6 counts as the IPv4.
+    shortcut: any Cloudflare zone passes the range check, not just ours; a
+    spammer who routes via their own zone only dodges this soft limit
+    (submissions are moderated). Upgrade: Authenticated Origin Pulls.
     """
     try:
-        ip = ipaddress.ip_address(cf_connecting_ip.strip())
         if any(ipaddress.ip_address(peer) in n for n in _CLOUDFLARE_NETS):
+            ip = ipaddress.ip_address(cf_connecting_ip.strip())
+            ip = getattr(ip, "ipv4_mapped", None) or ip
+            if ip.version == 6:
+                return str(ipaddress.ip_network(f"{ip}/64", strict=False).network_address)
             return str(ip)
     except ValueError:
         pass
