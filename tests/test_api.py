@@ -424,3 +424,10 @@ def test_notification_email_channel(monkeypatch):
     assert "/admin/login?key=" in sent["msg"].get_content()
     # The token stays out of the subject: subject lines are not E2E-encrypted.
     assert "key=" not in sent["msg"]["Subject"]
+
+
+def test_add_venue_ignores_a_client_supplied_venue_osm_id(client):
+    c, _ = client
+    c.post("/api/submit", json={"kind": "add_venue", "name": "Craft Eck", "venue_osm_id": "node/1",
+                                "address": "Musterstraße 5, 20357 Hamburg"})
+    assert list_submissions(get_connection(config.DB_PATH), "pending")[0]["venue_osm_id"] == ""

@@ -67,7 +67,7 @@ def approved_community_entries(conn) -> list[dict]:
         if s["kind"] == "add_venue":
             if s["lat"] is None or s["lon"] is None:
                 continue  # approved but never applied — nothing to pin
-            entry = {"osm_id": "community/" + slugify(s["venue_name"]),
+            entry = {"osm_id": s["venue_osm_id"] or "community/" + slugify(s["venue_name"]),
                      "venue": s["venue_name"], "lat": s["lat"], "lon": s["lon"]}
             if s["address"]:
                 entry["address"] = s["address"]

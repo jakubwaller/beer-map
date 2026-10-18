@@ -317,6 +317,8 @@ def create_app() -> FastAPI:
         payload["venue_name"] = ((sub.name or "").strip()
                                  if sub.kind == "add_venue" else sub.venue_osm_id)
         payload["submitter_ip"] = ip_key
+        if sub.kind == "add_venue":
+            payload["venue_osm_id"] = ""  # apply_one trusts this column; assigned at approval
         insert_submission(conn, payload, datetime.now().isoformat())
         notify.notify_new_submission(sub.brand or sub.kind,
                                      sub.venue_osm_id or payload["venue_name"])
