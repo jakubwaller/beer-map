@@ -29,7 +29,7 @@ def geocode_address(address: str, url: str = NOMINATIM_URL,
         )
         resp.raise_for_status()
         results = resp.json()
-    except httpx.HTTPError:
+    except (httpx.HTTPError, ValueError):  # ValueError: 200 with a non-JSON body
         return None
     if not results:
         return None

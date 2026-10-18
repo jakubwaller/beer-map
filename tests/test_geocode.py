@@ -44,3 +44,11 @@ def test_geocode_transient_failure_returns_none(monkeypatch):
 
     monkeypatch.setattr(geocode.httpx, "get", _get)
     assert geocode_address("Neue Allee 7") is None
+
+
+def test_geocode_returns_none_on_a_non_json_200(monkeypatch):
+    def get(url, params=None, headers=None, timeout=None):
+        return httpx.Response(200, text="<html>busy</html>", request=httpx.Request("GET", url))
+
+    monkeypatch.setattr(geocode.httpx, "get", get)
+    assert geocode_address("Neue Allee 7, Hamburg") is None
