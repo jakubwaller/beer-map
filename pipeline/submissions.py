@@ -138,9 +138,9 @@ def _apply_add_venue(conn, sub: dict, today: str) -> bool:
         if sub.get("id") is not None:
             conn.execute("UPDATE submissions SET lat=?, lon=? WHERE id=?",
                          (lat, lon, sub["id"]))
-    osm_id = sub.get("venue_osm_id") or _community_osm_id(conn, sub, lat, lon)
+    osm_id = sub.get("assigned_osm_id") or _community_osm_id(conn, sub, lat, lon)
     if sub.get("id") is not None:
-        conn.execute("UPDATE submissions SET venue_osm_id=? WHERE id=?", (osm_id, sub["id"]))
+        conn.execute("UPDATE submissions SET assigned_osm_id=? WHERE id=?", (osm_id, sub["id"]))
     vid = upsert_venue(conn, Venue(osm_id, sub["venue_name"], lat, lon,
                                    sub.get("address")), today)
     brand = (sub.get("brand") or "").strip()

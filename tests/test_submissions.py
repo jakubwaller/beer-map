@@ -299,7 +299,7 @@ def test_same_name_add_venue_in_two_cities_stays_two_venues(monkeypatch):
                         "ORDER BY lat").fetchall()
     assert [(r["osm_id"], r["lat"]) for r in rows] == [
         ("community/zum-l-wen-2", 48.14), ("community/zum-l-wen", 53.55)]
-    subs = [get_submission(conn, i)["venue_osm_id"] for i in (1, 2)]
+    subs = [get_submission(conn, i)["assigned_osm_id"] for i in (1, 2)]
     assert subs == ["community/zum-l-wen", "community/zum-l-wen-2"]
 
 
@@ -309,7 +309,20 @@ def test_add_venue_with_empty_slug_gets_an_id(monkeypatch):
                         lambda address, near=None: (53.6, 10.1))
     sid = _approved(conn, kind="add_venue", venue_osm_id="", venue_name="Кафе", brand="")
     assert apply_approved(conn, "2026-08-01") == 1
-    assert get_submission(conn, sid)["venue_osm_id"] == f"community/-{sid}"
+    assert get_submission(conn, sid)["assigned_osm_id"] == f"community/-{sid}"
+
+
+def test_add_venue_never_trusts_a_client_supplied_venue_osm_id(monkeypatch):
+    # Old add_venue rows kept whatever venue_osm_id the client sent; it must not
+    # steer the upsert onto a real venue.
+    conn = _seed()
+    monkeypatch.setattr("pipeline.submissions.geocode_address",
+                        lambda address, near=None: (48.14, 11.58))
+    _approved(conn, kind="add_venue", venue_osm_id="node/1", venue_name="Craft Eck", brand="")
+    assert apply_approved(conn, "2026-08-01") == 1
+    bar = conn.execute("SELECT name, lat FROM venues WHERE osm_id='node/1'").fetchone()
+    assert (bar["name"], bar["lat"]) == ("Bar X", 53.5)
+    assert conn.execute("SELECT 1 FROM venues WHERE osm_id='community/craft-eck'").fetchone()
 
 
 def test_applied_edit_hours_yields_to_osm_once_uploaded():

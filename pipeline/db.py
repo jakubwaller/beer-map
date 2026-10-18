@@ -53,7 +53,11 @@ CREATE TABLE IF NOT EXISTS submissions (
     decided_at TEXT,
     -- edit_hours only: NULL = still to push to OSM, N > 0 = uploaded in that
     -- changeset, 0 = resolved without an upload (pipeline/osm_push.py).
-    osm_changeset INTEGER
+    osm_changeset INTEGER,
+    -- add_venue only: the community/<slug> id the first apply chose. Written by
+    -- the server alone, never from the request (venue_osm_id came from the
+    -- client on old add_venue rows, so it is not trusted for this).
+    assigned_osm_id TEXT
 );
 -- One row per fetched tile of the nationwide sweep (pipeline/country.py), so
 -- an interrupted run can resume without refetching what it already has.
@@ -78,6 +82,7 @@ _MIGRATIONS = (
     ("submissions", "beer", "TEXT"),
     ("submissions", "opening_hours", "TEXT"),
     ("submissions", "osm_changeset", "INTEGER"),
+    ("submissions", "assigned_osm_id", "TEXT"),
 )
 
 
