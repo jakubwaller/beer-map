@@ -53,7 +53,11 @@ CREATE TABLE IF NOT EXISTS submissions (
     decided_at TEXT,
     -- edit_hours only: NULL = still to push to OSM, N > 0 = uploaded in that
     -- changeset, 0 = resolved without an upload (pipeline/osm_push.py).
-    osm_changeset INTEGER
+    osm_changeset INTEGER,
+    -- add_venue only: the community/<slug> id the first apply chose. Written by
+    -- the server alone, never from the request (venue_osm_id came from the
+    -- client on old add_venue rows, so it is not trusted for this).
+    assigned_osm_id TEXT
 );
 -- One row per fetched tile of the nationwide sweep (pipeline/country.py), so
 -- an interrupted run can resume without refetching what it already has.
@@ -78,6 +82,7 @@ _MIGRATIONS = (
     ("submissions", "beer", "TEXT"),
     ("submissions", "opening_hours", "TEXT"),
     ("submissions", "osm_changeset", "INTEGER"),
+    ("submissions", "assigned_osm_id", "TEXT"),
 )
 
 
@@ -111,6 +116,11 @@ def init_db(conn) -> None:
         if column not in cols:
             conn.execute(f"ALTER TABLE {table} ADD COLUMN {column} {decl}")
     _migrate_venue_brand_pk(conn)
+    # Old add_venue rows kept a client-sent venue_osm_id; it names no venue of
+    # theirs. Probe first: init_db runs per request and must not take the write lock.
+    sent_id = "kind='add_venue' AND COALESCE(venue_osm_id, '') <> ''"
+    if conn.execute(f"SELECT 1 FROM submissions WHERE {sent_id} LIMIT 1").fetchone():
+        conn.execute(f"UPDATE submissions SET venue_osm_id='' WHERE {sent_id}")
     scrub_plaintext_ips(conn)
     _backfill_search_keys(conn)
     conn.commit()
@@ -201,6 +211,17 @@ def upsert_edge(conn, venue_id, brand_id, source, seen, serving="unknown",
         """,
         (venue_id, brand_id, source, serving, beer or "", confidence, seen, seen),
     )
+
+
+def prune_stale_osm_edges(conn, venue_ids, today: str) -> None:
+    """Drop osm edges not seen today on venues fetched today: a mapper removed the tag.
+    Scoped to `venue_ids` so a failed fetch (nothing fetched) prunes nothing."""
+    ids = list(venue_ids)
+    for i in range(0, len(ids), 500):  # SQLite caps bound variables
+        chunk = ids[i:i + 500]
+        conn.execute(
+            "DELETE FROM venue_brand WHERE source='osm' AND last_seen < ? "
+            f"AND venue_id IN ({','.join('?' * len(chunk))})", [today, *chunk])
 
 
 def renormalize_brands(conn, normalize, skip=frozenset()) -> int:

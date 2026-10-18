@@ -209,10 +209,28 @@ def _tile_bounds(z: int, x: int, y: int):
     return lat(y + 1), lon(x), lat(y), lon(x + 1)
 
 
+def _from_own_site(request: Request) -> bool:
+    """Whether a write came from this site's own pages.
+
+    Cached basic credentials ride along on a cross-site form POST too, so an
+    admin write must prove its origin. Fails closed: Sec-Fetch-Site when the
+    browser sends it, else an Origin or Referer on PUBLIC_URL, else refused.
+    Only the admin page's fetch() posts here.
+    """
+    fetch_site = request.headers.get("sec-fetch-site")
+    if fetch_site is not None:
+        return fetch_site == "same-origin"
+    source = request.headers.get("origin") or request.headers.get("referer") or ""
+    own = config.PUBLIC_URL.rstrip("/")
+    return bool(own) and (source == own or source.startswith(own + "/"))
+
+
 def _require_admin(request: Request,
                    creds: Optional[HTTPBasicCredentials] = Depends(_basic)):
     # Two ways in: the signed-link cookie set by /admin/login (SameSite=Lax,
     # so a cross-site POST never carries it) or classic basic auth.
+    if request.method != "GET" and not _from_own_site(request):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "cross-site request")
     tok = request.cookies.get(_ADMIN_COOKIE)
     if tok and admin_links.verify_token(tok, datetime.now()):
         return
@@ -299,6 +317,8 @@ def create_app() -> FastAPI:
         payload["venue_name"] = ((sub.name or "").strip()
                                  if sub.kind == "add_venue" else sub.venue_osm_id)
         payload["submitter_ip"] = ip_key
+        if sub.kind == "add_venue":
+            payload["venue_osm_id"] = ""  # apply_one trusts this column; assigned at approval
         insert_submission(conn, payload, datetime.now().isoformat())
         notify.notify_new_submission(sub.brand or sub.kind,
                                      sub.venue_osm_id or payload["venue_name"])
@@ -380,9 +400,7 @@ def create_app() -> FastAPI:
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex">
 <title>Zapfkompass – Moderation</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Lora:wght@500;600;700&family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="/fonts/fonts.css" rel="stylesheet">
 <style>{_ADMIN_CSS}</style>
 </head><body>
 <header>

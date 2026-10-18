@@ -86,8 +86,8 @@ test("open-ended times ('18:00+') parse as a start without a close", () => {
     { label: "Mo–Sa", text: "ab 18:00" },
     { label: "So", text: "geschlossen" },
   ]);
-  assert.equal(statusText(openState(s, at("2026-08-03T19:00"))), "Jetzt geöffnet");
-  assert.equal(statusText(openState(s, at("2026-08-03T09:00"))),
+  assert.equal(statusText(openState(s, at("2026-08-03T19:00+02:00"))), "Jetzt geöffnet");
+  assert.equal(statusText(openState(s, at("2026-08-03T09:00+02:00"))),
                "Geschlossen · öffnet heute 18:00");
 });
 
@@ -106,31 +106,31 @@ test("out-of-scope syntax returns null so the raw tag can be shown", () => {
 
 test("openState reports open with a closing time", () => {
   const s = parseOpeningHours("Mo-Fr 17:00-01:00");
-  const st = openState(s, at("2026-08-03T18:30"));  // Monday evening
+  const st = openState(s, at("2026-08-03T18:30+02:00"));  // Monday evening
   assert.equal(st.open, true);
   assert.equal(statusText(st), "Jetzt geöffnet · bis 01:00");
 });
 
 test("openState counts yesterday's after-midnight tail as open", () => {
   const s = parseOpeningHours("Mo-Fr 17:00-01:00");
-  const st = openState(s, at("2026-08-04T00:30"));  // Tuesday 00:30 = Monday's tail
+  const st = openState(s, at("2026-08-04T00:30+02:00"));  // Tuesday 00:30 = Monday's tail
   assert.equal(st.open, true);
   assert.equal(st.until, 60);
 });
 
 test("openState names the next opening", () => {
   const s = parseOpeningHours("Mo-Fr 17:00-23:00");
-  assert.equal(statusText(openState(s, at("2026-08-03T09:00"))),
+  assert.equal(statusText(openState(s, at("2026-08-03T09:00+02:00"))),
                "Geschlossen · öffnet heute 17:00");
-  assert.equal(statusText(openState(s, at("2026-08-03T23:30"))),
+  assert.equal(statusText(openState(s, at("2026-08-03T23:30+02:00"))),
                "Geschlossen · öffnet morgen 17:00");
   // Saturday 12:00 -> shut all weekend, next opening is Monday.
-  assert.equal(statusText(openState(s, at("2026-08-08T12:00"))),
+  assert.equal(statusText(openState(s, at("2026-08-08T12:00+02:00"))),
                "Geschlossen · öffnet Mo 17:00");
 });
 
 test("openState survives a schedule that never opens", () => {
-  const st = openState(parseOpeningHours("Mo-Su off"), at("2026-08-03T18:30"));
+  const st = openState(parseOpeningHours("Mo-Su off"), at("2026-08-03T18:30+02:00"));
   assert.deepEqual(st, { open: false });
   assert.equal(statusText(st), "Geschlossen");
 });
@@ -151,13 +151,13 @@ test("formatWeek spells out a round-the-clock day", () => {
 
 test("statusText and formatWeek speak Czech and English on request", () => {
   const s = parseOpeningHours("Mo-Fr 17:00-01:00");
-  assert.equal(statusText(openState(s, at("2026-08-03T18:30")), "cs"),
+  assert.equal(statusText(openState(s, at("2026-08-03T18:30+02:00")), "cs"),
                "Nyní otevřeno · do 01:00");
-  assert.equal(statusText(openState(s, at("2026-08-03T18:30")), "en"),
+  assert.equal(statusText(openState(s, at("2026-08-03T18:30+02:00")), "en"),
                "Open now · until 01:00");
-  assert.equal(statusText(openState(s, at("2026-08-08T12:00")), "cs"),
+  assert.equal(statusText(openState(s, at("2026-08-08T12:00+02:00")), "cs"),
                "Zavřeno · otevírá Po 17:00");
-  assert.equal(statusText(openState(s, at("2026-08-08T12:00")), "en"),
+  assert.equal(statusText(openState(s, at("2026-08-08T12:00+02:00")), "en"),
                "Closed · opens Mon 17:00");
   assert.deepEqual(formatWeek(s, "cs"), [
     { label: "Po–Pá", text: "17:00–01:00" },
@@ -168,7 +168,7 @@ test("statusText and formatWeek speak Czech and English on request", () => {
     { label: "Sat, Sun", text: "closed" },
   ]);
   // An unknown language falls back to German rather than crashing.
-  assert.equal(statusText(openState(s, at("2026-08-03T18:30")), "fr"),
+  assert.equal(statusText(openState(s, at("2026-08-03T18:30+02:00")), "fr"),
                "Jetzt geöffnet · bis 01:00");
 });
 
@@ -181,15 +181,15 @@ test("venuesOpenNow keeps the open venues and drops unknown hours", () => {
     { name: "Always", opening_hours: "24/7" },
   ];
   assert.deepEqual(
-    venuesOpenNow(venues, at("2026-08-03T18:30")).map((v) => v.name),
+    venuesOpenNow(venues, at("2026-08-03T18:30+02:00")).map((v) => v.name),
     ["Open", "Always"]);
 });
 
 test("venuesOpenNow counts yesterday's after-midnight tail as open", () => {
   const venues = [{ name: "Late", opening_hours: "Mo 17:00-03:00" }];
   // Tuesday 01:30 — still inside Monday's run.
-  assert.equal(venuesOpenNow(venues, at("2026-08-04T01:30")).length, 1);
-  assert.equal(venuesOpenNow(venues, at("2026-08-04T04:00")).length, 0);
+  assert.equal(venuesOpenNow(venues, at("2026-08-04T01:30+02:00")).length, 1);
+  assert.equal(venuesOpenNow(venues, at("2026-08-04T04:00+02:00")).length, 0);
 });
 
 test("venueSchedule memoizes the parse on the venue object", () => {
@@ -261,4 +261,11 @@ test("gridToOpeningHours refuses a grid that says nothing usable", () => {
 test("a single differing day does not collapse into its neighbours", () => {
   const grid = scheduleToGrid(parseOpeningHours("Mo-Tu 10:00-20:00; We off; Th-Su 10:00-20:00"));
   assert.equal(gridToOpeningHours(grid), "Mo-Tu 10:00-20:00; We off; Th-Su 10:00-20:00");
+});
+
+test("openState reads Berlin time, whatever the device zone", () => {
+  const s = parseOpeningHours("Mo-Su 11:00-22:00");
+  // 20:30Z is 22:30 in Berlin (CEST): closed, though 21:30 in London.
+  assert.equal(openState(s, at("2026-07-01T20:30:00Z")).open, false);
+  assert.equal(openState(s, at("2026-07-01T19:30:00Z")).open, true);
 });

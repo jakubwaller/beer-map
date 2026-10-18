@@ -13,6 +13,7 @@ from .db import (
 )
 from .export import export_geojson
 from .geocode import geocode_address
+from .matching import haversine_m
 from .models import Venue
 
 _SERVINGS = {"fass", "tank"}
@@ -27,9 +28,10 @@ _SEL = rf"(?:{_DAY}(?:-{_DAY})?)(?:,{_DAY}(?:-{_DAY})?)*"
 # refuses anything past 1440, so 24:30 would validate here and then sit on the
 # venue as a string the map cannot read.
 _RANGE = r"(?:[01]\d|2[0-3]):[0-5]\d-(?:(?:[01]\d|2[0-3]):[0-5]\d|24:00)"
-_RULE = rf"(?:{_SEL}\s+(?:off|closed|{_RANGE}(?:,{_RANGE})*))"
-_HOURS_RE = re.compile(rf"(?:24/7|{_RULE}(?:\s*;\s*{_RULE})*)")
-_RANGE_RE = re.compile(_RANGE)
+# Literal spaces and re.ASCII: \s would let a newline through and \d a non-ASCII digit.
+_RULE = rf"(?:{_SEL} +(?:off|closed|{_RANGE}(?:,{_RANGE})*))"
+_HOURS_RE = re.compile(rf"(?:24/7|{_RULE}(?: *; *{_RULE})*)", re.ASCII)
+_RANGE_RE = re.compile(_RANGE, re.ASCII)
 _BRAND_KINDS = ("add", "remove")
 _VENUE_KINDS = ("edit_venue", "close_venue", "edit_hours")
 _NEW_VENUE_KIND = "add_venue"
@@ -106,6 +108,19 @@ def _venue_id(conn, osm_id):
     return row["id"] if row else None
 
 
+def _community_osm_id(conn, sub: dict, lat: float, lon: float) -> str:
+    """`community/<slug>`, or `community/<slug>-<id>` when the slug is empty or
+    already belongs to a different place (other name, or more than 200 m away)."""
+    slug = slugify(sub["venue_name"])
+    osm_id = "community/" + slug
+    row = conn.execute("SELECT name, lat, lon FROM venues WHERE osm_id=?", (osm_id,)).fetchone()
+    taken = row and (row["name"] != sub["venue_name"]
+                     or haversine_m(row["lat"], row["lon"], lat, lon) > 200)
+    if slug and not taken:
+        return osm_id
+    return f"{osm_id}-{sub.get('id')}"
+
+
 def _apply_add_venue(conn, sub: dict, today: str) -> bool:
     """Create the submitted venue, geocoding its address on first apply.
 
@@ -123,7 +138,9 @@ def _apply_add_venue(conn, sub: dict, today: str) -> bool:
         if sub.get("id") is not None:
             conn.execute("UPDATE submissions SET lat=?, lon=? WHERE id=?",
                          (lat, lon, sub["id"]))
-    osm_id = "community/" + slugify(sub["venue_name"])
+    osm_id = sub.get("assigned_osm_id") or _community_osm_id(conn, sub, lat, lon)
+    if sub.get("id") is not None:
+        conn.execute("UPDATE submissions SET assigned_osm_id=? WHERE id=?", (osm_id, sub["id"]))
     vid = upsert_venue(conn, Venue(osm_id, sub["venue_name"], lat, lon,
                                    sub.get("address")), today)
     brand = (sub.get("brand") or "").strip()
@@ -150,11 +167,18 @@ def apply_one(conn, sub: dict, today: str) -> bool:
         # fatal: fall back to updating just the address text.
         row = conn.execute(
             "SELECT lat, lon FROM venues WHERE osm_id=?", (osm_id,)).fetchone()
-        coords = geocode_address(sub["address"], near=(row["lat"], row["lon"]))
-        lat, lon = coords if coords else (None, None)
+        lat, lon = sub.get("lat"), sub.get("lon")
+        if lat is None or lon is None:
+            coords = geocode_address(sub["address"], near=(row["lat"], row["lon"]))
+            lat, lon = coords if coords else (None, None)
+            if coords and sub.get("id") is not None:  # stored so replays skip Nominatim
+                conn.execute("UPDATE submissions SET lat=?, lon=? WHERE id=?",
+                             (lat, lon, sub["id"]))
         update_venue_address(conn, osm_id, sub["address"], lat, lon)
         return True
     if kind == "edit_hours":
+        if (sub.get("osm_changeset") or 0) > 0:  # uploaded: OSM owns the hours now
+            return True
         update_venue_hours(conn, osm_id, sub["opening_hours"])
         return True
     if kind == "close_venue":

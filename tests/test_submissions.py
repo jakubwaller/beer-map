@@ -4,7 +4,7 @@ from datetime import datetime
 
 from pipeline.db import (
     get_connection, init_db, insert_submission, get_submission,
-    set_submission_status, upsert_venue, fetch_venues_with_brands,
+    set_submission_changeset, set_submission_status, upsert_venue, fetch_venues_with_brands,
 )
 from pipeline.models import Venue
 from pipeline.submissions import (
@@ -277,3 +277,96 @@ def test_edit_hours_survives_the_nightly_osm_reimport():
     assert hours() == "Mo-Su 09:00-17:00"
     apply_approved(conn, "2026-09-02")
     assert hours() == "Mo-Fr 16:00-01:00; Sa,Su 14:00-02:00"
+
+
+def _approved(conn, **kw):
+    sid = insert_submission(conn, _row(**kw), "2026-07-30T10:00:00")
+    set_submission_status(conn, sid, "approved", "2026-07-30")
+    return sid
+
+
+def test_same_name_add_venue_in_two_cities_stays_two_venues(monkeypatch):
+    conn = _seed()
+    coords = {"Hamburg": (53.55, 10.0), "München": (48.14, 11.58)}
+    monkeypatch.setattr("pipeline.submissions.geocode_address",
+                        lambda address, near=None: coords[address])
+    for city in coords:
+        _approved(conn, kind="add_venue", venue_osm_id="", venue_name="Zum Löwen",
+                  brand="Astra", address=city)
+    for day in ("2026-08-01", "2026-08-02"):  # two nightly replays
+        assert apply_approved(conn, day) == 2
+    rows = conn.execute("SELECT osm_id, lat FROM venues WHERE osm_id LIKE 'community/%' "
+                        "ORDER BY lat").fetchall()
+    assert [(r["osm_id"], r["lat"]) for r in rows] == [
+        ("community/zum-l-wen-2", 48.14), ("community/zum-l-wen", 53.55)]
+    subs = [get_submission(conn, i)["assigned_osm_id"] for i in (1, 2)]
+    assert subs == ["community/zum-l-wen", "community/zum-l-wen-2"]
+
+
+def test_add_venue_with_empty_slug_gets_an_id(monkeypatch):
+    conn = _seed()
+    monkeypatch.setattr("pipeline.submissions.geocode_address",
+                        lambda address, near=None: (53.6, 10.1))
+    sid = _approved(conn, kind="add_venue", venue_osm_id="", venue_name="Кафе", brand="")
+    assert apply_approved(conn, "2026-08-01") == 1
+    assert get_submission(conn, sid)["assigned_osm_id"] == f"community/-{sid}"
+
+
+def test_init_db_blanks_client_sent_venue_osm_id_on_add_venue_rows():
+    conn = _seed()
+    sid = _approved(conn, kind="add_venue", venue_osm_id="node/1", venue_name="Craft Eck", brand="")
+    init_db(conn)
+    assert get_submission(conn, sid)["venue_osm_id"] == ""
+
+
+def test_add_venue_never_trusts_a_client_supplied_venue_osm_id(monkeypatch):
+    # Old add_venue rows kept whatever venue_osm_id the client sent; it must not
+    # steer the upsert onto a real venue.
+    conn = _seed()
+    monkeypatch.setattr("pipeline.submissions.geocode_address",
+                        lambda address, near=None: (48.14, 11.58))
+    _approved(conn, kind="add_venue", venue_osm_id="node/1", venue_name="Craft Eck", brand="")
+    assert apply_approved(conn, "2026-08-01") == 1
+    bar = conn.execute("SELECT name, lat FROM venues WHERE osm_id='node/1'").fetchone()
+    assert (bar["name"], bar["lat"]) == ("Bar X", 53.5)
+    assert conn.execute("SELECT 1 FROM venues WHERE osm_id='community/craft-eck'").fetchone()
+
+
+def test_applied_edit_hours_yields_to_osm_once_uploaded():
+    conn = _seed()
+    _approved(conn, kind="edit_hours", brand="", opening_hours="Mo-Fr 10:00-22:00")
+    sid = _approved(conn, kind="edit_hours", brand="", opening_hours="Mo-Su 09:00-18:00")
+    set_submission_changeset(conn, sid, 123)
+    # sid 2 is uploaded; the nightly OSM import brings its own hours
+    upsert_venue(conn, Venue("node/1", "Bar X", 53.5, 10.0, opening_hours="Mo-Su 12:00-23:00"),
+                 "2026-08-01")
+    apply_approved(conn, "2026-08-01")
+    hours = conn.execute("SELECT opening_hours FROM venues WHERE osm_id='node/1'").fetchone()[0]
+    assert hours == "Mo-Fr 10:00-22:00"  # unpushed one still applies, uploaded one does not
+    conn.execute("UPDATE submissions SET osm_changeset=NULL")
+    apply_approved(conn, "2026-08-01")
+    hours = conn.execute("SELECT opening_hours FROM venues WHERE osm_id='node/1'").fetchone()[0]
+    assert hours == "Mo-Su 09:00-18:00"
+
+
+def test_edit_venue_replay_reuses_stored_geocode(monkeypatch):
+    conn = _seed()
+    calls = []
+    monkeypatch.setattr("pipeline.submissions.geocode_address",
+                        lambda address, near=None: calls.append(address) or (53.6, 10.1))
+    _approved(conn, kind="edit_venue", brand="", address="Neu 1")
+    apply_approved(conn, "2026-08-01")
+    upsert_venue(conn, Venue("node/1", "Bar X", 53.5, 10.0), "2026-08-02")  # OSM import resets pin
+    monkeypatch.setattr("pipeline.submissions.geocode_address",
+                        lambda address, near=None: calls.append("again") or None)
+    apply_approved(conn, "2026-08-02")
+    row = conn.execute("SELECT lat, lon FROM venues WHERE osm_id='node/1'").fetchone()
+    assert (row["lat"], row["lon"]) == (53.6, 10.1)
+    assert calls == ["Neu 1"]
+
+
+def test_validate_edit_hours_rejects_newlines_and_non_ascii_digits():
+    base = dict(kind="edit_hours", venue_osm_id="node/1")
+    assert validate_submission({**base, "opening_hours": "Mo-Fr 10:00-22:00; Sa off"}) is None
+    assert validate_submission({**base, "opening_hours": "Mo-Fr\n10:00-22:00"})
+    assert validate_submission({**base, "opening_hours": "Mo-Fr 1٣:00-22:00"})

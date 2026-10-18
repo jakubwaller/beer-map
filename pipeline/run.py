@@ -5,8 +5,8 @@ from datetime import date
 
 from . import curation, osm, submissions
 from .config import CURATION_PATH, DB_PATH, OUT_PATH, SKIP_BRANDS, normalize_brand
-from .db import (get_connection, init_db, renormalize_brands, upsert_brand,
-                 upsert_edge, upsert_venue)
+from .db import (get_connection, init_db, prune_stale_osm_edges, renormalize_brands,
+                 upsert_brand, upsert_edge, upsert_venue)
 from .export import export_geojson
 from .finders import FINDERS
 from .matching import match_entries
@@ -27,6 +27,7 @@ def run_pipeline(db_path=DB_PATH, out_path=OUT_PATH, curation_path=CURATION_PATH
     id_by_osm = {v.osm_id: upsert_venue(conn, v, today) for v in venues}
     for e in osm_edges:
         _store_edge(conn, id_by_osm[e.venue_osm_id], e.brand, e.source, today, serving=e.serving)
+    prune_stale_osm_edges(conn, id_by_osm.values(), today)
 
     finder_edges = unmatched_total = 0
     for f in finders:

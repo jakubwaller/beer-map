@@ -44,3 +44,13 @@ def test_export_writes_branded_venues_only(tmp_path):
     assert [f["properties"]["name"] for f in branded] == ["Pampa"]
     # Brandless venues are served per viewport by /api/gray — no gray file.
     assert not (tmp_path / "venues-gray.json").exists()
+
+
+def test_export_replaces_atomically_and_leaves_no_temp_file(tmp_path):
+    conn = get_connection(":memory:")
+    init_db(conn)
+    out = tmp_path / "venues.json"
+    out.write_text("old", encoding="utf-8")
+    export_geojson(conn, str(out))
+    assert json.loads(out.read_text(encoding="utf-8"))["features"] == []
+    assert [p.name for p in tmp_path.iterdir()] == ["venues.json"]

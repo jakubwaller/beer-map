@@ -182,14 +182,20 @@ export function parseOpeningHours(raw) {
   return parsed ? { days, raw: text } : null;
 }
 
+const BERLIN = new Intl.DateTimeFormat("en-GB", {
+  timeZone: "Europe/Berlin", weekday: "short", hour: "2-digit", minute: "2-digit", hourCycle: "h23",
+});
+const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+
 /** Where the venue stands right now: `{ open, until }` (until = null when the
  *  tag gives no closing time) or `{ open: false, at, nextDay, nextIn }`
- *  (nextIn = days ahead). Local device time — the map is German and so are its
- *  users' clocks. */
+ *  (nextIn = days ahead). Europe/Berlin time, not the device's: Germany,
+ *  Austria and Czechia share it, and a visitor abroad sees the venue's clock. */
 export function openState(schedule, now = new Date()) {
   if (!schedule) return null;
-  const today = (now.getDay() + 6) % 7;  // JS weeks start on Sunday, ours on Monday
-  const min = now.getHours() * 60 + now.getMinutes();
+  const p = Object.fromEntries(BERLIN.formatToParts(now).map((x) => [x.type, x.value]));
+  const today = WEEKDAYS.indexOf(p.weekday);
+  const min = +p.hour * 60 + +p.minute;
   for (const [start, end] of schedule.days[today])
     if (min >= start && (end === null || min < end))
       return { open: true, until: end === null ? null : end % DAY };

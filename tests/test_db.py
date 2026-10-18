@@ -290,3 +290,18 @@ def test_scrub_plaintext_ips_clears_legacy_rows():
     stored = {r["submitter_ip"] for r in list_submissions(conn, "pending")}
     assert stored == {"", "h:deadbeef"}   # hashed row untouched, raw one blanked
     assert scrub_plaintext_ips(conn) == 0  # idempotent
+
+
+def test_prune_stale_osm_edges_only_touches_fetched_venues_and_osm_source():
+    from pipeline.db import prune_stale_osm_edges
+    conn = get_connection(":memory:")
+    init_db(conn)
+    bid = upsert_brand(conn, "Holsten")
+    fetched = upsert_venue(conn, Venue("node/1", "A", 53.5, 10.0), "2026-08-01")
+    other = upsert_venue(conn, Venue("node/2", "B", 53.6, 10.0), "2026-08-01")
+    for vid in (fetched, other):
+        upsert_edge(conn, vid, bid, "osm", "2026-08-01")
+    upsert_edge(conn, fetched, bid, "community", "2026-08-01")
+    prune_stale_osm_edges(conn, [fetched], "2026-08-02")
+    left = {(r["venue_id"], r["source"]) for r in conn.execute("SELECT * FROM venue_brand")}
+    assert left == {(other, "osm"), (fetched, "community")}
