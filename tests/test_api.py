@@ -470,3 +470,27 @@ def test_ip_key_dropped_after_an_hour(client):
     assert list_submissions(conn, "pending")[0]["submitter_ip"] != ""  # inside the hour
     expire_ip_keys(conn, datetime.now() + timedelta(hours=2))
     assert list_submissions(conn, "pending")[0]["submitter_ip"] == ""
+
+
+def test_address_looked_up_once_and_cached(client, monkeypatch):
+    import api.app as app_mod
+    c, _ = client
+    calls = []
+    monkeypatch.setattr(app_mod, "lookup_address",
+                        lambda osm_id: calls.append(osm_id) or "Neue Allee 7, 22083 Hamburg")
+    for _ in range(2):
+        r = c.get("/api/address/node/1")
+        assert r.json() == {"address": "Neue Allee 7, 22083 Hamburg"}
+    assert calls == ["node/1"]
+    assert c.get("/api/address/node/999").status_code == 404
+
+
+def test_address_failure_is_not_cached(client, monkeypatch):
+    import api.app as app_mod
+    c, _ = client
+    monkeypatch.setattr(app_mod, "lookup_address", lambda osm_id: None)
+    assert c.get("/api/address/node/1").json() == {"address": None}
+    monkeypatch.setattr(app_mod, "lookup_address", lambda osm_id: "")
+    assert c.get("/api/address/node/1").json() == {"address": None}
+    monkeypatch.setattr(app_mod, "lookup_address", lambda osm_id: "should not be asked")
+    assert c.get("/api/address/node/1").json() == {"address": None}

@@ -1008,6 +1008,23 @@ function openVenueModal(v) {
   // Rows staged before the modal was last closed come back with it.
   const af = modalBody.querySelector(".addbeer");
   if (af) renderStaged(af);
+  if (!v.address && osm) fillAddress(v, osm);
+}
+
+// OSM leaves about a third of venues without addr:* tags; the server asks
+// Nominatim once per venue and keeps the answer.
+async function fillAddress(v, osm) {
+  try {
+    const r = await fetch(`/api/address/${osm}`);
+    if (!r.ok) return;
+    const { address } = await r.json();
+    if (!address) return;
+    v.address = address;
+    // The card may have been closed, or another opened, while this was in flight.
+    const af = modalBody.querySelector(".addbeer");
+    if (modalRoot.hidden || !af || af.dataset.osm !== osm) return;
+    modalBody.insertAdjacentHTML("afterbegin", `<div class="venue-addr">${esc(address)}</div>`);
+  } catch { /* no API (static serve) or offline: the card stays without one */ }
 }
 
 // --- Statistik / Über / Kontakt / Bier melden ---

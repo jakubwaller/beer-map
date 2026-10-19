@@ -52,3 +52,25 @@ def test_geocode_returns_none_on_a_non_json_200(monkeypatch):
 
     monkeypatch.setattr(geocode.httpx, "get", get)
     assert geocode_address("Neue Allee 7, Hamburg") is None
+
+
+def test_lookup_address_formats_nominatim_details(monkeypatch):
+    get, seen = _fake_get([{"address": {"road": "Am Schlossteich", "village": "Friedrichsruh",
+                                        "city": "Aumühle", "postcode": "21521"}}])
+    monkeypatch.setattr(geocode.httpx, "get", get)
+    monkeypatch.setattr(geocode, "_last_lookup", 0.0)
+    assert geocode.lookup_address("node/7924110466") == "Am Schlossteich, 21521 Aumühle"
+    assert seen["osm_ids"] == "N7924110466"
+
+
+def test_lookup_address_none_found_vs_failure(monkeypatch):
+    monkeypatch.setattr(geocode, "_last_lookup", 0.0)
+    monkeypatch.setattr(geocode.httpx, "get", _fake_get([])[0])
+    assert geocode.lookup_address("way/5") == ""
+    assert geocode.lookup_address("community/some-bar") == ""
+
+    def boom(*a, **kw):
+        raise httpx.ConnectError("down")
+    monkeypatch.setattr(geocode, "_last_lookup", 0.0)
+    monkeypatch.setattr(geocode.httpx, "get", boom)
+    assert geocode.lookup_address("node/1") is None
