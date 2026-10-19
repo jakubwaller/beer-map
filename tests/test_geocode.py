@@ -1,3 +1,5 @@
+import time
+
 import httpx
 
 from pipeline import geocode
@@ -78,5 +80,7 @@ def test_lookup_address_none_found_vs_failure(monkeypatch):
 
 def test_lookup_address_never_waits_for_the_slot(monkeypatch):
     monkeypatch.setattr(geocode.httpx, "get", _fake_get([])[0])
+    start = time.monotonic()
     with geocode._lookup_lock:
         assert geocode.lookup_address("node/1") is None
+    assert time.monotonic() - start < 0.5
