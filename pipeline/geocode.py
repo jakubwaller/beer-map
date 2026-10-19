@@ -49,14 +49,15 @@ def geocode_address(address: str, url: str = NOMINATIM_URL,
 def lookup_address(osm_id: str, url: str = LOOKUP_URL) -> str | None:
     """Nominatim's address for an OSM object without addr:* tags of its own —
     it fills street and postcode from the surroundings. Returns "" when there
-    is none to be had (worth caching) and None on a transient failure or when
-    another lookup holds the slot too long (worth retrying later)."""
+    is none to be had (worth caching) and None on a transient failure or while
+    another lookup is in flight (worth retrying later)."""
     global _last_lookup
     kind, _, num = osm_id.partition("/")
     if kind not in ("node", "way", "relation") or not num.isdigit():
         return ""
-    # Nominatim's usage policy allows one request per second for the whole app.
-    if not _lookup_lock.acquire(timeout=3):
+    # One card lookup at a time, a second apart (Nominatim's policy). Never
+    # wait for the slot: a burst would park every request thread of the API.
+    if not _lookup_lock.acquire(blocking=False):
         return None
     try:
         time.sleep(max(0.0, _last_lookup + 1 - time.monotonic()))

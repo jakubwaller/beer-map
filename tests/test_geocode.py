@@ -74,3 +74,9 @@ def test_lookup_address_none_found_vs_failure(monkeypatch):
     monkeypatch.setattr(geocode, "_last_lookup", 0.0)
     monkeypatch.setattr(geocode.httpx, "get", boom)
     assert geocode.lookup_address("node/1") is None
+
+
+def test_lookup_address_never_waits_for_the_slot(monkeypatch):
+    monkeypatch.setattr(geocode.httpx, "get", _fake_get([])[0])
+    with geocode._lookup_lock:
+        assert geocode.lookup_address("node/1") is None

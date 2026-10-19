@@ -1022,7 +1022,8 @@ async function fillAddress(v, osm) {
     v.address = address;
     // The card may have been closed, or another opened, while this was in flight.
     const af = modalBody.querySelector(".addbeer");
-    if (modalRoot.hidden || !af || af.dataset.osm !== osm) return;
+    // A reopen while the first lookup was in flight runs this twice.
+    if (modalRoot.hidden || !af || af.dataset.osm !== osm || modalBody.querySelector(".venue-addr")) return;
     modalBody.insertAdjacentHTML("afterbegin", `<div class="venue-addr">${esc(address)}</div>`);
   } catch { /* no API (static serve) or offline: the card stays without one */ }
 }
