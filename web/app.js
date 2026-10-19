@@ -1008,6 +1008,24 @@ function openVenueModal(v) {
   // Rows staged before the modal was last closed come back with it.
   const af = modalBody.querySelector(".addbeer");
   if (af) renderStaged(af);
+  if (!v.address && osm) fillAddress(osm);
+}
+
+// OSM leaves about a third of venues without addr:* tags; the server asks
+// Nominatim once per venue and keeps the answer. Nominatim only guesses the
+// nearest street, so the card says so and the correction form stays empty.
+async function fillAddress(osm) {
+  try {
+    const r = await fetch(`/api/address/${osm}`);
+    if (!r.ok) return;
+    const { address } = await r.json();
+    if (!address) return;
+    // The card may have been closed, or another opened, while this was in flight.
+    const af = modalBody.querySelector(".addbeer");
+    // A reopen while the first lookup was in flight runs this twice.
+    if (modalRoot.hidden || !af || af.dataset.osm !== osm || modalBody.querySelector(".venue-addr")) return;
+    modalBody.insertAdjacentHTML("afterbegin", `<div class="venue-addr">${esc(address)} (${esc(t("venue.addrApprox"))})</div>`);
+  } catch { /* no API (static serve) or offline: the card stays without one */ }
 }
 
 // --- Statistik / Über / Kontakt / Bier melden ---

@@ -22,6 +22,7 @@ from pipeline import config, submissions
 from pipeline.db import (fetch_gray_in_bbox, get_connection, init_db,
                          insert_submission, list_submissions, search_venues_db)
 from pipeline.export import _feature
+from pipeline.geocode import lookup_address
 
 from . import admin_links, notify
 
@@ -314,6 +315,32 @@ def create_app() -> FastAPI:
         rows = search_venues_db(conn, q, limit=30)
         return {"type": "FeatureCollection",
                 "features": [_feature(r, with_brands=True) for r in rows]}
+
+    @app.get("/api/address/{kind}/{num}")
+    def address(kind: str, num: str, response: Response, conn=Depends(_db)):
+        # The card's address for a venue OSM tags none on. Only visible venues
+        # are looked up, so this is no open proxy to Nominatim, and every
+        # answer is kept, so each venue costs Nominatim one request ever.
+        osm_id = f"{kind}/{num}"
+        row = conn.execute("SELECT address FROM venues WHERE osm_id=? AND COALESCE(hidden, 0)=0",
+                           (osm_id,)).fetchone()
+        if row is None:
+            raise HTTPException(404, "unknown venue")
+        found = row["address"]
+        if not found:
+            hit = conn.execute("SELECT address FROM looked_up_addresses WHERE osm_id=?",
+                               (osm_id,)).fetchone()
+            if hit:
+                found = hit["address"]
+            else:
+                found = lookup_address(osm_id)
+                if found is None:  # transient: answer empty, cache nothing
+                    return {"address": None}
+                conn.execute("INSERT OR REPLACE INTO looked_up_addresses VALUES (?, ?, ?)",
+                             (osm_id, found, date.today().isoformat()))
+                conn.commit()
+        response.headers["Cache-Control"] = "public, max-age=86400"
+        return {"address": found or None}
 
     @app.get("/api/brands")
     def brands(conn=Depends(_db)):

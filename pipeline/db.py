@@ -67,6 +67,14 @@ CREATE TABLE IF NOT EXISTS country_tiles (
     fetched_at TEXT NOT NULL,
     venues INTEGER NOT NULL
 );
+-- Nominatim's address for venues OSM gives none, looked up when a card opens
+-- (/api/address). Apart from venues because the nightly upsert rewrites
+-- venues.address from OSM, and this cache has to survive it.
+CREATE TABLE IF NOT EXISTS looked_up_addresses (
+    osm_id TEXT PRIMARY KEY,
+    address TEXT NOT NULL,  -- '' = Nominatim had none either
+    fetched_at TEXT NOT NULL
+);
 -- The /api/gray tile endpoint answers viewport queries straight from this
 -- table; the composite index turns them into a narrow lon-range scan.
 CREATE INDEX IF NOT EXISTS idx_venues_lon_lat ON venues(lon, lat);
