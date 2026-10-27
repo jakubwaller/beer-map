@@ -69,8 +69,8 @@ node --test web/*.test.js  # frontend pure functions (needs Node.js)
 Both jobs run in a throwaway container from the same image (the `pipeline` service, on
 the host network so it has IPv6 — see `docker-compose.yml`), so they need no venv on the host:
 ```cron
-0 4 * * * cd ~/beer-map && flock -w 21600 /tmp/overpass.lock docker compose run --rm pipeline timeout -k 5m 6h python -m pipeline.run >> ~/beer-map/pipeline.log 2>&1
-0 5 * * 0 cd ~/beer-map && flock -w 21600 /tmp/overpass.lock docker compose run --rm pipeline timeout -k 5m 6h python -m pipeline.country >> ~/beer-map/country.log 2>&1
+0 4 * * * cd ~/beer-map && flock --verbose -w 21600 /tmp/overpass.lock docker compose run --rm pipeline timeout -k 5m 6h python -m pipeline.run >> ~/beer-map/pipeline.log 2>&1
+0 5 * * 0 cd ~/beer-map && flock --verbose -w 21600 /tmp/overpass.lock docker compose run --rm pipeline timeout -k 5m 6h python -m pipeline.country >> ~/beer-map/country.log 2>&1
 ```
 Both take the host's shared Overpass lock (`/tmp/overpass.lock`, also held by papa-map's
 02:00 build and Dopivatel's refresh) and wait up to 6 h for it: on 2026-08-23 Overpass
