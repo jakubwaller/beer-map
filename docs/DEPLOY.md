@@ -41,12 +41,14 @@ exported GeoJSON belongs in `web-data/`**. The app refuses to start if
 
 `crontab -e`:
 ```cron
-0 4 * * * cd ~/beer-map && docker compose run --rm pipeline python -m pipeline.run >> ~/beer-map/pipeline.log 2>&1
-0 5 * * 0 cd ~/beer-map && docker compose run --rm pipeline python -m pipeline.country >> ~/beer-map/country.log 2>&1
+0 4 * * * cd ~/beer-map && flock --verbose -w 21600 /tmp/overpass.lock docker compose run --rm pipeline timeout -k 5m 6h python -m pipeline.run >> ~/beer-map/pipeline.log 2>&1
+0 5 * * 0 cd ~/beer-map && flock --verbose -w 21600 /tmp/overpass.lock docker compose run --rm pipeline timeout -k 5m 6h python -m pipeline.country >> ~/beer-map/country.log 2>&1
 ```
 The `pipeline` service is the same image on the host network (IPv6, see
-`docker-compose.yml`). The weekly sweep sits at Sunday 05:00 so it never starts alongside
-papa-map's 02:00 sweep on the same host: Overpass bans per source IP, and did on 2026-08-23.
+`docker-compose.yml`). Both jobs wait up to 6 h for the host's shared Overpass lock, which
+papa-map's 02:00 build and Dopivatel's Monday refresh take too, so no two sweeps run at once:
+Overpass bans per source IP, and did on 2026-08-23 and 2026-10-25. `timeout` inside the container
+ends a hung run after 6 h so it cannot hold the lock.
 
 ## Moderation
 
