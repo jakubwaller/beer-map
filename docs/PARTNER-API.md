@@ -5,6 +5,14 @@ the same moderation queue as public submissions. Nothing reaches the map until t
 it at `/admin`, where partner reports carry the partner's name as a tag. This file is the contract
 partners build against; change it together with `api/app.py` and `pipeline/submissions.py`.
 
+Unlike a public submission, a partner report sends no notification of its own. The nightly build
+(`python -m pipeline.run`, 04:00) sends one digest per night over the usual channels (Telegram, e-mail),
+with each partner's pending reports that no digest has announced yet, counted per kind, e.g.
+`dopivatel: 3 neue Meldungen (2× add, 1× close_venue)`. With nothing new, it sends nothing.
+Each report is marked (`submissions.digested_at`) only after a channel accepted the message, so a
+second run the same night stays silent, while a failed send or a skipped night carries over to
+the next digest. A report moderated before the digest ran is left out.
+
 ## Request
 
 `POST https://zapfkompass.de/api/partner/submit` with a JSON body and
@@ -13,7 +21,7 @@ call `http://beermap:8011/api/partner/submit` directly.
 
 Partners and secrets come from the env var `PARTNER_TOKENS`, comma-separated `name:secret` pairs
 (`dopivatel:<secret>`, generate one with `openssl rand -hex 32`). The name is what `/admin` and the
-notification show. With `PARTNER_TOKENS` unset, every request gets 401.
+nightly digest show. With `PARTNER_TOKENS` unset, every request gets 401.
 
 | Field | Type | Notes |
 |---|---|---|

@@ -456,8 +456,7 @@ def create_app() -> FastAPI:
             insert_submission(conn, payload, datetime.now().isoformat())
         except sqlite3.IntegrityError:  # a concurrent retry of the same ref got there first
             return {"ok": True, "duplicate": True}
-        notify.notify_new_submission(f"{partner}: {sub.brand or sub.kind}",
-                                     payload["venue_osm_id"] or payload["venue_name"])
+        # No notification here: the nightly build sends one digest (notify.send_partner_digest).
         return {"ok": True}
 
     @app.get("/admin/login")

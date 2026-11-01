@@ -657,15 +657,73 @@ def test_partner_daily_cap(partner, monkeypatch):
     assert _submit(c).status_code == 200    # the public endpoint has its own limit
 
 
-def test_partner_notification_names_the_partner(partner, monkeypatch):
-    import api.app as app_mod
-    c, _ = partner
+@pytest.fixture
+def telegram(monkeypatch):
+    """Every message the notification channels deliver (Telegram stands in for both)."""
+    from api import notify
+    monkeypatch.setattr(config, "TELEGRAM_BOT_TOKEN", "123:abc")
+    monkeypatch.setattr(config, "TELEGRAM_CHAT_ID", "-100123456789")
     sent = []
-    monkeypatch.setattr(app_mod.notify, "notify_new_submission", lambda b, v: sent.append((b, v)))
+    monkeypatch.setattr(notify.httpx, "post", lambda url, json, timeout: sent.append(json["text"]))
+    return sent
+
+
+def _digest():
+    from datetime import datetime
+    from api import notify
+    return notify.send_partner_digest(get_connection(config.DB_PATH), datetime.now())
+
+
+def test_partner_submit_sends_no_immediate_notification(partner, telegram):
+    c, _ = partner
+    assert _partner(c).json() == {"ok": True}
+    assert telegram == []
+    assert _submit(c).json() == {"ok": True}   # the public endpoint still announces each one
+    assert len(telegram) == 1 and "neue Einreichung" in telegram[0]
+
+
+def test_partner_digest_sends_once_for_new_reports(partner, telegram):
+    c, _ = partner
+    assert _digest() == 0 and telegram == []          # no reports, no message
+    for ref in ("a", "b"):
+        _partner(c, ref=ref)
+    _partner(c, ref="c", kind="close_venue", brand="")
+    _partner(c, ref="d", headers={"Authorization": "Bearer other-secret"})
+    _submit(c)                                        # public: announced on its own, not here
+    telegram.clear()
+    assert _digest() == 4
+    assert len(telegram) == 1
+    assert "dopivatel: 3 neue Meldungen (2× add, 1× close_venue)" in telegram[0]
+    assert "other: 1 neue Meldung (1× add)" in telegram[0]
+    assert "/admin" in telegram[0]
+    assert _digest() == 0 and len(telegram) == 1      # a rerun the same night sends nothing
+    _partner(c, ref="e")
+    assert _digest() == 1 and "dopivatel: 1 neue Meldung " in telegram[1]
+
+
+def test_nightly_run_sends_the_partner_digest(partner, telegram, monkeypatch):
+    import pipeline.run as run_mod
+    c, _ = partner
     _partner(c)
-    _partner(c, ref="r2", kind="add_venue", venue_osm_id="", brand="", name="Nová Hospoda",
-             venue={"lat": 49.2, "lon": 16.6})
-    assert sent == [("dopivatel: Kozel", "node/1"), ("dopivatel: add_venue", "Nová Hospoda")]
+    monkeypatch.setattr(run_mod, "DB_PATH", config.DB_PATH)
+    assert run_mod._partner_digest() == 1 and len(telegram) == 1
+
+
+def test_partner_digest_keeps_reports_when_nothing_was_delivered(partner, monkeypatch):
+    from api import notify
+    c, _ = partner
+    _partner(c)
+    monkeypatch.setattr(config, "TELEGRAM_BOT_TOKEN", "")   # no channel configured
+    assert _digest() == 0
+    monkeypatch.setattr(config, "TELEGRAM_BOT_TOKEN", "123:abc")
+    monkeypatch.setattr(config, "TELEGRAM_CHAT_ID", "-100123456789")
+
+    def down(*a, **k):
+        raise RuntimeError("network down")
+    monkeypatch.setattr(notify.httpx, "post", down)
+    assert _digest() == 0                                    # failed send: still owed
+    monkeypatch.setattr(notify.httpx, "post", lambda url, json, timeout: None)
+    assert _digest() == 1                                    # the next night catches up
 
 
 def test_public_submit_unchanged_by_partner_rules(partner):

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import sys
-from datetime import date
+from datetime import date, datetime
 
 from . import curation, osm, submissions
 from .config import CURATION_PATH, DB_PATH, OUT_PATH, SKIP_BRANDS, normalize_brand
@@ -58,5 +58,21 @@ def run_pipeline(db_path=DB_PATH, out_path=OUT_PATH, curation_path=CURATION_PATH
     }
 
 
+def _partner_digest() -> int:
+    # The one message a day about partner reports (they get no per-report
+    # notification). api.notify owns the channels; imported here only, so the
+    # pipeline modules stay free of the API package.
+    from api.notify import send_partner_digest
+    conn = get_connection(DB_PATH)
+    init_db(conn)
+    try:
+        return send_partner_digest(conn, datetime.now())
+    finally:
+        conn.close()
+
+
 if __name__ == "__main__":
-    print(run_pipeline())
+    try:
+        print(run_pipeline())
+    finally:  # a failed build (Overpass down) still sends the digest
+        print({"partner_digest": _partner_digest()})

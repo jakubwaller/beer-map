@@ -68,7 +68,9 @@ CREATE TABLE IF NOT EXISTS submissions (
     -- A partner report on a venue not in `venues`: where to create it on
     -- approval (its name is venue_name).
     hint_lat REAL,
-    hint_lon REAL
+    hint_lon REAL,
+    -- Partner rows: when the nightly digest announced it (NULL = not yet).
+    digested_at TEXT
 );
 -- One row per fetched tile of the nationwide sweep (pipeline/country.py), so
 -- an interrupted run can resume without refetching what it already has.
@@ -107,6 +109,7 @@ _MIGRATIONS = (
     ("submissions", "new_name", "TEXT"),
     ("submissions", "hint_lat", "REAL"),
     ("submissions", "hint_lon", "REAL"),
+    ("submissions", "digested_at", "TEXT"),
 )
 
 
