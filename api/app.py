@@ -21,7 +21,7 @@ from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.security import (HTTPAuthorizationCredentials, HTTPBasic,
                               HTTPBasicCredentials, HTTPBearer)
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
 from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
 
 from pipeline import config, submissions
@@ -243,6 +243,15 @@ def _require_partner(creds: Optional[HTTPAuthorizationCredentials] = Depends(_be
                         headers={"WWW-Authenticate": "Bearer"})
 
 
+async def _json_body(request: Request):
+    # Read after auth (declare it after _require_partner): a malformed body
+    # without a token must answer 401, not 400.
+    try:
+        return await request.json()
+    except ValueError:
+        raise HTTPException(400, "malformed JSON body")
+
+
 def _db():
     conn = get_connection(config.DB_PATH)
     init_db(conn)
@@ -427,12 +436,17 @@ def create_app() -> FastAPI:
         return {"ok": True}
 
     @app.post(_PARTNER_PATH)
-    def partner_submit(sub: PartnerSubmission, partner: str = Depends(_require_partner),
-                       conn=Depends(_db)):
+    def partner_submit(partner: str = Depends(_require_partner),
+                       body: dict = Depends(_json_body), conn=Depends(_db)):
+        try:
+            sub = PartnerSubmission.model_validate(body)
+        except ValidationError as e:
+            raise RequestValidationError(e.errors())
         # (partner, ref) is unique, so a retry of a stored report changes nothing.
         if submissions.partner_ref_exists(conn, partner, sub.ref):
             return {"ok": True, "duplicate": True}
         payload = sub.model_dump()
+        payload["address"] = (sub.address or "").strip() or None
         known = sub.kind != "add_venue" and conn.execute(
             "SELECT 1 FROM venues WHERE osm_id=?", (sub.venue_osm_id,)).fetchone() is not None
         err = submissions.validate_partner_submission(payload, known)

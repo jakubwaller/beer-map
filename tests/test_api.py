@@ -657,6 +657,12 @@ def test_partner_daily_cap(partner, monkeypatch):
     assert _submit(c).status_code == 200    # the public endpoint has its own limit
 
 
+class _OK:  # a 2xx Telegram answer
+    @staticmethod
+    def raise_for_status():
+        pass
+
+
 @pytest.fixture
 def telegram(monkeypatch):
     """Every message the notification channels deliver (Telegram stands in for both)."""
@@ -664,7 +670,7 @@ def telegram(monkeypatch):
     monkeypatch.setattr(config, "TELEGRAM_BOT_TOKEN", "123:abc")
     monkeypatch.setattr(config, "TELEGRAM_CHAT_ID", "-100123456789")
     sent = []
-    monkeypatch.setattr(notify.httpx, "post", lambda url, json, timeout: sent.append(json["text"]))
+    monkeypatch.setattr(notify.httpx, "post", lambda url, json, timeout: sent.append(json["text"]) or _OK)
     return sent
 
 
@@ -722,7 +728,7 @@ def test_partner_digest_keeps_reports_when_nothing_was_delivered(partner, monkey
         raise RuntimeError("network down")
     monkeypatch.setattr(notify.httpx, "post", down)
     assert _digest() == 0                                    # failed send: still owed
-    monkeypatch.setattr(notify.httpx, "post", lambda url, json, timeout: None)
+    monkeypatch.setattr(notify.httpx, "post", lambda url, json, timeout: _OK)
     assert _digest() == 1                                    # the next night catches up
 
 
@@ -738,3 +744,47 @@ def test_public_submit_unchanged_by_partner_rules(partner):
     assert _submit(c, ref="r1").json() == {"ok": True}
     row = list_submissions(get_connection(config.DB_PATH), "pending")[0]
     assert (row["partner"], row["ref"], row["submitter_ip"][:2]) == (None, None, "h:")
+
+
+def test_telegram_http_error_is_not_delivery(partner, monkeypatch):
+    import httpx
+    from api import notify
+    c, _ = partner
+    _partner(c)
+    monkeypatch.setattr(config, "TELEGRAM_BOT_TOKEN", "123:abc")
+    monkeypatch.setattr(config, "TELEGRAM_CHAT_ID", "-100123456789")
+    req = httpx.Request("POST", "https://api.telegram.org/x")
+    monkeypatch.setattr(notify.httpx, "post",
+                        lambda url, json, timeout: httpx.Response(401, request=req))
+    assert _digest() == 0   # rows stay undigested for the next night
+
+
+def test_failed_build_releases_its_lock_before_the_digest(partner, telegram, monkeypatch):
+    import pipeline.run as run_mod
+    c, _ = partner
+    _partner(c)
+    monkeypatch.setattr(run_mod, "DB_PATH", config.DB_PATH)
+    monkeypatch.setattr(run_mod.osm, "parse_overpass", lambda _: ([], []))
+
+    def half_done(conn, *a, **k):  # a write transaction, then the build dies
+        conn.execute("UPDATE submissions SET note='x'")
+        raise RuntimeError("build failed")
+    monkeypatch.setattr(run_mod.curation, "apply_curation", half_done)
+    with pytest.raises(RuntimeError):
+        run_mod.run_pipeline(db_path=config.DB_PATH, overpass_fetch=dict, finders=[])
+    assert run_mod._partner_digest() == 1   # was "database is locked"
+
+
+def test_partner_address_is_stripped_before_storing(partner):
+    c, _ = partner
+    assert _partner(c, kind="edit_venue", brand="", serving="", name="Bar Y",
+                    address="   ").json() == {"ok": True}
+    assert list_submissions(get_connection(config.DB_PATH), "pending")[0]["address"] is None
+
+
+def test_partner_malformed_json_needs_auth_first(partner):
+    c, _ = partner
+    bad = dict(content="{nope", headers={"Content-Type": "application/json"})
+    assert c.post("/api/partner/submit", **bad).status_code == 401
+    assert c.post("/api/partner/submit", content="{nope",
+                  headers={**_AUTH, "Content-Type": "application/json"}).status_code == 400
