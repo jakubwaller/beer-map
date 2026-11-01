@@ -8,7 +8,7 @@ from . import config
 from .curation import slugify
 from .db import (
     count_submissions_since, delete_edges, get_submission, list_submissions,
-    set_submission_status, set_venue_hidden, update_venue_address,
+    rename_venue, set_submission_status, set_venue_hidden, update_venue_address,
     update_venue_hours, upsert_brand, upsert_edge, upsert_venue,
 )
 from .export import export_geojson
@@ -36,9 +36,16 @@ _BRAND_KINDS = ("add", "remove")
 _VENUE_KINDS = ("edit_venue", "close_venue", "edit_hours")
 _NEW_VENUE_KIND = "add_venue"
 KINDS = _BRAND_KINDS + _VENUE_KINDS + (_NEW_VENUE_KIND,)
+# No edit_hours: osm_push uploads those to OSM as visitor reports on this site.
+PARTNER_KINDS = ("add", "remove", "edit_venue", "close_venue", "add_venue")
+_OSM_ID_RE = re.compile(r"(?:node|way|relation)/[1-9]\d*", re.ASCII)
 
 
-def validate_submission(payload: dict) -> str | None:
+def validate_submission(payload: dict, partner: bool = False) -> str | None:
+    """The rules for a public submission. `partner=True` (the partner API,
+    docs/PARTNER-API.md) also lets `add` say serving 'unknown', `edit_venue`
+    carry a new `name` instead of an address, and `add_venue` come with
+    coordinates instead of an address (validate_partner_submission checks those)."""
     kind = payload.get("kind")
     if kind not in KINDS:
         return "kind must be one of " + ", ".join(KINDS)
@@ -46,18 +53,22 @@ def validate_submission(payload: dict) -> str | None:
         return "venue_osm_id required"
     if payload.get("note") and len(payload["note"]) > 300:
         return "note too long"
+    servings = _SERVINGS | {"unknown"} if partner else _SERVINGS
     if kind in _BRAND_KINDS:
         brand = (payload.get("brand") or "").strip()
         if not brand or len(brand) > 80:
             return "brand must be 1-80 chars"
         if payload.get("beer") and len(payload["beer"]) > 80:
             return "beer must be at most 80 chars"
-        if kind == "add" and payload.get("serving") not in _SERVINGS:
-            return "serving must be 'fass' or 'tank'"
+        if kind == "add" and payload.get("serving") not in servings:
+            return "serving must be 'fass' or 'tank'" + (" or 'unknown'" if partner else "")
     elif kind == "edit_venue":
         address = (payload.get("address") or "").strip()
-        if not address or len(address) > 200:
-            return "address must be 1-200 chars"
+        new_name = (payload.get("name") or "").strip() if partner else ""
+        if len(new_name) > 120:
+            return "name must be at most 120 chars"
+        if (address or not new_name) and not 0 < len(address) <= 200:
+            return "address must be 1-200 chars" + (" (or send a new name)" if partner else "")
     elif kind == "edit_hours":
         hours = (payload.get("opening_hours") or "").strip()
         if not hours or len(hours) > 200:
@@ -77,14 +88,53 @@ def validate_submission(payload: dict) -> str | None:
         if not name or len(name) > 120:
             return "name must be 1-120 chars"
         address = (payload.get("address") or "").strip()
-        if not address or len(address) > 200:
+        if (address or not partner) and not 0 < len(address) <= 200:
             return "address must be 1-200 chars"
         brand = (payload.get("brand") or "").strip()
         if brand and len(brand) > 80:
             return "brand must be at most 80 chars"
-        if brand and payload.get("serving") not in _SERVINGS:
-            return "serving must be 'fass' or 'tank'"
+        if brand and payload.get("serving") not in servings:
+            return "serving must be 'fass' or 'tank'" + (" or 'unknown'" if partner else "")
     return None
+
+
+def validate_partner_submission(payload: dict, venue_known: bool) -> str | None:
+    """A partner API body (`venue` still nested): its own fields, then the
+    public rules. `venue_known` = venue_osm_id is already in `venues`."""
+    kind = payload.get("kind")
+    if kind not in PARTNER_KINDS:
+        return "kind must be one of " + ", ".join(PARTNER_KINDS)
+    if not 0 < len(payload.get("ref") or "") <= 64:
+        return "ref must be 1-64 chars"
+    hint = payload.get("venue")
+    if hint is not None:
+        south, west, north, east = config.COUNTRY_BBOX  # also refuses NaN
+        if not (south <= hint["lat"] <= north and west <= hint["lon"] <= east):
+            return "venue lat/lon outside the map (DE, AT, CZ)"
+    if kind == _NEW_VENUE_KIND:
+        if hint is None:
+            return "venue {lat, lon} required for add_venue"
+    elif not venue_known:
+        if not _OSM_ID_RE.fullmatch(payload.get("venue_osm_id") or ""):
+            return "venue_osm_id must look like node/123, way/123 or relation/123"
+        if hint is None:
+            return "unknown venue: send venue {name, lat, lon} to create it"
+        name = (hint.get("name") or "").strip()
+        if not name or len(name) > 120:
+            return "venue.name must be 1-120 chars"
+    return validate_submission(payload, partner=True)
+
+
+def partner_ref_exists(conn, partner: str, ref: str) -> bool:
+    return conn.execute("SELECT 1 FROM submissions WHERE partner=? AND ref=?",
+                        (partner, ref)).fetchone() is not None
+
+
+def within_partner_cap(conn, partner: str, now: datetime) -> bool:
+    since = (now - timedelta(hours=24)).isoformat()
+    n = conn.execute("SELECT COUNT(*) FROM submissions WHERE partner=? AND created_at >= ?",
+                     (partner, since)).fetchone()[0]
+    return n < config.PARTNER_DAILY_CAP
 
 
 def hash_ip(ip: str) -> str:
@@ -157,10 +207,19 @@ def apply_one(conn, sub: dict, today: str) -> bool:
         return _apply_add_venue(conn, sub, today)
     osm_id = sub.get("venue_osm_id")
     if _venue_id(conn, osm_id) is None:
-        return False
+        if sub.get("hint_lat") is None:
+            return False
+        # A partner report on a venue the sweeps don't have: the venue comes
+        # from its hint, here and on every nightly re-apply should it be lost.
+        upsert_venue(conn, Venue(osm_id, sub["venue_name"], sub["hint_lat"],
+                                 sub["hint_lon"]), today)
     # Venue-level edits run after OSM re-imports each build (see run_pipeline), so
     # an approved address change or "closed" flag keeps overriding the OSM data.
     if kind == "edit_venue":
+        if sub.get("new_name"):  # partner renames; re-applied after every OSM import
+            rename_venue(conn, osm_id, sub["new_name"])
+        if not sub.get("address"):
+            return True
         # Move the pin too — a text-only address edit would leave the map marker
         # at the old (OSM-imported) coordinates. The search is bounded near the
         # current pin so the venue stays in its city. Geocoding failure isn't

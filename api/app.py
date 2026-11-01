@@ -1,19 +1,25 @@
 from __future__ import annotations
 
+import hmac
 import html
 import ipaddress
 import math
 import os
 import re
 import secrets
+import sqlite3
 from datetime import date, datetime
 from pathlib import Path
 from typing import Optional
 
 from fastapi import Depends, FastAPI, HTTPException, Request, Response, status
+from fastapi.encoders import jsonable_encoder
+from fastapi.exception_handlers import request_validation_exception_handler
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.gzip import GZipMiddleware
-from fastapi.responses import HTMLResponse, RedirectResponse
-from fastapi.security import HTTPBasic, HTTPBasicCredentials
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
+from fastapi.security import (HTTPAuthorizationCredentials, HTTPBasic,
+                              HTTPBasicCredentials, HTTPBearer)
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
@@ -63,6 +69,8 @@ def client_ip(peer: str, cf_connecting_ip: str) -> str:
 
 
 _basic = HTTPBasic(auto_error=False)
+_bearer = HTTPBearer(auto_error=False)
+_PARTNER_PATH = "/api/partner/submit"
 _ADMIN_COOKIE = "beermap_admin"
 
 # Link-preview crawlers (WhatsApp, LinkedIn, Slack) read the static head tags
@@ -178,6 +186,7 @@ button:hover { border-color: var(--accent); color: var(--accent-strong); }
 }
 .kind.remove, .kind.close_venue { background: var(--danger); }
 .kind.add, .kind.add_venue { background: var(--good); }
+.kind.partner { background: var(--ink); }
 .venue { font-family: var(--serif); font-weight: 600; font-size: 17px; }
 .addr { color: var(--muted); font-size: 13px; }
 .detail { margin-top: 8px; font-size: 15px; }
@@ -210,6 +219,28 @@ class Submission(BaseModel):
     opening_hours: Optional[str] = None  # OSM syntax, for kind="edit_hours"
     note: Optional[str] = None
     hp: Optional[str] = None  # honeypot
+
+
+class VenueHint(BaseModel):
+    name: Optional[str] = None  # needed when the hint creates the venue; add_venue uses `name`
+    lat: float
+    lon: float
+
+
+class PartnerSubmission(Submission):
+    # The contract partners build against: docs/PARTNER-API.md. `hp` is ignored.
+    ref: str
+    venue: Optional[VenueHint] = None
+
+
+def _require_partner(creds: Optional[HTTPAuthorizationCredentials] = Depends(_bearer)) -> str:
+    """The partner a bearer token belongs to. No PARTNER_TOKENS = nobody (401)."""
+    sent = (creds.credentials if creds else "").encode()
+    for name, secret in config.PARTNER_TOKENS.items():
+        if hmac.compare_digest(sent, secret.encode()):
+            return name
+    raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Unauthorized",
+                        headers={"WWW-Authenticate": "Bearer"})
 
 
 def _db():
@@ -290,6 +321,13 @@ def create_app() -> FastAPI:
     # A dense /api/gray tile is a few hundred KB of JSON; gzip at the origin
     # spares the Pi's home uplink (Cloudflare passes origin encoding through).
     app.add_middleware(GZipMiddleware, minimum_size=1024)
+
+    @app.exception_handler(RequestValidationError)
+    async def _validation_error(request: Request, exc: RequestValidationError):
+        # The partner contract promises 400 for every bad body, not FastAPI's 422.
+        if request.url.path == _PARTNER_PATH:
+            return JSONResponse({"detail": jsonable_encoder(exc.errors())}, status_code=400)
+        return await request_validation_exception_handler(request, exc)
 
     @app.get("/api/gray/{z}/{x}/{y}")
     def gray_tile(z: int, x: int, y: int, response: Response, conn=Depends(_db)):
@@ -388,6 +426,40 @@ def create_app() -> FastAPI:
                                      sub.venue_osm_id or payload["venue_name"])
         return {"ok": True}
 
+    @app.post(_PARTNER_PATH)
+    def partner_submit(sub: PartnerSubmission, partner: str = Depends(_require_partner),
+                       conn=Depends(_db)):
+        # (partner, ref) is unique, so a retry of a stored report changes nothing.
+        if submissions.partner_ref_exists(conn, partner, sub.ref):
+            return {"ok": True, "duplicate": True}
+        payload = sub.model_dump()
+        known = sub.kind != "add_venue" and conn.execute(
+            "SELECT 1 FROM venues WHERE osm_id=?", (sub.venue_osm_id,)).fetchone() is not None
+        err = submissions.validate_partner_submission(payload, known)
+        if err:
+            raise HTTPException(400, err)
+        if not submissions.within_partner_cap(conn, partner, datetime.now()):
+            raise HTTPException(429, "partner daily cap exceeded")
+        hint = payload.pop("venue") or {}
+        # One server speaks for many players: no IP, and partners send no user data.
+        payload.update(partner=partner, submitter_ip=None, venue_name=sub.venue_osm_id)
+        if sub.kind == "add_venue":
+            payload.update(venue_osm_id="", venue_name=sub.name.strip(),
+                           lat=hint["lat"], lon=hint["lon"])
+        else:
+            if sub.kind == "edit_venue":
+                payload["new_name"] = (sub.name or "").strip() or None
+            if not known:  # approval creates the venue from the hint
+                payload.update(venue_name=hint["name"].strip(),
+                               hint_lat=hint["lat"], hint_lon=hint["lon"])
+        try:
+            insert_submission(conn, payload, datetime.now().isoformat())
+        except sqlite3.IntegrityError:  # a concurrent retry of the same ref got there first
+            return {"ok": True, "duplicate": True}
+        notify.notify_new_submission(f"{partner}: {sub.brand or sub.kind}",
+                                     payload["venue_osm_id"] or payload["venue_name"])
+        return {"ok": True}
+
     @app.get("/admin/login")
     def admin_login(key: str = ""):
         # One-tap login from the submission notification. The GET only
@@ -419,13 +491,26 @@ def create_app() -> FastAPI:
                 )
             }
 
+        def _coords(lat, lon):
+            return f"{lat:.5f}, {lon:.5f}"
+
+        def _place(r, venue):
+            # A partner report on a venue we lack: say approval will create it.
+            if not venue and r.get("hint_lat") is not None:
+                return "Neu anlegen bei " + _coords(r["hint_lat"], r["hint_lon"])
+            return venue.get("address") or ""
+
         def _detail(r):
             if r["kind"] == "add_venue":
                 brand = (f" · {html.escape(r['brand'])} ({html.escape(r['serving'])})"
                          if r["brand"] else "")
-                return html.escape(r["address"] or "") + brand
+                where = r["address"] or (_coords(r["lat"], r["lon"]) if r["lat"] is not None else "")
+                return html.escape(where) + brand
             if r["kind"] == "edit_venue":
-                return "Neue Adresse: " + html.escape(r["address"] or "")
+                parts = [f"Neuer Name: {html.escape(r['new_name'])}"] if r.get("new_name") else []
+                if r["address"]:
+                    parts.append("Neue Adresse: " + html.escape(r["address"]))
+                return " · ".join(parts)
             if r["kind"] == "edit_hours":
                 return "Neue Zeiten: " + html.escape(r["opening_hours"] or "")
             if r["kind"] == "close_venue":
@@ -437,8 +522,9 @@ def create_app() -> FastAPI:
             f"""<li class="card">
   <div class="head">
     <span class="kind {html.escape(r['kind'])}">{html.escape(_KIND_LABELS.get(r['kind'], r['kind']))}</span>
+    {f'<span class="kind partner">{html.escape(r["partner"])}</span>' if r.get('partner') else ''}
     <span class="venue">{html.escape(venue.get('name') or r['venue_name'] or r['venue_osm_id'] or '?')}</span>
-    <span class="addr">{html.escape(venue.get('address') or '')}</span>
+    <span class="addr">{html.escape(_place(r, venue))}</span>
   </div>
   <div class="detail">{_detail(r)}</div>
   {f'<div class="note">„{html.escape(r["note"])}“</div>' if r.get('note') else ''}

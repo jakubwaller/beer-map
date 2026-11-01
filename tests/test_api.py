@@ -494,3 +494,189 @@ def test_address_failure_is_not_cached(client, monkeypatch):
     assert c.get("/api/address/node/1").json() == {"address": None}
     monkeypatch.setattr(app_mod, "lookup_address", lambda osm_id: "should not be asked")
     assert c.get("/api/address/node/1").json() == {"address": None}
+
+
+# --- Partner API (/api/partner/submit, docs/PARTNER-API.md) ---------------
+
+_TOKEN = "test-secret-123"
+_AUTH = {"Authorization": f"Bearer {_TOKEN}"}
+_HINT = {"name": "Hospoda U Testu", "lat": 50.08, "lon": 14.42}   # Prague, synthetic
+
+
+@pytest.fixture
+def partner(client, monkeypatch):
+    monkeypatch.setattr(config, "PARTNER_TOKENS", {"dopivatel": _TOKEN, "other": "other-secret"})
+    return client
+
+
+def _partner(c, headers=_AUTH, **kw):
+    body = dict(ref="r1", venue_osm_id="node/1", brand="Kozel", serving="tank", kind="add")
+    body.update(kw)
+    return c.post("/api/partner/submit", json=body, headers=headers)
+
+
+def test_partner_auth_missing_wrong_and_right_token(partner):
+    c, _ = partner
+    assert _partner(c, headers={}).status_code == 401
+    assert _partner(c, headers={"Authorization": "Bearer nope"}).status_code == 401
+    assert _partner(c, headers={"Authorization": f"Basic {_TOKEN}"}).status_code == 401
+    # A bad body without a token still gets 401, never a validation hint.
+    assert _partner(c, headers={}, ref=None).status_code == 401
+    assert _partner(c).json() == {"ok": True}
+    row = list_submissions(get_connection(config.DB_PATH), "pending")[0]
+    assert row["partner"] == "dopivatel" and row["ref"] == "r1"
+    assert row["submitter_ip"] is None   # no IP to hash, nothing personal stored
+
+
+def test_partner_endpoint_off_without_tokens(client, monkeypatch):
+    c, _ = client
+    monkeypatch.setattr(config, "PARTNER_TOKENS", {})
+    assert _partner(c).status_code == 401
+    assert _partner(c, headers={"Authorization": "Bearer "}).status_code == 401
+
+
+def test_partner_tokens_parsed_from_env(monkeypatch):
+    import importlib
+    monkeypatch.setenv("PARTNER_TOKENS", " dopivatel:s3cr:et , nosecret: ,:orphan,junk")
+    try:
+        assert importlib.reload(config).PARTNER_TOKENS == {"dopivatel": "s3cr:et"}
+    finally:
+        monkeypatch.delenv("PARTNER_TOKENS")
+        importlib.reload(config)
+
+
+def test_partner_ref_is_idempotent_per_partner(partner):
+    c, _ = partner
+    assert _partner(c).json() == {"ok": True}
+    assert _partner(c, brand="Gambrinus").json() == {"ok": True, "duplicate": True}
+    other = {"Authorization": "Bearer other-secret"}
+    assert _partner(c, headers=other).json() == {"ok": True}   # same ref, other partner
+    rows = list_submissions(get_connection(config.DB_PATH), "pending")
+    assert [(r["partner"], r["brand"]) for r in rows] == [("dopivatel", "Kozel"), ("other", "Kozel")]
+
+
+def test_partner_validation_is_400(partner):
+    c, _ = partner
+    bad = [dict(ref=""), dict(ref="x" * 65), dict(kind="edit_hours", opening_hours="Mo 10:00-12:00"),
+           dict(serving="lager"), dict(brand=""), dict(ref=None), dict(venue={"lat": "x", "lon": 1})]
+    for kw in bad:
+        r = _partner(c, **kw)
+        assert r.status_code == 400 and "detail" in r.json(), kw
+    assert _partner(c, ref="u", serving="unknown").json() == {"ok": True}  # partners may not know
+
+
+def test_partner_unknown_venue_needs_a_hint(partner):
+    c, _ = partner
+    r = _partner(c, venue_osm_id="node/777")
+    assert r.status_code == 400 and "venue" in r.json()["detail"]
+    assert _partner(c, venue_osm_id="manual/foo", venue=_HINT).status_code == 400  # not an OSM id
+    assert _partner(c, venue_osm_id="node/777",
+                    venue=dict(_HINT, lat=40.0)).status_code == 400              # off the map
+    assert _partner(c, venue_osm_id="node/777", venue=dict(_HINT, name="")).status_code == 400
+    assert list_submissions(get_connection(config.DB_PATH), "pending") == []
+    assert _partner(c, venue_osm_id="node/777", venue=_HINT).json() == {"ok": True}
+    row = list_submissions(get_connection(config.DB_PATH), "pending")[0]
+    assert (row["venue_name"], row["hint_lat"], row["hint_lon"]) == ("Hospoda U Testu", 50.08, 14.42)
+    # Nothing exists until the moderator approves.
+    assert get_connection(config.DB_PATH).execute(
+        "SELECT 1 FROM venues WHERE osm_id='node/777'").fetchone() is None
+
+
+def test_partner_hint_approval_creates_venue_and_survives_pipeline(partner, tmp_path):
+    from pipeline.run import run_pipeline
+    c, out = partner
+    _partner(c, venue_osm_id="node/777", venue=_HINT, brand="kozel", serving="tank")
+    page = c.get("/admin", auth=("admin", "secret")).text
+    assert "Hospoda U Testu" in page and ">dopivatel<" in page and "Neu anlegen bei 50.08000" in page
+    sid = list_submissions(get_connection(config.DB_PATH), "pending")[0]["id"]
+    assert c.post(f"/api/admin/{sid}/approve", auth=("admin", "secret")).json() == {"ok": True}
+
+    def exported():
+        fc = json.loads(open(out, encoding="utf-8").read())
+        return {f["properties"]["name"]: f for f in fc["features"]}
+
+    hosp = exported()["Hospoda U Testu"]
+    assert hosp["geometry"]["coordinates"] == [14.42, 50.08]
+    assert [(b["brand"], b["source"], b["serving"]) for b in hosp["properties"]["brands"]] == \
+        [("Kozel", "community", "tank")]
+    # The nightly build never sees node/777; the venue and its beer stay, and
+    # a lost venue row is recreated from the hint on re-apply.
+    run = dict(db_path=config.DB_PATH, out_path=out, curation_path=str(tmp_path / "none.yaml"),
+               overpass_fetch=lambda: {"elements": []}, finders=[], today="2026-11-02")
+    run_pipeline(**run)
+    assert "Hospoda U Testu" in exported()
+    conn = get_connection(config.DB_PATH)
+    conn.execute("DELETE FROM venues WHERE osm_id='node/777'")
+    conn.commit()
+    run_pipeline(**run)
+    assert exported()["Hospoda U Testu"]["properties"]["brands"][0]["brand"] == "Kozel"
+    # The curation export carries the hint, so a fresh DB can recreate it too.
+    from pipeline.curation import approved_community_entries
+    entry = approved_community_entries(conn)[0]
+    assert (entry["osm_id"], entry["venue"], entry["lat"], entry["lon"]) == \
+        ("node/777", "Hospoda U Testu", 50.08, 14.42)
+
+
+def test_partner_add_venue_uses_coordinates_not_geocoding(partner, monkeypatch):
+    c, _ = partner
+    assert _partner(c, kind="add_venue", venue_osm_id="", brand="", name="Nová Hospoda").status_code == 400
+    assert _partner(c, kind="add_venue", venue_osm_id="", brand="", venue=_HINT).status_code == 400
+    assert _partner(c, kind="add_venue", venue_osm_id="node/1", name="Nová Hospoda", brand="Kozel",
+                    serving="unknown", venue={"lat": 49.2, "lon": 16.6}).json() == {"ok": True}
+    row = list_submissions(get_connection(config.DB_PATH), "pending")[0]
+    assert (row["venue_osm_id"], row["venue_name"], row["lat"], row["lon"], row["address"]) == \
+        ("", "Nová Hospoda", 49.2, 16.6, None)
+    monkeypatch.setattr(submissions, "geocode_address",
+                        lambda *a, **k: pytest.fail("partner add_venue must not geocode"))
+    assert c.post(f"/api/admin/{row['id']}/approve", auth=("admin", "secret")).json() == {"ok": True}
+    v = get_connection(config.DB_PATH).execute(
+        "SELECT name, lat, lon FROM venues WHERE osm_id LIKE 'community/%'").fetchone()
+    assert tuple(v) == ("Nová Hospoda", 49.2, 16.6)
+
+
+def test_partner_edit_venue_renames(partner):
+    c, _ = partner
+    assert _partner(c, kind="edit_venue", brand="").status_code == 400   # neither name nor address
+    assert _partner(c, kind="edit_venue", brand="", name="Bar Y").json() == {"ok": True}
+    row = list_submissions(get_connection(config.DB_PATH), "pending")[0]
+    assert "Neuer Name: Bar Y" in c.get("/admin", auth=("admin", "secret")).text
+    assert c.post(f"/api/admin/{row['id']}/approve", auth=("admin", "secret")).json() == {"ok": True}
+    v = get_connection(config.DB_PATH).execute(
+        "SELECT name, address, search_key FROM venues WHERE osm_id='node/1'").fetchone()
+    assert (v["name"], v["address"], v["search_key"]) == ("Bar Y", None, "bar y")
+
+
+def test_partner_daily_cap(partner, monkeypatch):
+    c, _ = partner
+    monkeypatch.setattr(config, "PARTNER_DAILY_CAP", 2)
+    assert _partner(c, ref="a").status_code == 200
+    assert _partner(c, ref="b").status_code == 200
+    assert _partner(c, ref="c").status_code == 429
+    assert _partner(c, ref="a").json() == {"ok": True, "duplicate": True}  # retries still answer
+    assert _partner(c, ref="c", headers={"Authorization": "Bearer other-secret"}).status_code == 200
+    assert _submit(c).status_code == 200    # the public endpoint has its own limit
+
+
+def test_partner_notification_names_the_partner(partner, monkeypatch):
+    import api.app as app_mod
+    c, _ = partner
+    sent = []
+    monkeypatch.setattr(app_mod.notify, "notify_new_submission", lambda b, v: sent.append((b, v)))
+    _partner(c)
+    _partner(c, ref="r2", kind="add_venue", venue_osm_id="", brand="", name="Nová Hospoda",
+             venue={"lat": 49.2, "lon": 16.6})
+    assert sent == [("dopivatel: Kozel", "node/1"), ("dopivatel: add_venue", "Nová Hospoda")]
+
+
+def test_public_submit_unchanged_by_partner_rules(partner):
+    c, _ = partner
+    assert _submit(c, serving="unknown").status_code == 400
+    assert _submit(c, venue_osm_id="node/777", venue=_HINT).status_code == 400
+    assert c.post("/api/submit", json={"venue_osm_id": "node/1", "kind": "edit_venue",
+                                       "name": "Bar Y"}).status_code == 400
+    assert c.post("/api/submit", json={"kind": "add_venue", "name": "X"}).status_code == 400
+    assert c.post("/api/submit", json={"kind": "bogus"}).status_code == 400
+    assert c.post("/api/submit", json={"venue_osm_id": 1}).status_code == 422   # FastAPI default
+    assert _submit(c, ref="r1").json() == {"ok": True}
+    row = list_submissions(get_connection(config.DB_PATH), "pending")[0]
+    assert (row["partner"], row["ref"], row["submitter_ip"][:2]) == (None, None, "h:")

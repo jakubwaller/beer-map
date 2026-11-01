@@ -188,6 +188,15 @@ RATE_WINDOW_S = int(os.environ.get("BEERMAP_RATE_WINDOW_S", "3600"))
 # force an unsalted hash, so an unset salt falls back to a per-process random
 # one: rate limiting then resets on restart, which is the safe way to fail.
 IP_SALT = os.environ.get("BEERMAP_IP_SALT") or secrets.token_hex(16)
+# Partner apps that may post to /api/partner/submit (docs/PARTNER-API.md):
+# comma-separated name:secret pairs, e.g. "dopivatel:<secret>". Unset or empty,
+# the endpoint answers 401 to everyone. A pair without a secret is ignored.
+PARTNER_TOKENS = {n.strip(): s.strip() for n, _, s in
+                  (p.partition(":") for p in os.environ.get("PARTNER_TOKENS", "").split(","))
+                  if n.strip() and s.strip()}
+# A partner posts from one server IP, so it gets a per-partner sanity cap
+# instead of the per-IP limit: this many submissions per rolling 24 h.
+PARTNER_DAILY_CAP = 500
 WEB_DIR = os.environ.get("BEERMAP_WEB_DIR", "web")
 TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
 TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID", "")
