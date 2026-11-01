@@ -19,10 +19,16 @@ def _store_edge(conn, venue_id, brand, source, seen, serving="unknown"):
 
 def run_pipeline(db_path=DB_PATH, out_path=OUT_PATH, curation_path=CURATION_PATH,
                  overpass_fetch=osm.fetch_overpass, finders=FINDERS, today=None):
-    today = today or date.today().isoformat()
     conn = get_connection(db_path)
     init_db(conn)
+    try:  # closing releases a failed build's write lock before the digest runs
+        return _build(conn, out_path, curation_path, overpass_fetch, finders,
+                      today or date.today().isoformat())
+    finally:
+        conn.close()
 
+
+def _build(conn, out_path, curation_path, overpass_fetch, finders, today):
     venues, osm_edges = osm.parse_overpass(overpass_fetch())
     id_by_osm = {v.osm_id: upsert_venue(conn, v, today) for v in venues}
     for e in osm_edges:

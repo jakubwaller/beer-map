@@ -22,7 +22,7 @@ def _admin_link() -> str:
 
 
 def _send_telegram(text: str) -> None:
-    httpx.post(
+    r = httpx.post(
         f"https://api.telegram.org/bot{config.TELEGRAM_BOT_TOKEN}/sendMessage",
         json={
             "chat_id": config.TELEGRAM_CHAT_ID,
@@ -33,6 +33,7 @@ def _send_telegram(text: str) -> None:
         },
         timeout=10,
     )
+    r.raise_for_status()  # a Telegram error must not count as delivered
 
 
 def _send_email(text: str, subject: str) -> None:
