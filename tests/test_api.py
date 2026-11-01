@@ -777,7 +777,7 @@ def test_failed_build_releases_its_lock_before_the_digest(partner, telegram, mon
 
 def test_partner_address_is_stripped_before_storing(partner):
     c, _ = partner
-    assert _partner(c, kind="edit_venue", brand="", serving=None, name="Bar Y",
+    assert _partner(c, kind="edit_venue", brand="", serving="", name="Bar Y",
                     address="   ").json() == {"ok": True}
     assert list_submissions(get_connection(config.DB_PATH), "pending")[0]["address"] is None
 
