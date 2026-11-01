@@ -76,6 +76,8 @@ def approved_community_entries(conn) -> list[dict]:
                 entry["serving"] = s["serving"]
         elif s["kind"] in ("add", "remove"):
             entry = {"osm_id": s["venue_osm_id"], "brand": s["brand"]}
+            if s["hint_lat"] is not None:  # partner venue the sweeps lack: recreate it
+                entry.update(venue=s["venue_name"], lat=s["hint_lat"], lon=s["hint_lon"])
             if s["kind"] == "add":
                 entry["serving"] = s["serving"]
             entry["action"] = s["kind"]

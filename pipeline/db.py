@@ -58,7 +58,19 @@ CREATE TABLE IF NOT EXISTS submissions (
     -- add_venue only: the community/<slug> id the first apply chose. Written by
     -- the server alone, never from the request (venue_osm_id came from the
     -- client on old add_venue rows, so it is not trusted for this).
-    assigned_osm_id TEXT
+    assigned_osm_id TEXT,
+    -- Partner API rows only (docs/PARTNER-API.md): which partner sent it and
+    -- its own id for the report, unique per partner.
+    partner TEXT,
+    ref TEXT,
+    -- edit_venue from a partner: the venue's new name.
+    new_name TEXT,
+    -- A partner report on a venue not in `venues`: where to create it on
+    -- approval (its name is venue_name).
+    hint_lat REAL,
+    hint_lon REAL,
+    -- Partner rows: when the nightly digest announced it (NULL = not yet).
+    digested_at TEXT
 );
 -- One row per fetched tile of the nationwide sweep (pipeline/country.py), so
 -- an interrupted run can resume without refetching what it already has.
@@ -92,6 +104,12 @@ _MIGRATIONS = (
     ("submissions", "opening_hours", "TEXT"),
     ("submissions", "osm_changeset", "INTEGER"),
     ("submissions", "assigned_osm_id", "TEXT"),
+    ("submissions", "partner", "TEXT"),
+    ("submissions", "ref", "TEXT"),
+    ("submissions", "new_name", "TEXT"),
+    ("submissions", "hint_lat", "REAL"),
+    ("submissions", "hint_lon", "REAL"),
+    ("submissions", "digested_at", "TEXT"),
 )
 
 
@@ -124,6 +142,10 @@ def init_db(conn) -> None:
         cols = {r["name"] for r in conn.execute(f"PRAGMA table_info({table})")}
         if column not in cols:
             conn.execute(f"ALTER TABLE {table} ADD COLUMN {column} {decl}")
+    # After the migrations: on an old DB the columns only exist from here on.
+    # Public rows have partner NULL, and NULLs never collide in a unique index.
+    conn.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_submissions_partner_ref "
+                 "ON submissions(partner, ref)")
     _migrate_venue_brand_pk(conn)
     # Old add_venue rows kept a client-sent venue_osm_id; it names no venue of
     # theirs. Probe first: init_db runs per request and must not take the write lock.
@@ -311,6 +333,13 @@ def update_venue_address(conn, osm_id: str, address: str,
     return cur.rowcount
 
 
+def rename_venue(conn, osm_id: str, name: str) -> int:
+    row = conn.execute("SELECT address FROM venues WHERE osm_id=?", (osm_id,)).fetchone()
+    cur = conn.execute("UPDATE venues SET name=?, search_key=? WHERE osm_id=?",
+                       (name, _search_key(name, row["address"] if row else None), osm_id))
+    return cur.rowcount
+
+
 def update_venue_hours(conn, osm_id: str, hours: str) -> int:
     """Set a venue's `opening_hours`, overriding what OSM imported.
 
@@ -417,7 +446,7 @@ def search_venues_db(conn, query: str, limit: int = 30) -> list[dict]:
 
 _SUB_COLS = ("kind", "venue_osm_id", "venue_name", "lat", "lon",
              "brand", "serving", "beer", "address", "opening_hours", "note",
-             "submitter_ip")
+             "submitter_ip", "partner", "ref", "new_name", "hint_lat", "hint_lon")
 
 
 def insert_submission(conn, sub: dict, created_at: str) -> int:

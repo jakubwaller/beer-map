@@ -11,7 +11,7 @@ ssh <host>
 cd ~ && git clone <repo-url> beer-map && cd beer-map
 cp deploy/beermap.env.example deploy/beermap.env
 # edit deploy/beermap.env: strong BEERMAP_ADMIN_PW, a random BEERMAP_IP_SALT,
-# and the Telegram bot token + chat id
+# the Telegram bot token + chat id, and PARTNER_TOKENS for partner apps
 ./docker-run.sh          # build image, start container, build the first dataset
 ```
 
@@ -54,6 +54,11 @@ ends a hung run after 6 h so it cannot hold the lock.
 
 `https://zapfkompass.de/admin` — HTTP Basic (`admin` / `BEERMAP_ADMIN_PW`).
 Approvals apply the edit and re-export `venues.json` instantly.
+Reports forwarded by a partner app (Dopivatel) land in the same queue, tagged with the partner's
+name. They are not announced one by one: the 04:00 `pipeline.run` cron sends one digest of the
+new ones. Their tokens live in `PARTNER_TOKENS` in `deploy/beermap.env` (`name:secret`, comma-separated);
+after changing it, `docker compose up -d` recreates the container with the new env. Contract:
+[`PARTNER-API.md`](PARTNER-API.md).
 Approved opening-hours corrections are additionally pushed to OSM by hand —
 see [`OSM-WRITEBACK.md`](OSM-WRITEBACK.md).
 
