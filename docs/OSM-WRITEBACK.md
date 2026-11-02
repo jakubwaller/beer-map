@@ -138,5 +138,7 @@ Right before posting it asks OSM again — the dedupe lookup for a new place,
 the element for a closure — and resolves the submission without a note if a
 mapper got there first. Reports older than `--max-age-days` (default 90) are
 left untouched; `--drop N` gives up on one. `submissions.osm_note_id`:
-NULL = to post, N = note N, 0 = resolved without a note. Same token as the
+NULL = to post, N = note N, 0 = resolved without a note, -1 = a post
+that failed after it may have reached OSM (read timeout, unreadable answer):
+the next run looks for a note with its text at the point before posting again. Same token as the
 hours push; a token minted before `write_notes` was added must be re-minted.

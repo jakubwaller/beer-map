@@ -23,7 +23,10 @@ like pipeline.osm_push. Rules:
 
 `submissions.osm_note_id` records the outcome, like osm_changeset: NULL = still
 to post, N > 0 = posted as note N, 0 = resolved without a note (linked to an
-OSM element, already in / gone from OSM, a duplicate of a noted report).
+OSM element, already in / gone from OSM, a duplicate of a noted report), -1 =
+a post that failed after it may have reached OSM (read timeout, unreadable
+answer). A -1 row is first looked for among the notes at its point and only
+posted again when none carries its text.
 """
 
 from __future__ import annotations
@@ -99,13 +102,14 @@ def pending(conn) -> list[dict]:
         "SELECT s.*, v.lat AS v_lat, v.lon AS v_lon, v.name AS v_name FROM submissions s "
         "LEFT JOIN venues v ON v.osm_id = s.venue_osm_id "
         "WHERE s.status='approved' AND s.kind IN ('add_venue', 'close_venue') "
-        "AND s.osm_note_id IS NULL ORDER BY s.created_at, s.id").fetchall()
+        "AND (s.osm_note_id IS NULL OR s.osm_note_id = -1) "
+        "ORDER BY s.created_at, s.id").fetchall()
     return [dict(r) for r in rows]
 
 
 def _noted(conn) -> list[dict]:
     return [dict(r) for r in conn.execute(
-        "SELECT kind, venue_osm_id, venue_name, lat, lon FROM submissions "
+        "SELECT kind, venue_osm_id, venue_name, lat, lon, assigned_osm_id FROM submissions "
         "WHERE osm_note_id > 0").fetchall()]
 
 
@@ -114,9 +118,23 @@ def _same_report(a: dict, b: dict) -> bool:
         return False
     if a["kind"] == "close_venue":
         return a["venue_osm_id"] == b["venue_osm_id"]
+    if a.get("assigned_osm_id") and a["assigned_osm_id"] == b.get("assigned_osm_id"):
+        return True  # the same community venue
     return (None not in (a["lat"], a["lon"], b["lat"], b["lon"])
             and haversine_m(a["lat"], a["lon"], b["lat"], b["lon"]) <= dedupe.NAME_RADIUS_M
             and dedupe.similar(a["venue_name"], b["venue_name"]))
+
+
+def _note_url(nid: int) -> str:
+    return f"{config.OSM_AUTH_URL.rstrip('/')}/note/{nid}"
+
+
+def _maybe_sent(exc: Exception) -> bool:
+    """False only when the POST surely never created a note: refused with a
+    status, or no connection made. A read timeout or an unreadable 200 may
+    have."""
+    return not isinstance(exc, (httpx.HTTPStatusError, httpx.ConnectError,
+                                httpx.ConnectTimeout, httpx.PoolTimeout))
 
 
 def set_note_id(conn, sub_id: int, note_id: int) -> None:
@@ -160,7 +178,8 @@ def post_notes(conn, api: OsmApi, dry_run: bool = False, max_age_days: int = 90,
             log(f"#{s['id']} {s['kind']}: no coordinates, skipped")
             counts["failed"] += 1
             continue
-        report = dict(kind=s["kind"], venue_osm_id=osm_id, venue_name=name, lat=lat, lon=lon)
+        report = dict(kind=s["kind"], venue_osm_id=osm_id, venue_name=name, lat=lat, lon=lon,
+                      assigned_osm_id=s.get("assigned_osm_id"))
         if any(_same_report(report, n) for n in noted):
             resolve(s, 0, "the same report is already in a note")
             continue
@@ -195,16 +214,32 @@ def post_notes(conn, api: OsmApi, dry_run: bool = False, max_age_days: int = 90,
         text = note_text(s, _LANG.get(cc, "en"), name, osm_id)
         log(f"#{s['id']} {s['kind']} at {lat:.5f},{lon:.5f} [{cc}]:\n    "
             + text.replace("\n", "\n    "))
+        if s["osm_note_id"] == -1:
+            try:
+                nid = next((i for i, t in api.notes_near(lat, lon) if _clean(t) == _clean(text)),
+                           None)
+            except _CALL_ERRORS + (KeyError, TypeError) as exc:
+                log(f"#{s['id']} {s['kind']}: looking for the earlier post failed ({exc})")
+                counts["failed"] += 1
+                continue
+            if nid is not None:
+                resolve(s, nid, f"the earlier post did arrive: {_note_url(nid)}")
+                noted.append(report)
+                continue
         if dry_run:
             counts["posted"] += 1
         else:
             try:
                 nid = api.create_note(lat, lon, text)
             except _CALL_ERRORS + (KeyError, TypeError) as exc:
-                log(f"#{s['id']} {s['kind']}: posting failed ({exc})")
+                sent = _maybe_sent(exc)
+                log(f"#{s['id']} {s['kind']}: posting failed ({exc})"
+                    + ("; it may have arrived, the next run looks before posting" if sent else ""))
+                if sent:
+                    set_note_id(conn, s["id"], -1)
                 counts["failed"] += 1
                 continue
-            resolve(s, nid, f"{config.OSM_AUTH_URL.rstrip('/')}/note/{nid}")
+            resolve(s, nid, _note_url(nid))
         noted.append(report)
     return counts
 

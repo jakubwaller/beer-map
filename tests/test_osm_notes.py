@@ -18,15 +18,20 @@ NODE = """<osm><node id="5" version="2" lat="50.08" lon="14.42">
 
 
 class FakeOsm:
-    def __init__(self, element_status=200):
-        self.element_status = element_status
+    def __init__(self, element_status=200, post=None, near=()):
+        self.element_status, self.post, self.near = element_status, post, list(near)
         self.posts = []
 
     def __call__(self, request):
         if request.method == "POST" and request.url.path == "/api/0.6/notes.json":
             self.posts.append(dict(urllib.parse.parse_qsl(request.url.query.decode())))
+            if self.post:
+                return self.post(request)
             return httpx.Response(200, json={"type": "Feature",
                                              "properties": {"id": 900 + len(self.posts)}})
+        if request.method == "GET" and request.url.path == "/api/0.6/notes.json":
+            return httpx.Response(200, json={"type": "FeatureCollection", "features": [
+                {"properties": {"id": i, "comments": [{"text": t}]}} for i, t in self.near]})
         if request.method == "GET" and request.url.path == "/api/0.6/node/5":
             return httpx.Response(self.element_status, text=NODE)
         return httpx.Response(500)
@@ -169,3 +174,48 @@ def test_osm_failure_leaves_it_pending():
 def test_main_needs_a_token_unless_dry_run(tmp_path, monkeypatch):
     monkeypatch.setattr(osm_notes.config, "OSM_TOKEN", "")
     assert osm_notes.main(["--db", str(tmp_path / "x.db")]) == 2
+
+
+def test_same_community_venue_is_noted_once():
+    conn = _conn()
+    _add(conn)
+    # A second report of it, far enough and named differently that only the
+    # shared community venue tells.
+    dup = _add(conn, lat=50.09, venue_name="Nová pivnice u Husů")
+    fake = FakeOsm()
+    counts, _ = _run(conn, fake)
+    assert len(fake.posts) == 1 and get_submission(conn, dup)["osm_note_id"] == 0
+
+
+def _timeout(request):
+    raise httpx.ReadTimeout("slow", request=request)
+
+
+def test_ambiguous_failure_is_found_on_the_next_run_not_reposted():
+    conn = _conn()
+    sid = _add(conn)
+    fake = FakeOsm(post=_timeout)
+    counts, _ = _run(conn, fake)
+    assert counts["failed"] == 1 and get_submission(conn, sid)["osm_note_id"] == -1
+    text = fake.posts[0]["text"]
+    fake = FakeOsm(near=[(77, "someone else's note"), (555, text)])
+    counts, out = _run(conn, fake)
+    assert fake.posts == [] and counts["posted"] == 1 and "earlier post did arrive" in out
+    assert get_submission(conn, sid)["osm_note_id"] == 555
+
+
+def test_ambiguous_failure_that_never_arrived_is_posted_again():
+    conn = _conn()
+    sid = _add(conn)
+    _run(conn, FakeOsm(post=lambda r: httpx.Response(200, text="<html>proxy</html>")))
+    assert get_submission(conn, sid)["osm_note_id"] == -1
+    fake = FakeOsm(near=[(77, "someone else's note")])
+    counts, _ = _run(conn, fake)
+    assert len(fake.posts) == 1 and get_submission(conn, sid)["osm_note_id"] == 901
+
+
+def test_refused_post_stays_plainly_pending():
+    conn = _conn()
+    sid = _add(conn)
+    _run(conn, FakeOsm(post=lambda r: httpx.Response(403)))
+    assert get_submission(conn, sid)["osm_note_id"] is None

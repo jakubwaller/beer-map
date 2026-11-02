@@ -364,6 +364,15 @@ class OsmApi:
         r.raise_for_status()
         return int(r.json()["properties"]["id"])
 
+    def notes_near(self, lat: float, lon: float, d: float = 0.001) -> list[tuple[int, str]]:
+        """(id, opening comment) of every note, open or closed, within ±d°."""
+        r = self.client.get(f"{self.base}/api/0.6/notes.json", params={
+            "bbox": f"{lon - d:.7f},{lat - d:.7f},{lon + d:.7f},{lat + d:.7f}",
+            "closed": -1, "limit": 100})
+        r.raise_for_status()
+        return [(int(f["properties"]["id"]), (f["properties"].get("comments") or [{}])[0].get("text", ""))
+                for f in r.json().get("features", [])]
+
     def close_changeset(self, cid: int) -> None:
         r = self.client.put(f"{self.base}/api/0.6/changeset/{cid}/close")
         r.raise_for_status()
