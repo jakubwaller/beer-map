@@ -159,6 +159,42 @@ def test_geocode_transient_failure_is_not_cached(client, monkeypatch):
     assert len(calls) == 1
 
 
+def test_geocode_failure_skips_the_rest_of_the_render(client, monkeypatch):
+    import httpx
+    calls = []
+
+    def down(address, **k):
+        calls.append(k.get("timeout"))
+        raise httpx.ConnectTimeout("Nominatim down")
+    monkeypatch.setattr(dedupe, "geocode_address", down)
+    for i in range(3):
+        client.post("/api/submit", json={"kind": "add_venue", "name": f"Ort {i}",
+                                         "address": f"Musterstraße {i}"})
+    assert client.get("/admin", auth=AUTH).text.count("Prüfen später") == 3
+    assert calls == [dedupe.GEOCODE_TIMEOUT_S]
+
+
+def test_strict_geocode_raises_on_a_wrong_shaped_answer(monkeypatch):
+    from pipeline import geocode
+
+    class Resp:
+        def __init__(self, body):
+            self.body = body
+
+        def raise_for_status(self):
+            pass
+
+        def json(self):
+            return self.body
+    for body in ({"error": "x"}, [{"display_name": "no coords"}]):
+        monkeypatch.setattr(geocode.httpx, "get", lambda *a, b=body, **k: Resp(b))
+        assert geocode.geocode_address("x") is None
+        with pytest.raises(ValueError):
+            geocode.geocode_address("x", strict=True)
+    monkeypatch.setattr(geocode.httpx, "get", lambda *a, **k: Resp([]))
+    assert geocode.geocode_address("x", strict=True) is None  # genuine no-match
+
+
 def test_geocode_throttle_spaces_threads(monkeypatch):
     import threading
     import time

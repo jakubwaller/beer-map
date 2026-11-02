@@ -24,6 +24,7 @@ from .matching import haversine_m
 NAME_RADIUS_M = 75   # a similar name this close is probably the same place
 NEAR_RADIUS_M = 15   # this close it is, whatever the name says
 GEOCODE_INTERVAL_S = 1.0  # Nominatim usage policy
+GEOCODE_TIMEOUT_S = 5.0   # /admin waits on it; approval keeps geocode's own 15 s
 # An unnamed or differently named OSM object counts only when it could be the
 # place itself — not the bench or bicycle stand next to it.
 _VENUE_AMENITIES = {"pub", "bar", "biergarten", "restaurant", "cafe", "fast_food",
@@ -111,7 +112,8 @@ class Budget:
     `calls` of them, none after `seconds`, and no OSM after an OSM failure."""
 
     def __init__(self, calls: int = 3, seconds: float = 20.0):
-        self.calls, self.until, self.osm_down = calls, time.monotonic() + seconds, False
+        self.calls, self.until = calls, time.monotonic() + seconds
+        self.osm_down = self.geocode_down = False
 
     def take(self) -> bool:
         if self.calls <= 0 or time.monotonic() >= self.until:
@@ -133,7 +135,7 @@ def _geocode(address: str):
         if wait > 0:
             time.sleep(wait)
         try:
-            return geocode_address(address, strict=True)
+            return geocode_address(address, strict=True, timeout=GEOCODE_TIMEOUT_S)
         finally:
             _last_geocode = time.monotonic()
 
@@ -162,12 +164,15 @@ def candidates(conn, sub: dict, budget: Budget | None = None) -> tuple[list[dict
     if point is None:
         miss = sub.get("geocode_miss") or ""
         retry = miss < (datetime.now() - timedelta(days=1)).isoformat()
+        if budget and budget.geocode_down and sub.get("address") and retry:
+            sub["geocode_error"] = True  # Nominatim failed earlier in this render
+            return [], None
         if not (sub.get("address") and retry and budget and budget.take()):
             return [], None
         try:
             point = _geocode(sub["address"])
         except (httpx.HTTPError, ValueError):
-            sub["geocode_error"] = True  # transient: not cached, next load retries
+            sub["geocode_error"] = budget.geocode_down = True  # not cached; next load retries
             return [], None
         if point is None:
             sub["geocode_miss"] = datetime.now().isoformat()
