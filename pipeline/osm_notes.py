@@ -131,10 +131,11 @@ def _note_url(nid: int) -> str:
 
 def _maybe_sent(exc: Exception) -> bool:
     """False only when the POST surely never created a note: refused with a
-    status, or no connection made. A read timeout or an unreadable 200 may
-    have."""
-    return not isinstance(exc, (httpx.HTTPStatusError, httpx.ConnectError,
-                                httpx.ConnectTimeout, httpx.PoolTimeout))
+    4xx, or no connection made. A 5xx (a proxy may answer after the API
+    did), a read timeout or an unreadable 200 may have."""
+    if isinstance(exc, httpx.HTTPStatusError):
+        return exc.response.status_code >= 500
+    return not isinstance(exc, (httpx.ConnectError, httpx.ConnectTimeout, httpx.PoolTimeout))
 
 
 def set_note_id(conn, sub_id: int, note_id: int) -> None:

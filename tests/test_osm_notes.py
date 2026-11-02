@@ -219,3 +219,10 @@ def test_refused_post_stays_plainly_pending():
     sid = _add(conn)
     _run(conn, FakeOsm(post=lambda r: httpx.Response(403)))
     assert get_submission(conn, sid)["osm_note_id"] is None
+
+
+def test_server_error_on_post_counts_as_maybe_sent():
+    conn = _conn()
+    sid = _add(conn)
+    _run(conn, FakeOsm(post=lambda r: httpx.Response(502)))
+    assert get_submission(conn, sid)["osm_note_id"] == -1
