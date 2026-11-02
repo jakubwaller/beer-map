@@ -245,15 +245,22 @@ def post_notes(conn, api: OsmApi, dry_run: bool = False, max_age_days: int = 90,
         else:
             # -1 first: should the write after a successful post fail, the next
             # run still looks for this note before posting it again.
-            set_note_id(conn, s["id"], -1)
+            try:
+                set_note_id(conn, s["id"], -1)
+            except sqlite3.Error as exc:
+                log(f"#{s['id']} {s['kind']}: could not mark it before posting ({exc}), skipped")
+                counts["failed"] += 1
+                continue
             try:
                 nid = api.create_note(lat, lon, text)
             except _CALL_ERRORS + (KeyError, TypeError) as exc:
                 sent = _maybe_sent(exc)
                 log(f"#{s['id']} {s['kind']}: posting failed ({exc})"
                     + ("; it may have arrived, the next run looks before posting" if sent else ""))
-                if not sent:
-                    set_note_id(conn, s["id"], s["osm_note_id"])
+                if not sent:  # put it back, unless a --drop ran meanwhile
+                    conn.execute("UPDATE submissions SET osm_note_id=? WHERE id=? "
+                                 "AND osm_note_id=-1", (s["osm_note_id"], s["id"]))
+                    conn.commit()
                 counts["failed"] += 1
                 continue
             try:

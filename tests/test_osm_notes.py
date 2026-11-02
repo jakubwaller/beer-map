@@ -322,3 +322,29 @@ def test_no_coordinates_is_left_for_a_human_not_a_failure():
     counts, _ = _run(conn, FakeOsm())
     assert counts["failed"] == 0 and counts["skipped"] == 1
     assert get_submission(conn, sid)["osm_note_id"] is None
+
+
+def test_a_drop_during_a_refused_post_is_not_reverted():
+    conn = _conn()
+    sid = _add(conn)
+
+    def post(request):
+        osm_notes.set_note_id(conn, sid, 0)  # `--drop` from another shell meanwhile
+        return httpx.Response(400, text="no")
+
+    counts, _ = _run(conn, FakeOsm(post=post))
+    assert counts["failed"] == 1 and get_submission(conn, sid)["osm_note_id"] == 0
+
+
+def test_a_failed_mark_before_the_post_skips_the_row(monkeypatch):
+    conn = _conn()
+    sid = _add(conn)
+
+    def locked(*a):
+        raise sqlite3.OperationalError("database is locked")
+
+    monkeypatch.setattr(osm_notes, "set_note_id", locked)
+    fake = FakeOsm()
+    counts, out = _run(conn, fake)
+    assert counts["failed"] == 1 and fake.posts == [] and "could not mark it" in out
+    assert get_submission(conn, sid)["osm_note_id"] is None
