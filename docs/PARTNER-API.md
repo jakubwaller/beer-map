@@ -43,6 +43,9 @@ What each kind does once approved:
 - `close_venue`: the venue is hidden from the map.
 - `edit_venue`: rename (`name`) and/or move (`address`); at least one of the two.
 - `add_venue`: creates a new venue at `venue.lat`/`venue.lon` with `name`, plus `brand` if given.
+  If the place already exists — on Zapfkompass, or in OSM under a tag the map doesn't import
+  (fast_food, stadium, marketplace...) — the moderator may attach the report to that venue instead
+  (the brand lands there, no second pin) or reject it as a duplicate.
 
 When `venue_osm_id` is unknown and a `venue` hint comes with it, approval first creates the venue
 from the hint (that osm_id, `venue.name`, its coordinates) and then applies the report. The venue

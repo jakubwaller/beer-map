@@ -4,7 +4,7 @@ import hashlib
 import re
 from datetime import datetime, timedelta
 
-from . import config
+from . import config, dedupe
 from .curation import slugify
 from .db import (
     count_submissions_since, delete_edges, get_submission, list_submissions,
@@ -178,27 +178,38 @@ def _apply_add_venue(conn, sub: dict, today: str) -> bool:
     re-applies after the venue was pruned) reuse the stored coordinates instead
     of asking Nominatim again. No coordinates and no geocode hit means the
     venue cannot be placed — the submission stays pending for the moderator.
+    A venue that already exists (linked by the moderator, or created by an
+    earlier apply) is left as it is; only the brand is attached.
     """
-    lat, lon = sub.get("lat"), sub.get("lon")
-    if lat is None or lon is None:
-        coords = geocode_address(sub["address"])
-        if coords is None:
+    osm_id = sub.get("assigned_osm_id")
+    vid = _venue_id(conn, osm_id) if osm_id else None
+    if vid is None:
+        vid = _create_add_venue(conn, sub, osm_id, today)
+        if vid is None:
             return False
-        lat, lon = coords
-        if sub.get("id") is not None:
-            conn.execute("UPDATE submissions SET lat=?, lon=? WHERE id=?",
-                         (lat, lon, sub["id"]))
-    osm_id = sub.get("assigned_osm_id") or _community_osm_id(conn, sub, lat, lon)
-    if sub.get("id") is not None:
-        conn.execute("UPDATE submissions SET assigned_osm_id=? WHERE id=?", (osm_id, sub["id"]))
-    vid = upsert_venue(conn, Venue(osm_id, sub["venue_name"], lat, lon,
-                                   sub.get("address")), today)
     brand = (sub.get("brand") or "").strip()
     if brand:
         bid = upsert_brand(conn, config.normalize_brand(brand))
         upsert_edge(conn, vid, bid, "community", today,
                     serving=sub.get("serving", "unknown"), beer=sub.get("beer") or None)
     return True
+
+
+def _create_add_venue(conn, sub: dict, osm_id: str | None, today: str) -> int | None:
+    lat, lon = sub.get("lat"), sub.get("lon")
+    if lat is None or lon is None:
+        coords = geocode_address(sub["address"])
+        if coords is None:
+            return None
+        lat, lon = coords
+        if sub.get("id") is not None:
+            conn.execute("UPDATE submissions SET lat=?, lon=? WHERE id=?",
+                         (lat, lon, sub["id"]))
+    osm_id = osm_id or _community_osm_id(conn, sub, lat, lon)
+    if sub.get("id") is not None:
+        conn.execute("UPDATE submissions SET assigned_osm_id=? WHERE id=?", (osm_id, sub["id"]))
+    return upsert_venue(conn, Venue(osm_id, sub["venue_name"], lat, lon,
+                                    sub.get("address")), today)
 
 
 def apply_one(conn, sub: dict, today: str) -> bool:
@@ -280,6 +291,8 @@ def approve_submission(conn, sub_id: int, today: str, out_path: str) -> bool:
 def approve_all_pending(conn, today: str, out_path: str) -> int:
     approved = 0
     for sub in list_submissions(conn, "pending"):
+        if possible_duplicate(conn, sub):
+            continue  # a new venue next to an existing one wants a moderator's look
         if not apply_one(conn, sub, today):
             continue  # stays pending, same as single approve
         set_submission_status(conn, sub["id"], "approved", today)
@@ -288,6 +301,35 @@ def approve_all_pending(conn, today: str, out_path: str) -> int:
     if approved:  # one export for the whole batch, not one per submission
         export_geojson(conn, out_path)
     return approved
+
+
+def possible_duplicate(conn, sub: dict) -> bool:
+    """An unlinked add_venue with a look-alike venue already in our DB."""
+    return (sub["kind"] == _NEW_VENUE_KIND and not sub.get("assigned_osm_id")
+            and sub.get("lat") is not None and sub.get("lon") is not None
+            and bool(dedupe.db_candidates(conn, sub["venue_name"], sub["lat"], sub["lon"])))
+
+
+def link_submission(conn, sub_id: int, osm_id: str) -> bool:
+    """Point a pending add_venue at an existing venue or OSM element (one of
+    its duplicate candidates), so approval attaches to it instead of creating
+    a community venue. Its coordinates become the submission's, so the
+    curation export can recreate it. An empty `osm_id` undoes the link."""
+    sub = get_submission(conn, sub_id)
+    if not sub or sub["status"] != "pending" or sub["kind"] != _NEW_VENUE_KIND:
+        return False
+    if not osm_id:
+        conn.execute("UPDATE submissions SET assigned_osm_id=NULL WHERE id=?", (sub_id,))
+        conn.commit()
+        return True
+    cands, _ = dedupe.candidates(conn, sub, fetch_osm=False)
+    hit = next((c for c in cands if c["osm_id"] == osm_id), None)
+    if hit is None:
+        return False
+    conn.execute("UPDATE submissions SET assigned_osm_id=?, lat=?, lon=? WHERE id=?",
+                 (osm_id, hit["lat"], hit["lon"], sub_id))
+    conn.commit()
+    return True
 
 
 def reject_submission(conn, sub_id: int, today: str) -> bool:

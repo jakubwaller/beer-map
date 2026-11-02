@@ -24,7 +24,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, ValidationError
 from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
 
-from pipeline import config, submissions
+from pipeline import config, dedupe, submissions
 from pipeline.db import (fetch_gray_in_bbox, get_connection, init_db,
                          insert_submission, list_submissions, search_venues_db)
 from pipeline.export import _feature
@@ -201,6 +201,14 @@ button:hover { border-color: var(--accent); color: var(--accent-strong); }
 .approve:hover { background: var(--good); border-color: var(--good); color: #fff; }
 .reject { border-color: var(--line); color: var(--muted); }
 .reject:hover { background: var(--danger); border-color: var(--danger); color: #fff; }
+.kind.dup { background: var(--danger); }
+.dups { margin-top: 10px; padding: 8px 10px; border-radius: 8px; background: var(--bg); font-size: 14px; }
+.dups.found { border: 1px solid var(--danger); }
+.dups ul { list-style: none; margin: 6px 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.dups li { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.dups .src { font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--muted); }
+.dups button { padding: 4px 12px; font-size: 13px; }
+.dups .linked { color: var(--good); font-weight: 600; }
 .empty {
   background: var(--card); border: 1px dashed var(--line); border-radius: 12px;
   padding: 32px 16px; text-align: center; color: var(--muted);
@@ -225,6 +233,10 @@ class VenueHint(BaseModel):
     name: Optional[str] = None  # needed when the hint creates the venue; add_venue uses `name`
     lat: float
     lon: float
+
+
+class Link(BaseModel):
+    osm_id: str = ""  # one of the submission's duplicate candidates; "" unlinks
 
 
 class PartnerSubmission(Submission):
@@ -504,6 +516,60 @@ def create_app() -> FastAPI:
                 )
             }
 
+        # Duplicate candidates for every add_venue. After one OSM failure the
+        # rest of this page skips OSM, so a dead API costs one timeout, not N.
+        dups: dict[int, tuple[list[dict], bool | None]] = {}
+        osm_up = True
+        for r in rows:
+            if r["kind"] == "add_venue":
+                dups[r["id"]] = dedupe.candidates(conn, r, fetch_osm=osm_up)
+                osm_up = osm_up and dups[r["id"]][1] is not False
+
+        def _dups(r):
+            if r["id"] not in dups:
+                return ""
+            cands, osm_ok = dups[r["id"]]
+            if r["lat"] is None:
+                return '<div class="dups">Keine Koordinaten – Duplikatprüfung nicht möglich.</div>'
+            linked = r.get("assigned_osm_id")
+            lines = []
+            for c in cands:
+                oid = html.escape(c["osm_id"])
+                label = html.escape(c["name"] or "(ohne Name)")
+                kind = f" · {html.escape(c['kind'])}" if c["kind"] else ""
+                ref = (f'<a href="https://www.openstreetmap.org/{oid}" target="_blank" rel="noopener">{oid}</a>'
+                       if c["osm_id"].split("/")[0] in ("node", "way", "relation") else oid)
+                act = (f'<span class="linked">verknüpft</span> <button data-osm="" onclick="link({r["id"]},this.dataset.osm)">Lösen</button>'
+                       if c["osm_id"] == linked else
+                       f'<button data-osm="{oid}" onclick="link({r["id"]},this.dataset.osm)">Verknüpfen</button>')
+                src = "Zapfkompass" if c["source"] == "db" else "OSM"
+                lines.append(f'<li><span class="src">{src}</span> <b>{label}</b>{kind} · {c["dist"]} m · {ref} {act}</li>')
+            status_line = {False: " OSM nicht erreichbar – nur Zapfkompass geprüft.",
+                           None: " OSM nicht geprüft (neu laden)."}.get(osm_ok, "")
+            if not lines:
+                return f'<div class="dups">Keine Duplikate gefunden.{status_line}</div>'
+            return (f'<div class="dups found">Mögliche Duplikate:{status_line}'
+                    f'<ul>{"".join(lines)}</ul></div>')
+
+        def _buttons(r):
+            approve = "Freigeben"
+            if r["kind"] == "add_venue" and r.get("assigned_osm_id"):
+                approve = "Freigeben → " + html.escape(r["assigned_osm_id"])
+            elif dups.get(r["id"], ([],))[0]:
+                approve = "Als neu freigeben"
+            def btn(cls, action, label):
+                return f"""<button class="{cls}" onclick="d({r['id']},'{action}')">{label}</button>"""
+            out = btn("approve", "approve", approve)
+            if dups.get(r["id"], ([],))[0]:
+                out += btn("reject", "reject", "Duplikat – ablehnen")
+            return out + btn("reject", "reject", "Ablehnen")
+
+        def _dup_flag(r):
+            cands = dups.get(r["id"], ([],))[0]
+            if r.get("assigned_osm_id") or not any(c["source"] == "db" for c in cands):
+                return ""
+            return '<span class="kind dup">Duplikat?</span>'
+
         def _coords(lat, lon):
             return f"{lat:.5f}, {lon:.5f}"
 
@@ -536,17 +602,16 @@ def create_app() -> FastAPI:
   <div class="head">
     <span class="kind {html.escape(r['kind'])}">{html.escape(_KIND_LABELS.get(r['kind'], r['kind']))}</span>
     {f'<span class="kind partner">{html.escape(r["partner"])}</span>' if r.get('partner') else ''}
+    {_dup_flag(r)}
     <span class="venue">{html.escape(venue.get('name') or r['venue_name'] or r['venue_osm_id'] or '?')}</span>
     <span class="addr">{html.escape(_place(r, venue))}</span>
   </div>
   <div class="detail">{_detail(r)}</div>
   {f'<div class="note">„{html.escape(r["note"])}“</div>' if r.get('note') else ''}
+  {_dups(r)}
   <div class="foot">
     <span class="meta">#{r['id']} · {html.escape(r['venue_osm_id'] or '')} · {html.escape((r.get('created_at') or '')[:16].replace('T', ' '))}</span>
-    <span class="actions">
-      <button class="approve" onclick="d({r['id']},'approve')">Freigeben</button>
-      <button class="reject" onclick="d({r['id']},'reject')">Ablehnen</button>
-    </span>
+    <span class="actions">{_buttons(r)}</span>
   </div>
 </li>"""
             for r in rows
@@ -581,8 +646,14 @@ async function d(id, a) {{
   await fetch('/api/admin/' + id + '/' + a, {{method: 'POST'}});
   location.reload();
 }}
+async function link(id, osm) {{
+  const r = await fetch('/api/admin/' + id + '/link', {{method: 'POST',
+    headers: {{'Content-Type': 'application/json'}}, body: JSON.stringify({{osm_id: osm}})}});
+  if (!r.ok) alert('Verknüpfen fehlgeschlagen');
+  location.reload();
+}}
 async function approveAll(n) {{
-  if (!confirm('Alle ' + n + ' Meldungen freigeben?')) return;
+  if (!confirm('Alle ' + n + ' Meldungen freigeben? (Neue Orte mit Duplikat-Verdacht bleiben offen.)')) return;
   await fetch('/api/admin/approve-all', {{method: 'POST'}});
   location.reload();
 }}
@@ -600,6 +671,12 @@ async function approveAll(n) {{
         if not submissions.approve_submission(conn, sub_id, date.today().isoformat(), config.OUT_PATH):
             raise HTTPException(404, "not pending, or could not be applied "
                                      "(venue gone / address not geocodable)")
+        return {"ok": True}
+
+    @app.post("/api/admin/{sub_id}/link")
+    def link(sub_id: int, body: Link, conn=Depends(_db), _=Depends(_require_admin)):
+        if not submissions.link_submission(conn, sub_id, body.osm_id.strip()):
+            raise HTTPException(404, "not a pending add_venue, or not one of its candidates")
         return {"ok": True}
 
     @app.post("/api/admin/{sub_id}/reject")
