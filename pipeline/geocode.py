@@ -15,13 +15,15 @@ _last_lookup = 0.0
 
 
 def geocode_address(address: str, url: str = NOMINATIM_URL,
-                    near: tuple[float, float] | None = None) -> tuple[float, float] | None:
+                    near: tuple[float, float] | None = None,
+                    strict: bool = False) -> tuple[float, float] | None:
     """Resolve a free-text address to (lat, lon) via Nominatim. Returns None on
     no match or a transient failure — callers should keep the venue's existing
     coordinates rather than fail the whole operation. `near` bounds the search
     to roughly ±25 km of that point: an address edit keeps the venue in its
     city, and a bare "Straße 5" must not jump to a same-named street elsewhere
-    in Germany."""
+    in Germany. `strict=True` raises on a transient failure (network, timeout,
+    HTTP error, garbled body) instead, so None means a genuine no-match."""
     params = {"q": address, "format": "json", "limit": 1}
     if near is not None:
         lat, lon = near
@@ -37,6 +39,8 @@ def geocode_address(address: str, url: str = NOMINATIM_URL,
         resp.raise_for_status()
         results = resp.json()
     except (httpx.HTTPError, ValueError):  # ValueError: 200 with a non-JSON body
+        if strict:
+            raise
         return None
     if not results:
         return None

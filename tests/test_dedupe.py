@@ -133,12 +133,46 @@ def test_link_unlink_approve_as_new_keeps_reported_point(client):
 
 def test_geocode_miss_is_cached(client, monkeypatch):
     calls = []
-    monkeypatch.setattr(dedupe, "geocode_address", lambda a: calls.append(a))
+    monkeypatch.setattr(dedupe, "geocode_address", lambda a, **k: calls.append(a))
     client.post("/api/submit", json={"kind": "add_venue", "name": "Nirgendwo",
                                      "address": "keine echte Adresse"})
     assert "Adresse nicht gefunden" in client.get("/admin", auth=AUTH).text
     client.get("/admin", auth=AUTH)
     assert calls == ["keine echte Adresse"]
+
+
+def test_geocode_transient_failure_is_not_cached(client, monkeypatch):
+    import httpx
+    calls = []
+
+    def flaky(address, **k):
+        calls.append(address)
+        raise httpx.ConnectTimeout("Nominatim slow")
+    monkeypatch.setattr(dedupe, "geocode_address", flaky)
+    client.post("/api/submit", json={"kind": "add_venue", "name": "Hospoda na Rohu",
+                                     "address": "Musterstraße 5"})
+    assert "Prüfen später" in client.get("/admin", auth=AUTH).text
+    sub = list_submissions(get_connection(config.DB_PATH), "pending")[0]
+    assert sub["geocode_miss"] is None
+    monkeypatch.setattr(dedupe, "geocode_address", lambda a, **k: (LAT, LON))
+    assert "node/77" in client.get("/admin", auth=AUTH).text  # retried and checked
+    assert len(calls) == 1
+
+
+def test_geocode_throttle_spaces_threads(monkeypatch):
+    import threading
+    import time
+    stamps = []
+    monkeypatch.setattr(dedupe, "GEOCODE_INTERVAL_S", 0.05)
+    monkeypatch.setattr(dedupe, "geocode_address",
+                        lambda a, **k: stamps.append(time.monotonic()))
+    threads = [threading.Thread(target=dedupe._geocode, args=("x",)) for _ in range(3)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+    stamps.sort()
+    assert all(b - a >= 0.045 for a, b in zip(stamps, stamps[1:]))
 
 
 def test_network_lookups_capped_per_page_load(client, monkeypatch):

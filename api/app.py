@@ -533,6 +533,8 @@ def create_app() -> FastAPI:
             if dedupe.origin(r) is None:
                 if r.get("geocode_miss"):
                     return '<div class="dups">Adresse nicht gefunden – Duplikatprüfung nicht möglich.</div>'
+                if r.get("geocode_error"):
+                    return f'<div class="dups">Geocoding gerade nicht erreichbar – Prüfen später. {check}</div>'
                 return f'<div class="dups">Kandidaten werden geladen. {check}</div>'
             linked = r.get("assigned_osm_id")
             lines = []

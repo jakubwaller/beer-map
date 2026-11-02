@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import json
 import math
+import threading
 import time
 from datetime import datetime, timedelta
 
@@ -120,18 +121,21 @@ class Budget:
 
 
 _last_geocode = 0.0
+_geocode_lock = threading.Lock()
 
 
 def _geocode(address: str):
-    """geocode_address at Nominatim's 1 request per second."""
+    """geocode_address at Nominatim's 1 request per second (across threads).
+    None = no match; a transient failure raises."""
     global _last_geocode
-    wait = _last_geocode + GEOCODE_INTERVAL_S - time.monotonic()
-    if wait > 0:
-        time.sleep(wait)
-    try:
-        return geocode_address(address)
-    finally:
-        _last_geocode = time.monotonic()
+    with _geocode_lock:
+        wait = _last_geocode + GEOCODE_INTERVAL_S - time.monotonic()
+        if wait > 0:
+            time.sleep(wait)
+        try:
+            return geocode_address(address, strict=True)
+        finally:
+            _last_geocode = time.monotonic()
 
 
 def origin(sub: dict):
@@ -160,7 +164,11 @@ def candidates(conn, sub: dict, budget: Budget | None = None) -> tuple[list[dict
         retry = miss < (datetime.now() - timedelta(days=1)).isoformat()
         if not (sub.get("address") and retry and budget and budget.take()):
             return [], None
-        point = _geocode(sub["address"])
+        try:
+            point = _geocode(sub["address"])
+        except (httpx.HTTPError, ValueError):
+            sub["geocode_error"] = True  # transient: not cached, next load retries
+            return [], None
         if point is None:
             sub["geocode_miss"] = datetime.now().isoformat()
             conn.execute("UPDATE submissions SET geocode_miss=? WHERE id=?",
