@@ -22,3 +22,4 @@ def _offline_dedupe(monkeypatch):
         raise httpx.ConnectError("offline in tests")
     monkeypatch.setattr(dedupe, "_get_map", down)
     monkeypatch.setattr(dedupe, "geocode_address", lambda *a, **k: None)
+    monkeypatch.setattr(dedupe, "GEOCODE_INTERVAL_S", 0.0)

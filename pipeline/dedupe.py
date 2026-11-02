@@ -10,6 +10,9 @@ from __future__ import annotations
 
 import json
 import math
+import threading
+import time
+from datetime import datetime, timedelta
 
 import httpx
 
@@ -20,6 +23,8 @@ from .matching import haversine_m
 
 NAME_RADIUS_M = 75   # a similar name this close is probably the same place
 NEAR_RADIUS_M = 15   # this close it is, whatever the name says
+GEOCODE_INTERVAL_S = 1.0  # Nominatim usage policy
+GEOCODE_TIMEOUT_S = 5.0   # /admin waits on it; approval keeps geocode's own 15 s
 # An unnamed or differently named OSM object counts only when it could be the
 # place itself — not the bench or bicycle stand next to it.
 _VENUE_AMENITIES = {"pub", "bar", "biergarten", "restaurant", "cafe", "fast_food",
@@ -102,31 +107,92 @@ def osm_candidates(name, lat, lon) -> list[dict]:
     return sorted(out, key=lambda c: c["dist"])
 
 
-def candidates(conn, sub: dict, fetch_osm: bool = True) -> tuple[list[dict], bool | None]:
+class Budget:
+    """The network lookups (geocode, OSM) one /admin render may spend: at most
+    `calls` of them, none after `seconds`, and no OSM after an OSM failure."""
+
+    def __init__(self, calls: int = 3, seconds: float = 20.0):
+        self.calls, self.until = calls, time.monotonic() + seconds
+        self.osm_down = self.geocode_down = False
+
+    def take(self) -> bool:
+        if self.calls <= 0 or time.monotonic() >= self.until:
+            return False
+        self.calls -= 1
+        return True
+
+
+_last_geocode = 0.0
+_geocode_lock = threading.Lock()
+
+
+def _geocode(address: str):
+    """geocode_address at Nominatim's 1 request per second (across threads).
+    None = no match; a transient failure raises."""
+    global _last_geocode
+    with _geocode_lock:
+        wait = _last_geocode + GEOCODE_INTERVAL_S - time.monotonic()
+        if wait > 0:
+            time.sleep(wait)
+        try:
+            return geocode_address(address, strict=True, timeout=GEOCODE_TIMEOUT_S)
+        finally:
+            _last_geocode = time.monotonic()
+
+
+def origin(sub: dict):
+    """Where the reporter put the place. Linking moves lat/lon to the linked
+    candidate and parks the reported point in hint_lat/hint_lon."""
+    if sub.get("hint_lat") is not None:
+        return sub["hint_lat"], sub["hint_lon"]
+    if sub.get("lat") is not None:
+        return sub["lat"], sub["lon"]
+    return None
+
+
+def candidates(conn, sub: dict, budget: Budget | None = None) -> tuple[list[dict], bool | None]:
     """DB and OSM candidates for a pending add_venue, DB first, each tagged
     with `source` ("db" | "osm"). The second value is True when OSM answered
-    (now or cached), False when it failed, None when it was not asked.
+    (now or cached), False when it failed, None when it was not asked —
+    no `budget` means no network at all.
 
     A visitor's submission has only an address: it is geocoded here and the
-    hit stored on the row, exactly as approval would. OSM answers are cached
-    on the row too, so reloading /admin doesn't ask again."""
-    lat, lon = sub.get("lat"), sub.get("lon")
-    if lat is None or lon is None:
-        coords = geocode_address(sub["address"]) if sub.get("address") else None
-        if coords is None:
+    hit stored on the row, exactly as approval would; a miss is stored too
+    (`geocode_miss`) and not retried for a day. OSM answers are cached on
+    the row, so reloading /admin doesn't ask again."""
+    point = origin(sub)
+    if point is None:
+        miss = sub.get("geocode_miss") or ""
+        retry = miss < (datetime.now() - timedelta(days=1)).isoformat()
+        if budget and budget.geocode_down and sub.get("address") and retry:
+            sub["geocode_error"] = True  # Nominatim failed earlier in this render
             return [], None
-        lat, lon = sub["lat"], sub["lon"] = coords
-        conn.execute("UPDATE submissions SET lat=?, lon=? WHERE id=?", (lat, lon, sub["id"]))
+        if not (sub.get("address") and retry and budget and budget.take()):
+            return [], None
+        try:
+            point = _geocode(sub["address"])
+        except (httpx.HTTPError, ValueError):
+            sub["geocode_error"] = budget.geocode_down = True  # not cached; next load retries
+            return [], None
+        if point is None:
+            sub["geocode_miss"] = datetime.now().isoformat()
+            conn.execute("UPDATE submissions SET geocode_miss=? WHERE id=?",
+                         (sub["geocode_miss"], sub["id"]))
+            conn.commit()
+            return [], None
+        sub["lat"], sub["lon"] = point
+        conn.execute("UPDATE submissions SET lat=?, lon=? WHERE id=?", (*point, sub["id"]))
         conn.commit()
+    lat, lon = point
     found = [dict(c, source="db") for c in db_candidates(conn, sub["venue_name"], lat, lon)]
     osm, ok = None, None
     if sub.get("osm_candidates") is not None:
         osm, ok = json.loads(sub["osm_candidates"]), True
-    elif fetch_osm:
+    elif budget and not budget.osm_down and budget.take():
         try:
             osm, ok = osm_candidates(sub["venue_name"], lat, lon), True
         except (httpx.HTTPError, ValueError, KeyError, TypeError):
-            ok = False  # moderation goes on without OSM; next page load retries
+            ok, budget.osm_down = False, True  # moderation goes on without OSM
         else:
             sub["osm_candidates"] = json.dumps(osm)
             conn.execute("UPDATE submissions SET osm_candidates=? WHERE id=?",

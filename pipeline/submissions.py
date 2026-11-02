@@ -306,28 +306,32 @@ def approve_all_pending(conn, today: str, out_path: str) -> int:
 def possible_duplicate(conn, sub: dict) -> bool:
     """An unlinked add_venue with a look-alike venue already in our DB."""
     return (sub["kind"] == _NEW_VENUE_KIND and not sub.get("assigned_osm_id")
-            and sub.get("lat") is not None and sub.get("lon") is not None
-            and bool(dedupe.db_candidates(conn, sub["venue_name"], sub["lat"], sub["lon"])))
+            and dedupe.origin(sub) is not None
+            and bool(dedupe.db_candidates(conn, sub["venue_name"], *dedupe.origin(sub))))
 
 
 def link_submission(conn, sub_id: int, osm_id: str) -> bool:
     """Point a pending add_venue at an existing venue or OSM element (one of
     its duplicate candidates), so approval attaches to it instead of creating
     a community venue. Its coordinates become the submission's, so the
-    curation export can recreate it. An empty `osm_id` undoes the link."""
+    curation export can recreate it; the reported point is kept in
+    hint_lat/hint_lon. An empty `osm_id` undoes the link and puts it back."""
     sub = get_submission(conn, sub_id)
     if not sub or sub["status"] != "pending" or sub["kind"] != _NEW_VENUE_KIND:
         return False
     if not osm_id:
-        conn.execute("UPDATE submissions SET assigned_osm_id=NULL WHERE id=?", (sub_id,))
+        conn.execute("UPDATE submissions SET assigned_osm_id=NULL, lat=COALESCE(hint_lat, lat), "
+                     "lon=COALESCE(hint_lon, lon), hint_lat=NULL, hint_lon=NULL WHERE id=?",
+                     (sub_id,))
         conn.commit()
         return True
-    cands, _ = dedupe.candidates(conn, sub, fetch_osm=False)
+    cands, _ = dedupe.candidates(conn, sub)
+    point = dedupe.origin(sub)
     hit = next((c for c in cands if c["osm_id"] == osm_id), None)
     if hit is None:
         return False
-    conn.execute("UPDATE submissions SET assigned_osm_id=?, lat=?, lon=? WHERE id=?",
-                 (osm_id, hit["lat"], hit["lon"], sub_id))
+    conn.execute("UPDATE submissions SET assigned_osm_id=?, lat=?, lon=?, hint_lat=?, hint_lon=? "
+                 "WHERE id=?", (osm_id, hit["lat"], hit["lon"], *point, sub_id))
     conn.commit()
     return True
 
