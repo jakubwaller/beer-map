@@ -55,7 +55,8 @@ CREATE TABLE IF NOT EXISTS submissions (
     -- edit_hours only: NULL = still to push to OSM, N > 0 = uploaded in that
     -- changeset, 0 = resolved without an upload (pipeline/osm_push.py).
     osm_changeset INTEGER,
-    -- add_venue only: the community/<slug> id the first apply chose. Written by
+    -- add_venue only: the community/<slug> id the first apply chose, or the
+    -- existing venue / OSM element the moderator linked it to. Written by
     -- the server alone, never from the request (venue_osm_id came from the
     -- client on old add_venue rows, so it is not trusted for this).
     assigned_osm_id TEXT,
@@ -70,7 +71,12 @@ CREATE TABLE IF NOT EXISTS submissions (
     hint_lat REAL,
     hint_lon REAL,
     -- Partner rows: when the nightly digest announced it (NULL = not yet).
-    digested_at TEXT
+    digested_at TEXT,
+    -- add_venue only: the OSM duplicate candidates as JSON (pipeline/dedupe.py),
+    -- NULL = OSM not asked yet.
+    osm_candidates TEXT,
+    -- add_venue only: when /admin last failed to geocode its address.
+    geocode_miss TEXT
 );
 -- One row per fetched tile of the nationwide sweep (pipeline/country.py), so
 -- an interrupted run can resume without refetching what it already has.
@@ -110,6 +116,8 @@ _MIGRATIONS = (
     ("submissions", "hint_lat", "REAL"),
     ("submissions", "hint_lon", "REAL"),
     ("submissions", "digested_at", "TEXT"),
+    ("submissions", "osm_candidates", "TEXT"),
+    ("submissions", "geocode_miss", "TEXT"),
 )
 
 
