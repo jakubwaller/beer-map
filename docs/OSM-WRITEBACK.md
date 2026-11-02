@@ -90,7 +90,8 @@ uploaded, no network). Exit status is 1 when anything conflicted or failed,
 ## One-time: the app and the token
 
 The OAuth 2 application `Zapfkompass` is registered on openstreetmap.org
-with the single scope `write_api` and the out-of-band redirect
+with the scopes `write_api` and `write_notes` ("Modify the map" and
+"Modify notes"; the notes are `pipeline.osm_notes`, below) and the out-of-band redirect
 `urn:ietf:wg:oauth:2.0:oob` (OSM refuses non-HTTPS redirect URIs, so there
 is no local callback; the code travels by clipboard). Its client id and
 secret live in `~/.zapfkompass-osm.env` on the machine that mints tokens,
@@ -121,3 +122,23 @@ registering it again, updating the env file, and minting a new token.
 `https://master.apis.dev.openstreetmap.org` (separate accounts, separate app
 registration, data thrown away periodically) to watch a real upload happen
 without touching the live map.
+
+## Notes for places OSM lacks
+
+`python -m pipeline.osm_notes` (`--dry-run` first) turns approved reports
+that OSM does not know about into OSM Notes, never edits: an `add_venue`
+the duplicate check found no OSM element for, and a `close_venue` for an
+OSM element. One note per submission at its coordinates, in Czech (CZ),
+German (DE/AT) or English, naming the place, address and beer, and the
+source (a visitor report on zapfkompass.de or one forwarded from the
+Dopivatel app, moderator-reviewed, not a survey). Nothing about the
+reporter goes in.
+
+Right before posting it asks OSM again — the dedupe lookup for a new place,
+the element for a closure — and resolves the submission without a note if a
+mapper got there first. Reports older than `--max-age-days` (default 90) are
+left untouched; `--drop N` gives up on one. `submissions.osm_note_id`:
+NULL = to post, N = note N, 0 = resolved without a note, -1 = a post
+that failed after it may have reached OSM (read timeout, unreadable answer):
+the next run looks for a note with its text at the point before posting again. Same token as the
+hours push; a token minted before `write_notes` was added must be re-minted.

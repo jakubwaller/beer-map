@@ -327,7 +327,7 @@ def same_hours(a: str | None, b: str | None) -> bool:
 # --- the API ----------------------------------------------------------------
 
 class OsmApi:
-    """The four calls an upload needs, against api.openstreetmap.org unless
+    """The calls an upload (and a note) needs, against api.openstreetmap.org unless
     `OSM_API_URL` says otherwise (the dev instance for a rehearsal). The
     token is the personal OAuth 2 token `pipeline.osm_auth` mints."""
 
@@ -356,6 +356,22 @@ class OsmApi:
                             headers={"Content-Type": "text/xml"})
         r.raise_for_status()
         return int(r.text.strip())
+
+    def create_note(self, lat: float, lon: float, text: str) -> int:
+        """A new OSM note (pipeline/osm_notes.py); returns its id."""
+        r = self.client.post(f"{self.base}/api/0.6/notes.json",
+                             params={"lat": f"{lat:.7f}", "lon": f"{lon:.7f}", "text": text})
+        r.raise_for_status()
+        return int(r.json()["properties"]["id"])
+
+    def notes_near(self, lat: float, lon: float, d: float = 0.001) -> list[tuple[int, str]]:
+        """(id, opening comment) of every note, open or closed, within ±d°."""
+        r = self.client.get(f"{self.base}/api/0.6/notes.json", params={
+            "bbox": f"{lon - d:.7f},{lat - d:.7f},{lon + d:.7f},{lat + d:.7f}",
+            "closed": -1, "limit": 100})
+        r.raise_for_status()
+        return [(int(f["properties"]["id"]), (f["properties"].get("comments") or [{}])[0].get("text", ""))
+                for f in r.json().get("features", [])]
 
     def close_changeset(self, cid: int) -> None:
         r = self.client.put(f"{self.base}/api/0.6/changeset/{cid}/close")

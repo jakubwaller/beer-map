@@ -210,9 +210,10 @@ SMTP_PORT = int(os.environ.get("BEERMAP_SMTP_PORT", "587"))
 SMTP_USER = os.environ.get("BEERMAP_SMTP_USER", "")
 SMTP_PASS = os.environ.get("BEERMAP_SMTP_PASS", "")
 SMTP_TO = os.environ.get("BEERMAP_SMTP_TO", "")
-# OSM writeback of approved opening-hours corrections (pipeline/osm_push.py).
-# OSM_TOKEN is the personal OAuth 2 token pipeline/osm_auth.py mints (scope
-# write_api); unset, the push can only dry-run. The two hosts are overridable
+# OSM writeback of approved opening-hours corrections (pipeline/osm_push.py)
+# and notes for places OSM lacks (pipeline/osm_notes.py). OSM_TOKEN is the
+# OAuth 2 token pipeline/osm_auth.py mints (scopes write_api write_notes);
+# unset, both can only dry-run. The two hosts are overridable
 # so a rehearsal can target the dev instance (master.apis.dev.openstreetmap.org
 # serves both roles there).
 OSM_API_URL = os.environ.get("OSM_API_URL", "https://api.openstreetmap.org")

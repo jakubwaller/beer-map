@@ -1,8 +1,8 @@
-"""Mint the OSM OAuth 2 token that `pipeline.osm_push` uploads with.
+"""Mint the OSM OAuth 2 token that `pipeline.osm_push` and `pipeline.osm_notes` use.
 
 One-shot, run on a machine with a browser: it prints the authorization URL,
-you approve the Zapfkompass app on openstreetmap.org (scope `write_api`, the
-only one it asks for), paste the code the page shows back here, and the
+you approve the Zapfkompass app on openstreetmap.org (scopes `write_api` and
+`write_notes`, the only ones it asks for), paste the code the page shows back here, and the
 token lands in the env file — never on the terminal. Copy the `OSM_TOKEN=`
 line into `deploy/beermap.env` on the server afterwards.
 
@@ -23,7 +23,8 @@ import httpx
 
 from . import config
 
-SCOPE = "write_api"
+SCOPE = "write_api write_notes"
+NEEDED = ("allow_write_api", "allow_write_notes")
 OOB = "urn:ietf:wg:oauth:2.0:oob"
 DEFAULT_ENV_FILE = "~/.zapfkompass-osm.env"
 
@@ -91,8 +92,8 @@ def exchange_code(code: str, client_id: str, client_secret: str, redirect_uri: s
 
 
 def permissions(token: str, api_url: str | None = None, transport=None) -> list[str]:
-    """What the token may do, as OSM reports it (`allow_write_api` is the
-    one the upload needs)."""
+    """What the token may do, as OSM reports it (NEEDED lists the ones
+    the upload and the notes need)."""
     base = (api_url or config.OSM_API_URL).rstrip("/")
     with httpx.Client(headers={"User-Agent": config.USER_AGENT,
                                "Authorization": f"Bearer {token}"},
@@ -119,7 +120,7 @@ def main(argv: list[str] | None = None) -> int:
     redirect = env.get("OSM_REDIRECT_URI") or OOB
 
     print("Open this in a browser logged in to the OSM account the edits should belong to,")
-    print("approve the write_api permission, and paste the code the page shows:\n")
+    print("approve the write_api and write_notes permissions, and paste the code the page shows:\n")
     print("  " + authorize_url(client_id, redirect))
     print()
     code = input("Authorization code: ").strip()
@@ -143,8 +144,11 @@ def main(argv: list[str] | None = None) -> int:
               "try `python -m pipeline.osm_push --dry-run` on the server", file=sys.stderr)
         return 1
     print(f"OSM_TOKEN written to {path} (permissions: {', '.join(granted) or 'none'})")
-    if "allow_write_api" not in granted:
-        print("that token cannot write — the app was authorized without write_api", file=sys.stderr)
+    missing = [p for p in NEEDED if p not in granted]
+    if missing:
+        print(f"that token lacks {', '.join(missing)} — tick the matching permission on the "
+              f"app under {config.OSM_AUTH_URL}/oauth2/applications and mint again",
+              file=sys.stderr)
         return 1
     return 0
 

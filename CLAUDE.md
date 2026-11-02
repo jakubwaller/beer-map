@@ -41,6 +41,7 @@ python -m http.server -d web 8000    # serve frontend only (no API)
 uvicorn api.app:app                  # serve frontend + API on one origin
 python -m pipeline.export_curation   # print approved community subs as curation.yaml entries
 python -m pipeline.osm_push --dry-run # push approved hours corrections to OSM (docs/OSM-WRITEBACK.md)
+python -m pipeline.osm_notes --dry-run # post approved new places / closures OSM lacks as OSM Notes
 ```
 
 Code targets Python 3.9+ — every module starts with `from __future__ import annotations`; keep union type hints (`str | None`) behind it.
@@ -73,7 +74,7 @@ Everything is upserts keyed on `(venue_id, brand_id, source, beer)` — `beer` (
 
 `pipeline/export_curation.py` renders approved submissions as curation.yaml entries so they can be committed to git and survive DB loss.
 
-`pipeline/osm_push.py` carries approved `edit_hours` submissions upstream to OSM — by hand, never from cron, one changeset per venue, the element re-fetched and sent back whole with its `version` so a concurrent edit gets a 409 instead of being overwritten. The changeset says where the hours really come from (a visitor report on zapfkompass.de, moderator-reviewed); never tag it `source=survey`. `submissions.osm_changeset` records the outcome (NULL = to push, N = changeset, 0 = resolved without upload). `pipeline/osm_auth.py` mints the token. Runbook: **[`docs/OSM-WRITEBACK.md`](docs/OSM-WRITEBACK.md)**.
+`pipeline/osm_push.py` carries approved `edit_hours` submissions upstream to OSM — by hand, never from cron, one changeset per venue, the element re-fetched and sent back whole with its `version` so a concurrent edit gets a 409 instead of being overwritten. The changeset says where the hours really come from (a visitor report on zapfkompass.de, moderator-reviewed); never tag it `source=survey`. `submissions.osm_changeset` records the outcome (NULL = to push, N = changeset, 0 = resolved without upload). `pipeline/osm_notes.py` is its sibling for what OSM lacks: an approved `add_venue` not linked to an OSM element, or a `close_venue`, becomes one OSM Note (local language, honest source, no personal data) for a mapper to verify — never a direct edit; `submissions.osm_note_id` has the same NULL/N/0 meaning. `pipeline/osm_auth.py` mints the token. Runbook: **[`docs/OSM-WRITEBACK.md`](docs/OSM-WRITEBACK.md)**.
 
 ### Frontend (`web/`)
 

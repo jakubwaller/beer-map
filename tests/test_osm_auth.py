@@ -10,14 +10,14 @@ from pipeline.osm_auth import (
 )
 
 
-def test_authorize_url_asks_for_write_api_only():
+def test_authorize_url_asks_for_write_api_and_notes_only():
     url = authorize_url("abc", auth_url="https://osm.test/")
     parsed = urllib.parse.urlparse(url)
     q = urllib.parse.parse_qs(parsed.query)
     assert parsed.scheme == "https" and parsed.netloc == "osm.test"
     assert parsed.path == "/oauth2/authorize"
     assert q == {"response_type": ["code"], "client_id": ["abc"],
-                 "redirect_uri": [OOB], "scope": ["write_api"]}
+                 "redirect_uri": [OOB], "scope": ["write_api write_notes"]}
 
 
 def test_exchange_code_posts_the_authorization_code_grant():
@@ -81,7 +81,8 @@ def test_main_writes_the_token_to_the_file_and_never_prints_it(tmp_path, monkeyp
     monkeypatch.setattr("builtins.input", lambda prompt="": "  c0de \n")
     monkeypatch.setattr(osm_auth, "exchange_code",
                         lambda code, cid, secret, redirect: f"tok-for-{code}-{cid}-{secret}")
-    monkeypatch.setattr(osm_auth, "permissions", lambda token: ["allow_write_api"])
+    monkeypatch.setattr(osm_auth, "permissions",
+                        lambda token: ["allow_write_api", "allow_write_notes"])
 
     assert osm_auth.main(["--env-file", path]) == 0
     out = capsys.readouterr()
@@ -123,3 +124,8 @@ def test_main_flags_a_token_without_write_permission(tmp_path, monkeypatch, caps
     monkeypatch.setattr(osm_auth, "permissions", lambda token: ["allow_read_prefs"])
     assert osm_auth.main(["--env-file", path]) == 1
     assert "write_api" in capsys.readouterr().err
+    # A token minted before notes were added: writes, but cannot post notes.
+    monkeypatch.setattr(osm_auth, "permissions", lambda token: ["allow_write_api"])
+    assert osm_auth.main(["--env-file", path]) == 1
+    err = capsys.readouterr().err
+    assert "allow_write_notes" in err and "allow_write_api," not in err
