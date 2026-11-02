@@ -1,3 +1,5 @@
+from datetime import datetime
+
 import httpx
 import pytest
 
@@ -528,3 +530,81 @@ def test_cli_dry_run_needs_no_token_and_drop_needs_no_network(tmp_path, monkeypa
 def test_cli_force_requires_id(tmp_path):
     with pytest.raises(SystemExit):
         osm_push.main(["--force", "--db", str(tmp_path / "t.sqlite")])
+
+
+class AutoOsm(FakeOsm):
+    def __init__(self, granted=("allow_write_api", "allow_write_notes"), perm_status=200, **kw):
+        super().__init__(**kw)
+        self.granted, self.perm_status = list(granted), perm_status
+
+    def __call__(self, request):
+        if request.url.path == "/api/0.6/permissions.json":
+            return httpx.Response(self.perm_status, json={"permissions": self.granted})
+        return super().__call__(request)
+
+
+def _auto(conn, fake, monkeypatch, token="tok", **kw):
+    monkeypatch.setattr(config, "OSM_TOKEN", token)
+    monkeypatch.setattr(config, "OSM_API_URL", "https://osm.test")
+    lines = []
+    code = osm_push.auto(conn, transport=httpx.MockTransport(fake), log=lines.append,
+                         now=datetime(2026, 9, 10, 6, 30), pause_s=0, **kw)
+    return code, lines
+
+
+def test_auto_respects_the_grace_and_the_cap(monkeypatch):
+    conn = _conn()
+    upsert_venue(conn, Venue("node/2", "Bar Y", 53.5, 10.0), "2026-09-01")
+    a = _approved(conn, "Mo-Su 12:00-22:00")
+    b = _approved(conn, "Mo-Su 12:00-23:00", osm_id="node/2")
+    fresh = _approved(conn, "Mo-Su 12:00-21:00", osm_id="node/3")
+    conn.execute("UPDATE submissions SET decided_at='2026-09-09' WHERE id=?", (fresh,))
+    fake = AutoOsm()
+    code, lines = _auto(conn, fake, monkeypatch, limit=1)
+    assert code == 0
+    assert fake.paths("PUT").count("/api/0.6/changeset/create") == 1
+    assert get_submission(conn, a)["osm_changeset"] == 123
+    assert get_submission(conn, b)["osm_changeset"] is None  # over the cap
+    assert get_submission(conn, fresh)["osm_changeset"] is None  # decided < 24 h ago
+    assert "pending 2 (in grace 1, over the cap 1)" in lines[-1]
+    assert "(changesets 123)" in lines[-1]
+
+
+def test_auto_holds_a_whole_venue_while_its_newest_report_is_in_grace(monkeypatch):
+    conn = _conn()
+    old = _approved(conn, "Mo-Su 12:00-22:00")
+    new = _approved(conn, "Mo-Su 12:00-23:00", created="2026-09-09T10:00:00")
+    conn.execute("UPDATE submissions SET decided_at='2026-09-10' WHERE id=?", (new,))
+    fake = AutoOsm()
+    code, _ = _auto(conn, fake, monkeypatch)
+    assert code == 0 and fake.paths("PUT") == []
+    assert get_submission(conn, old)["osm_changeset"] is None
+
+
+def test_auto_leaves_refused_items_pending_and_never_forces(monkeypatch):
+    conn = _conn()
+    sid = _approved(conn, "Mo-Su 12:00-22:00", created="2026-07-01T12:00:00")  # OSM edited later
+    fake = AutoOsm()
+    code, lines = _auto(conn, fake, monkeypatch)
+    assert code == 0 and fake.paths("PUT") == []
+    assert get_submission(conn, sid)["osm_changeset"] is None
+    assert "left for a human 1" in lines[-1]
+
+
+@pytest.mark.parametrize("token,granted,status", [
+    ("", (), 200), ("tok", ("allow_write_notes",), 200), ("tok", (), 401)])
+def test_auto_without_a_usable_token_logs_one_line_and_exits_0(monkeypatch, token, granted,
+                                                               status):
+    conn = _conn()
+    sid = _approved(conn, "Mo-Su 12:00-22:00")
+    fake = AutoOsm(granted=granted, perm_status=status)
+    code, lines = _auto(conn, fake, monkeypatch, token=token)
+    assert code == 0 and len(lines) == 1 and "nothing uploaded" in lines[0]
+    assert fake.paths("PUT") == []
+    assert get_submission(conn, sid)["osm_changeset"] is None
+
+
+def test_aged_reads_a_bare_date_as_its_last_second():
+    assert not osm_push.aged({"decided_at": "2026-09-09"}, 24, datetime(2026, 9, 10, 23, 0))
+    assert osm_push.aged({"decided_at": "2026-09-09"}, 24, datetime(2026, 9, 11, 0, 0))
+    assert osm_push.aged({"decided_at": "2026-09-09T10:00:00"}, 24, datetime(2026, 9, 10, 10, 0))

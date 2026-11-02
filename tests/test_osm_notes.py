@@ -130,7 +130,7 @@ def test_skips_linked_old_and_duplicate_reports():
     fake = FakeOsm()
     counts, _ = _run(conn, fake)
     assert len(fake.posts) == 1
-    assert counts == dict(posted=1, resolved=2, old=1, failed=0)
+    assert counts == dict(posted=1, resolved=2, old=1, failed=0, young=0, capped=0)
     assert get_submission(conn, linked)["osm_note_id"] == 0
     assert get_submission(conn, dup)["osm_note_id"] == 0
     assert get_submission(conn, old)["osm_note_id"] is None  # a wider cutoff still gets it
@@ -226,3 +226,49 @@ def test_server_error_on_post_counts_as_maybe_sent():
     sid = _add(conn)
     _run(conn, FakeOsm(post=lambda r: httpx.Response(502)))
     assert get_submission(conn, sid)["osm_note_id"] == -1
+
+
+class AutoOsm(FakeOsm):
+    """FakeOsm that also answers the permissions call --auto makes first."""
+
+    def __init__(self, granted=("allow_write_api", "allow_write_notes"), **kw):
+        super().__init__(**kw)
+        self.granted = list(granted)
+
+    def __call__(self, request):
+        if request.url.path == "/api/0.6/permissions.json":
+            return httpx.Response(200, json={"permissions": self.granted})
+        return super().__call__(request)
+
+
+def _auto(conn, fake, monkeypatch, **kw):
+    from pipeline import config
+    monkeypatch.setattr(config, "OSM_TOKEN", "t")
+    monkeypatch.setattr(config, "OSM_API_URL", "https://osm.test")
+    lines = []
+    code = osm_notes.auto(conn, transport=httpx.MockTransport(fake), log=lines.append, now=NOW,
+                          find_osm=lambda *a: [], country=lambda *a: "cz", pause_s=0, **kw)
+    return code, lines
+
+
+def test_auto_waits_out_the_grace_and_respects_the_cap(monkeypatch):
+    conn = _conn()
+    fresh = _add(conn, created="2026-11-01T12:00:00", venue_name="Hospoda 0")  # approved yesterday
+    olds = [_add(conn, lat=50.08 + i / 100, venue_name=f"Hospoda {i}",
+                 assigned_osm_id=f"community/h{i}") for i in range(1, 4)]
+    fake = AutoOsm()
+    code, lines = _auto(conn, fake, monkeypatch, limit=2)
+    assert code == 0 and len(fake.posts) == 2
+    assert get_submission(conn, fresh)["osm_note_id"] is None
+    assert get_submission(conn, olds[2])["osm_note_id"] is None
+    assert lines[-1].startswith("osm_notes --auto: posted 2 (notes 901, 902)")
+    assert "pending 2 (in grace 1, over the cap 1)" in lines[-1]
+
+
+def test_auto_without_the_notes_scope_logs_one_line_and_exits_0(monkeypatch):
+    conn = _conn()
+    sid = _add(conn)
+    fake = AutoOsm(granted=["allow_write_api"])
+    code, lines = _auto(conn, fake, monkeypatch)
+    assert code == 0 and fake.posts == [] and len(lines) == 1 and "allow_write_notes" in lines[0]
+    assert get_submission(conn, sid)["osm_note_id"] is None

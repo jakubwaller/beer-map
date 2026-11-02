@@ -7,8 +7,9 @@ second half: carrying the approved correction to OSM, where the hours came
 from, so the nightly import brings it back down on its own and everyone else
 reading OSM gets it too.
 
-It is done **by hand, with a personal OSM account**, never by cron. Every
-upload is an edit under that account's name.
+Every upload is an edit under one personal OSM account's name. It runs
+daily from cron in `--auto` mode (see [Automatic mode](#automatic-mode)), and
+can still be run by hand.
 
 ## What one run does
 
@@ -67,8 +68,9 @@ These are one-by-one, human-reviewed edits, not a mechanical edit in the
 sense of OSM's Automated Edits code of conduct — keep it that way: dry-run
 first, look at what it would change, keep the volume to what a person
 reviewed. If a mapper objects to an edit, revert it and talk before uploading
-more. A line on the account's profile saying it uploads reviewed community
-reports from zapfkompass.de saves that conversation.
+more. A line on the account's profile saves that conversation, e.g.:
+
+> Uploads opening hours and notes from visitor reports on zapfkompass.de, each one reviewed and approved by a moderator before upload; one venue per changeset. Questions or objections: reply to the changeset.
 
 ## Running it
 
@@ -86,6 +88,34 @@ opening a changeset or touching the database; it needs no token. Options:
 ignore the edited-after-the-report check), `--drop N` (mark as not to be
 uploaded, no network). Exit status is 1 when anything conflicted or failed,
 2 when the token is missing.
+
+## Automatic mode
+
+`--auto` is what the daily cron runs ([DEPLOY.md](DEPLOY.md#daily-data-refresh)),
+for both `pipeline.osm_push` and `pipeline.osm_notes`:
+
+```bash
+docker compose run --rm pipeline python -m pipeline.osm_push --auto
+docker compose run --rm pipeline python -m pipeline.osm_notes --auto
+```
+
+It is the same run as by hand, with three limits. Only reports whose
+moderator decision is at least `--grace-hours` (24) old, so a wrong approval
+can still be undone first (`decided_at` is a bare date, read as that day's
+end; for the hours, a venue with any report still in its grace waits
+whole). At most `--max` (5) uploads or notes per run. And never `--force`:
+whatever the rules above refuse (edited on OSM after the report, a tag the
+grid cannot show whole, a 409) stays pending, is logged every day, and waits
+for a human with `--force --id N` or `--drop N`. A missing token, or one
+without the scope it needs (`write_api` for the hours, `write_notes` for the
+notes), logs one line and exits 0. Each run ends with one summary line
+(uploaded, changeset or note ids, resolved, left for a human, pending);
+the exit status is 1 only when a call failed. `--dry-run` works with it.
+
+This does not make it an automated edit: every upload is still a single
+visitor report a moderator read and approved, one venue per changeset,
+`source=zapfkompass.de visitor report`. The schedule only removes the
+step of remembering to press the button.
 
 ## One-time: the app and the token
 

@@ -5,9 +5,12 @@ moderator approves it; that copy is what the map shows the same day. This
 script carries the same correction to OSM afterwards, so the nightly import
 brings it back down on its own and every other OSM consumer gets it too.
 
-It is a one-shot, run by hand (`python -m pipeline.osm_push --dry-run` first),
-never a pipeline step: each upload is an edit under a real OSM account, and
-the person holding that account decides when it happens.
+Run by hand (`python -m pipeline.osm_push --dry-run` first), or unattended
+from a daily cron with `--auto`, never as a pipeline step. Each upload is an
+edit under a real OSM account, of a single report a moderator has already
+approved; `--auto` only waits out a grace period after that approval (so a
+wrong one can still be undone), caps the uploads per run, and never forces
+past any of the rules below — what they refuse stays pending for a human.
 
 Rules, all of which exist because they were the cheap way to be a good OSM
 citizen:
@@ -44,10 +47,11 @@ import re
 import sys
 import time
 import xml.etree.ElementTree as ET
+from datetime import datetime, timedelta
 
 import httpx
 
-from . import config
+from . import config, osm_auth
 from .db import (get_connection, get_submission, init_db, list_hours_for_osm,
                  set_submission_changeset)
 
@@ -432,11 +436,14 @@ def _last_pushed(conn, osm_id: str) -> dict | None:
 
 
 def push(conn, api: OsmApi, subs: list[dict] | None = None, dry_run: bool = False,
-         force: bool = False, log=print, pause_s: float = 1.0) -> dict[str, int]:
-    """Upload every pending correction (or just `subs`). Returns counts per
-    outcome; `uploaded` counts would-be uploads in a dry run, which makes no
-    request beyond the GETs and writes nothing to the DB."""
-    counts = dict(uploaded=0, unchanged=0, superseded=0, skipped=0, conflict=0, failed=0)
+         force: bool = False, log=print, pause_s: float = 1.0,
+         limit: int | None = None) -> dict[str, int]:
+    """Upload every pending correction (or just `subs`), at most `limit` of
+    them. Returns counts per outcome; `uploaded` counts would-be uploads in a
+    dry run, which makes no request beyond the GETs and writes nothing to the
+    DB; `capped` the ones `limit` left for the next run."""
+    counts = dict(uploaded=0, unchanged=0, superseded=0, skipped=0, conflict=0, failed=0,
+                  capped=0)
 
     def resolve(sub, changeset: int):
         if not dry_run:
@@ -449,6 +456,9 @@ def push(conn, api: OsmApi, subs: list[dict] | None = None, dry_run: bool = Fals
         counts["superseded"] += 1
 
     for s in todo:
+        if limit is not None and counts["uploaded"] >= limit:
+            counts["capped"] += 1
+            continue
         sid, osm_id, target = s["id"], s["venue_osm_id"], s["opening_hours"]
         ref = parse_osm_id(osm_id)
         if ref is None:
@@ -544,6 +554,68 @@ def _close_quietly(api: OsmApi, cid: int, log) -> None:
         log(f"    closing changeset {cid} failed ({exc}); it closes itself within the hour")
 
 
+# --- unattended (--auto) ------------------------------------------------------
+
+def aged(sub: dict, hours: float, now: datetime | None = None) -> bool:
+    """Whether the moderator decided at least `hours` ago. The admin stores
+    decided_at as a bare date, read here as that day's last second, so the
+    grace is never shorter than asked. No decided_at at all predates the
+    column, i.e. is long past."""
+    d = (sub.get("decided_at") or "")[:19]
+    if len(d) == 10:
+        d += "T23:59:59"
+    return d <= ((now or datetime.now()) - timedelta(hours=hours)).isoformat()[:19]
+
+
+def token_ready(needed: str, log=print, transport=None) -> bool:
+    """For --auto: False, after one log line, when OSM_TOKEN is missing,
+    refused, or lacks `needed` (e.g. allow_write_notes) — a state for a human
+    to fix, not a cron failure. A network error raises."""
+    fix = "mint one with `python -m pipeline.osm_auth`; nothing uploaded"
+    if not config.OSM_TOKEN:
+        log(f"OSM_TOKEN is not set: {fix}")
+        return False
+    try:
+        granted = osm_auth.permissions(config.OSM_TOKEN, transport=transport)
+    except httpx.HTTPStatusError as exc:
+        if exc.response.status_code not in (401, 403):
+            raise
+        log(f"OSM_TOKEN refused by OSM ({exc.response.status_code}): {fix}")
+        return False
+    if needed not in granted:
+        log(f"OSM_TOKEN lacks {needed}: {fix}")
+        return False
+    return True
+
+
+def auto(conn, limit: int = 5, grace_hours: float = 24, dry_run: bool = False,
+         now: datetime | None = None, transport=None, log=print, pause_s: float = 1.0) -> int:
+    """The cron run: every correction approved at least `grace_hours` ago, at
+    most `limit` uploads, never forced. A venue with any report still in its
+    grace waits whole, so an older report is not uploaded just before a
+    newer one supersedes it. Ends with one summary line; returns the exit code."""
+    if not token_ready("allow_write_api", log, transport):
+        return 0
+    subs = list_hours_for_osm(conn)
+    young = {s["venue_osm_id"] for s in subs if not aged(s, grace_hours, now)}
+    ready = [s for s in subs if s["venue_osm_id"] not in young]
+    api = OsmApi(token=config.OSM_TOKEN, transport=transport)
+    try:
+        counts = push(conn, api, ready, dry_run=dry_run, log=log, pause_s=pause_s, limit=limit)
+    finally:
+        api.close()
+    ids = [r[0] for r in conn.execute(
+        f"SELECT osm_changeset FROM submissions WHERE osm_changeset > 0 AND id IN "
+        f"({','.join('?' * len(ready))})", [s["id"] for s in ready])] if ready else []
+    log(f"osm_push --auto: {'would upload' if dry_run else 'uploaded'} {counts['uploaded']} "
+        f"(changesets {', '.join(map(str, ids)) or '-'}), resolved without an upload "
+        f"{counts['unchanged'] + counts['superseded'] + counts['skipped']}, "
+        f"left for a human {counts['conflict']}, failed {counts['failed']}, "
+        f"pending {len(subs) - len(ready) + counts['capped']} "
+        f"(in grace {len(subs) - len(ready)}, over the cap {counts['capped']})")
+    return 1 if counts["failed"] else 0
+
+
 def _select(conn, ids: list[int], log) -> list[dict]:
     """The pending corrections among `ids`, explaining each one that is not."""
     pending = {s["id"]: s for s in list_hours_for_osm(conn)}
@@ -578,13 +650,24 @@ def main(argv: list[str] | None = None) -> int:
                    help="with --id: upload even if OSM was edited after the report")
     p.add_argument("--drop", type=int, action="append", default=[],
                    help="mark this submission as not to be uploaded (repeatable)")
+    p.add_argument("--auto", action="store_true",
+                   help="unattended (cron): only corrections approved --grace-hours ago, "
+                        "at most --max uploads, nothing forced; a missing token exits 0")
+    p.add_argument("--max", type=int, default=5,
+                   help="with --auto: uploads per run (default %(default)s)")
+    p.add_argument("--grace-hours", type=float, default=24,
+                   help="with --auto: wait this long after the approval (default %(default)s)")
     p.add_argument("--db", default=config.DB_PATH)
     args = p.parse_args(argv)
     if args.force and not args.id:
         p.error("--force needs --id: it overrides the conflict check for named submissions only")
+    if args.auto and (args.force or args.id or args.drop):
+        p.error("--auto takes no --force, --id or --drop: those are a human's calls")
 
     conn = get_connection(args.db)
     init_db(conn)
+    if args.auto:
+        return auto(conn, limit=args.max, grace_hours=args.grace_hours, dry_run=args.dry_run)
     for sid in args.drop:
         for s in _select(conn, [sid], print):
             if args.dry_run:
