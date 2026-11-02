@@ -516,21 +516,24 @@ def create_app() -> FastAPI:
                 )
             }
 
-        # Duplicate candidates for every add_venue. After one OSM failure the
-        # rest of this page skips OSM, so a dead API costs one timeout, not N.
+        # Duplicate candidates for every add_venue. The network lookups are
+        # capped per render (dedupe.Budget); answers are cached on the rows,
+        # so each reload ("Prüfen") fills in a few more.
         dups: dict[int, tuple[list[dict], bool | None]] = {}
-        osm_up = True
+        budget = dedupe.Budget()
         for r in rows:
             if r["kind"] == "add_venue":
-                dups[r["id"]] = dedupe.candidates(conn, r, fetch_osm=osm_up)
-                osm_up = osm_up and dups[r["id"]][1] is not False
+                dups[r["id"]] = dedupe.candidates(conn, r, budget)
+        check = '<button onclick="location.reload()">Prüfen</button>'
 
         def _dups(r):
             if r["id"] not in dups:
                 return ""
             cands, osm_ok = dups[r["id"]]
-            if r["lat"] is None:
-                return '<div class="dups">Keine Koordinaten – Duplikatprüfung nicht möglich.</div>'
+            if dedupe.origin(r) is None:
+                if r.get("geocode_miss"):
+                    return '<div class="dups">Adresse nicht gefunden – Duplikatprüfung nicht möglich.</div>'
+                return f'<div class="dups">Kandidaten werden geladen. {check}</div>'
             linked = r.get("assigned_osm_id")
             lines = []
             for c in cands:
@@ -545,7 +548,7 @@ def create_app() -> FastAPI:
                 src = "Zapfkompass" if c["source"] == "db" else "OSM"
                 lines.append(f'<li><span class="src">{src}</span> <b>{label}</b>{kind} · {c["dist"]} m · {ref} {act}</li>')
             status_line = {False: " OSM nicht erreichbar – nur Zapfkompass geprüft.",
-                           None: " OSM nicht geprüft (neu laden)."}.get(osm_ok, "")
+                           None: f" OSM noch nicht geprüft. {check}"}.get(osm_ok, "")
             if not lines:
                 return f'<div class="dups">Keine Duplikate gefunden.{status_line}</div>'
             return (f'<div class="dups found">Mögliche Duplikate:{status_line}'
@@ -575,7 +578,7 @@ def create_app() -> FastAPI:
 
         def _place(r, venue):
             # A partner report on a venue we lack: say approval will create it.
-            if not venue and r.get("hint_lat") is not None:
+            if not venue and r.get("hint_lat") is not None and r["kind"] != "add_venue":
                 return "Neu anlegen bei " + _coords(r["hint_lat"], r["hint_lon"])
             return venue.get("address") or ""
 

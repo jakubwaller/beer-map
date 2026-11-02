@@ -114,6 +114,44 @@ def test_osm_down_still_approvable_as_new(client):
     assert conn.execute("SELECT 1 FROM venues WHERE osm_id LIKE 'community/kro-%' AND name='KRO Libeň'").fetchone()
 
 
+def test_link_unlink_approve_as_new_keeps_reported_point(client):
+    sid = _partner_add_venue(client, "Hospoda na Rohu")
+    client.post(f"/api/admin/{sid}/link", auth=AUTH, json={"osm_id": "node/77"})
+    sub = get_submission(get_connection(config.DB_PATH), sid)
+    assert (sub["lat"], sub["hint_lat"]) == (LAT + 0.00036, LAT)
+    # distances still measured from the reported point, not the linked venue
+    assert "40 m" in client.get("/admin", auth=AUTH).text
+    assert client.post(f"/api/admin/{sid}/link", auth=AUTH, json={"osm_id": ""}).json() == {"ok": True}
+    sub = get_submission(get_connection(config.DB_PATH), sid)
+    assert sub["assigned_osm_id"] is None and (sub["lat"], sub["lon"]) == (LAT, LON)
+    assert sub["hint_lat"] is None
+    assert client.post(f"/api/admin/{sid}/approve", auth=AUTH).json() == {"ok": True}
+    v = get_connection(config.DB_PATH).execute(
+        "SELECT lat, lon FROM venues WHERE osm_id LIKE 'community/%'").fetchone()
+    assert (v["lat"], v["lon"]) == (LAT, LON)
+
+
+def test_geocode_miss_is_cached(client, monkeypatch):
+    calls = []
+    monkeypatch.setattr(dedupe, "geocode_address", lambda a: calls.append(a))
+    client.post("/api/submit", json={"kind": "add_venue", "name": "Nirgendwo",
+                                     "address": "keine echte Adresse"})
+    assert "Adresse nicht gefunden" in client.get("/admin", auth=AUTH).text
+    client.get("/admin", auth=AUTH)
+    assert calls == ["keine echte Adresse"]
+
+
+def test_network_lookups_capped_per_page_load(client, monkeypatch):
+    calls = []
+    monkeypatch.setattr(dedupe, "_get_map", lambda *bbox: calls.append(bbox) or {"elements": []})
+    for i in range(5):
+        _partner_add_venue(client, f"Neu {i}", ref=f"r{i}")
+    page = client.get("/admin", auth=AUTH).text
+    assert len(calls) == 3 and page.count("OSM noch nicht geprüft") == 2
+    client.get("/admin", auth=AUTH)
+    assert len(calls) == 5
+
+
 def test_unlink_restores_new_venue(client):
     sid = _partner_add_venue(client, "Hospoda na Rohu")
     client.post(f"/api/admin/{sid}/link", auth=AUTH, json={"osm_id": "node/77"})
