@@ -7,7 +7,8 @@ Neither is edited into the map from here — a visitor's word is not a survey.
 Instead each becomes one note at the place, saying what was reported and where
 the report came from, so someone who can walk past checks and edits.
 
-Run by hand (`python -m pipeline.osm_notes --dry-run` first), never from cron,
+Run by hand (`python -m pipeline.osm_notes --dry-run` first), or from a daily
+cron with `--auto` (reports approved at least 24 h ago, a few notes per run),
 like pipeline.osm_push. Rules:
 
 - One note per submission, at its coordinates, in the local language (Czech in
@@ -25,13 +26,15 @@ like pipeline.osm_push. Rules:
 to post, N > 0 = posted as note N, 0 = resolved without a note (linked to an
 OSM element, already in / gone from OSM, a duplicate of a noted report), -1 =
 a post that failed after it may have reached OSM (read timeout, unreadable
-answer). A -1 row is first looked for among the notes at its point and only
+answer). -1 is written before every post and replaced by the note id after,
+so a post whose DB write fails still counts as maybe-sent. A -1 row is first looked for among the notes at its point and only
 posted again when none carries its text.
 """
 
 from __future__ import annotations
 
 import argparse
+import sqlite3
 import sys
 import time
 from datetime import datetime, timedelta, timezone
@@ -42,7 +45,7 @@ from . import config, dedupe
 from .db import get_connection, init_db
 from .geocode import country_code
 from .matching import haversine_m
-from .osm_push import _CALL_ERRORS, OsmApi, _status, parse_osm_id, tag_value
+from .osm_push import _CALL_ERRORS, OsmApi, _status, aged, parse_osm_id, tag_value, token_ready
 
 SITE = "https://zapfkompass.de"
 _LANG = {"cz": "cs", "de": "de", "at": "de"}
@@ -145,10 +148,14 @@ def set_note_id(conn, sub_id: int, note_id: int) -> None:
 
 def post_notes(conn, api: OsmApi, dry_run: bool = False, max_age_days: int = 90,
                now: datetime | None = None, find_osm=dedupe.osm_candidates,
-               country=country_code, log=print, pause_s: float = 1.0) -> dict[str, int]:
-    """Post every pending report as a note. In a dry run OSM and Nominatim are
-    still asked (the skip rules need them), but nothing is posted or written."""
-    counts = dict(posted=0, resolved=0, old=0, failed=0)
+               country=country_code, log=print, pause_s: float = 1.0,
+               grace_hours: float | None = None, limit: int | None = None) -> dict[str, int]:
+    """Post every pending report as a note: with `grace_hours`, only those a
+    moderator approved that long ago (`young` counts the rest), and at most
+    `limit` notes (`capped` counts what that leaves for the next run). In a
+    dry run OSM and Nominatim are still asked (the skip rules need them), but
+    nothing is posted or written."""
+    counts = dict(posted=0, resolved=0, old=0, failed=0, young=0, capped=0, skipped=0)
     cutoff = ((now or datetime.now(timezone.utc)) - timedelta(days=max_age_days)).isoformat()[:19]
     noted = _noted(conn)
 
@@ -161,6 +168,12 @@ def post_notes(conn, api: OsmApi, dry_run: bool = False, max_age_days: int = 90,
     for s in pending(conn):
         if (s["created_at"] or "")[:19] < cutoff:
             counts["old"] += 1
+            continue
+        if grace_hours is not None and not aged(s, grace_hours, now):
+            counts["young"] += 1
+            continue
+        if limit is not None and counts["posted"] >= limit:
+            counts["capped"] += 1
             continue
         if s["kind"] == "add_venue":
             if parse_osm_id(s.get("assigned_osm_id")):
@@ -176,8 +189,8 @@ def post_notes(conn, api: OsmApi, dry_run: bool = False, max_age_days: int = 90,
                 else (s["hint_lat"], s["hint_lon"])
             name = s["v_name"] or s["venue_name"]
         if lat is None or lon is None:
-            log(f"#{s['id']} {s['kind']}: no coordinates, skipped")
-            counts["failed"] += 1
+            log(f"#{s['id']} {s['kind']}: no coordinates, left for a human")
+            counts["skipped"] += 1
             continue
         report = dict(kind=s["kind"], venue_osm_id=osm_id, venue_name=name, lat=lat, lon=lon,
                       assigned_osm_id=s.get("assigned_osm_id"))
@@ -209,8 +222,8 @@ def post_notes(conn, api: OsmApi, dry_run: bool = False, max_age_days: int = 90,
             continue
         cc = country(lat, lon)
         if cc is None:
-            log(f"#{s['id']} {s['kind']}: country lookup failed, skipped")
-            counts["failed"] += 1
+            log(f"#{s['id']} {s['kind']}: country lookup failed, left for the next run")
+            counts["skipped"] += 1
             continue
         text = note_text(s, _LANG.get(cc, "en"), name, osm_id)
         log(f"#{s['id']} {s['kind']} at {lat:.5f},{lon:.5f} [{cc}]:\n    "
@@ -230,19 +243,59 @@ def post_notes(conn, api: OsmApi, dry_run: bool = False, max_age_days: int = 90,
         if dry_run:
             counts["posted"] += 1
         else:
+            # -1 first: should the write after a successful post fail, the next
+            # run still looks for this note before posting it again.
+            try:
+                set_note_id(conn, s["id"], -1)
+            except sqlite3.Error as exc:
+                log(f"#{s['id']} {s['kind']}: could not mark it before posting ({exc}), skipped")
+                counts["failed"] += 1
+                continue
             try:
                 nid = api.create_note(lat, lon, text)
             except _CALL_ERRORS + (KeyError, TypeError) as exc:
                 sent = _maybe_sent(exc)
                 log(f"#{s['id']} {s['kind']}: posting failed ({exc})"
                     + ("; it may have arrived, the next run looks before posting" if sent else ""))
-                if sent:
-                    set_note_id(conn, s["id"], -1)
+                if not sent:  # put it back, unless a --drop ran meanwhile
+                    conn.execute("UPDATE submissions SET osm_note_id=? WHERE id=? "
+                                 "AND osm_note_id=-1", (s["osm_note_id"], s["id"]))
+                    conn.commit()
                 counts["failed"] += 1
                 continue
-            resolve(s, nid, _note_url(nid))
+            try:
+                resolve(s, nid, _note_url(nid))
+            except sqlite3.Error as exc:
+                log(f"#{s['id']} {s['kind']}: POSTED AS NOTE {nid} ({_note_url(nid)}) but "
+                    f"recording it failed ({exc}); left at -1, the next run finds the note")
+                counts["failed"] += 1
         noted.append(report)
     return counts
+
+
+def auto(conn, limit: int = 5, grace_hours: float = 24, dry_run: bool = False,
+         transport=None, log=print, **kw) -> int:
+    """The cron run: reports approved at least `grace_hours` ago, at most
+    `limit` notes. Ends with one summary line; returns the exit code."""
+    if not token_ready("allow_write_notes", log, transport):
+        return 0
+    before = {s["id"] for s in pending(conn)}
+    api = OsmApi(token=config.OSM_TOKEN, transport=transport)
+    try:
+        counts = post_notes(conn, api, dry_run=dry_run, log=log, grace_hours=grace_hours,
+                            limit=limit, **kw)
+    finally:
+        api.close()
+    ids = [r[0] for r in conn.execute(
+        f"SELECT osm_note_id FROM submissions WHERE osm_note_id > 0 AND id IN "
+        f"({','.join('?' * len(before))})", sorted(before))] if before else []
+    log(f"osm_notes --auto: {'would post' if dry_run else 'posted'} {counts['posted']} "
+        f"(notes {', '.join(map(str, ids)) or '-'}), resolved without a note "
+        f"{counts['resolved']}, left for a human {counts['skipped']}, "
+        f"failed {counts['failed']}, pending "
+        f"{counts['young'] + counts['capped']} (in grace {counts['young']}, "
+        f"over the cap {counts['capped']}), older than the cutoff {counts['old']}")
+    return 1 if counts["failed"] else 0
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -253,11 +306,24 @@ def main(argv: list[str] | None = None) -> int:
                    help="leave reports older than this alone (default %(default)s)")
     p.add_argument("--drop", type=int, action="append", default=[],
                    help="mark this submission as not to be posted (repeatable)")
+    p.add_argument("--auto", action="store_true",
+                   help="unattended (cron): only reports approved --grace-hours ago, "
+                        "at most --max notes; a missing token or scope exits 0")
+    p.add_argument("--max", type=int, default=5,
+                   help="with --auto: notes per run (default %(default)s)")
+    p.add_argument("--grace-hours", type=float, default=24,
+                   help="with --auto: wait this long after the approval (default %(default)s)")
     p.add_argument("--db", default=config.DB_PATH)
     args = p.parse_args(argv)
+    if args.auto and args.drop:
+        p.error("--auto takes no --drop: that is a human's call")
 
     conn = get_connection(args.db)
+    conn.execute("PRAGMA busy_timeout = 600000")  # wait out a running build's write, 10 min
     init_db(conn)
+    if args.auto:
+        return auto(conn, limit=args.max, grace_hours=args.grace_hours, dry_run=args.dry_run,
+                    max_age_days=args.max_age_days)
     if args.drop:
         for sid in args.drop:
             if not args.dry_run:
