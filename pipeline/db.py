@@ -74,7 +74,10 @@ CREATE TABLE IF NOT EXISTS submissions (
     digested_at TEXT,
     -- add_venue only: the OSM duplicate candidates as JSON (pipeline/dedupe.py),
     -- NULL = OSM not asked yet.
-    osm_candidates TEXT
+    osm_candidates TEXT,
+    -- add_venue/close_venue only: NULL = no OSM note yet, N > 0 = posted as
+    -- note N, 0 = resolved without a note (pipeline/osm_notes.py).
+    osm_note_id INTEGER
 );
 -- One row per fetched tile of the nationwide sweep (pipeline/country.py), so
 -- an interrupted run can resume without refetching what it already has.
@@ -115,6 +118,7 @@ _MIGRATIONS = (
     ("submissions", "hint_lon", "REAL"),
     ("submissions", "digested_at", "TEXT"),
     ("submissions", "osm_candidates", "TEXT"),
+    ("submissions", "osm_note_id", "INTEGER"),
 )
 
 

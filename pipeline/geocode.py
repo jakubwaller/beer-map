@@ -10,6 +10,7 @@ from .osm import _address
 
 NOMINATIM_URL = "https://nominatim.openstreetmap.org/search"
 LOOKUP_URL = "https://nominatim.openstreetmap.org/lookup"
+REVERSE_URL = "https://nominatim.openstreetmap.org/reverse"
 _lookup_lock = threading.Lock()
 _last_lookup = 0.0
 
@@ -84,3 +85,15 @@ def lookup_address(osm_id: str, url: str = LOOKUP_URL) -> str | None:
                          "addr:postcode": a.get("postcode"), "addr:city": city}) or ""
     except (KeyError, TypeError, AttributeError):
         return ""
+
+
+def country_code(lat: float, lon: float, url: str = REVERSE_URL) -> str | None:
+    """ISO country code ("cz", "de", ...) of a point via Nominatim reverse at
+    country zoom; None on a miss or a transient failure."""
+    try:
+        resp = httpx.get(url, params={"lat": lat, "lon": lon, "zoom": 3, "format": "jsonv2"},
+                         headers={"User-Agent": USER_AGENT}, timeout=10)
+        resp.raise_for_status()
+        return (resp.json().get("address") or {}).get("country_code") or None
+    except (httpx.HTTPError, ValueError, AttributeError):
+        return None
