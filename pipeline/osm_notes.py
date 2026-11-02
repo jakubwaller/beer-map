@@ -26,13 +26,15 @@ like pipeline.osm_push. Rules:
 to post, N > 0 = posted as note N, 0 = resolved without a note (linked to an
 OSM element, already in / gone from OSM, a duplicate of a noted report), -1 =
 a post that failed after it may have reached OSM (read timeout, unreadable
-answer). A -1 row is first looked for among the notes at its point and only
+answer). -1 is written before every post and replaced by the note id after,
+so a post whose DB write fails still counts as maybe-sent. A -1 row is first looked for among the notes at its point and only
 posted again when none carries its text.
 """
 
 from __future__ import annotations
 
 import argparse
+import sqlite3
 import sys
 import time
 from datetime import datetime, timedelta, timezone
@@ -153,7 +155,7 @@ def post_notes(conn, api: OsmApi, dry_run: bool = False, max_age_days: int = 90,
     `limit` notes (`capped` counts what that leaves for the next run). In a
     dry run OSM and Nominatim are still asked (the skip rules need them), but
     nothing is posted or written."""
-    counts = dict(posted=0, resolved=0, old=0, failed=0, young=0, capped=0)
+    counts = dict(posted=0, resolved=0, old=0, failed=0, young=0, capped=0, skipped=0)
     cutoff = ((now or datetime.now(timezone.utc)) - timedelta(days=max_age_days)).isoformat()[:19]
     noted = _noted(conn)
 
@@ -187,8 +189,8 @@ def post_notes(conn, api: OsmApi, dry_run: bool = False, max_age_days: int = 90,
                 else (s["hint_lat"], s["hint_lon"])
             name = s["v_name"] or s["venue_name"]
         if lat is None or lon is None:
-            log(f"#{s['id']} {s['kind']}: no coordinates, skipped")
-            counts["failed"] += 1
+            log(f"#{s['id']} {s['kind']}: no coordinates, left for a human")
+            counts["skipped"] += 1
             continue
         report = dict(kind=s["kind"], venue_osm_id=osm_id, venue_name=name, lat=lat, lon=lon,
                       assigned_osm_id=s.get("assigned_osm_id"))
@@ -220,8 +222,8 @@ def post_notes(conn, api: OsmApi, dry_run: bool = False, max_age_days: int = 90,
             continue
         cc = country(lat, lon)
         if cc is None:
-            log(f"#{s['id']} {s['kind']}: country lookup failed, skipped")
-            counts["failed"] += 1
+            log(f"#{s['id']} {s['kind']}: country lookup failed, left for the next run")
+            counts["skipped"] += 1
             continue
         text = note_text(s, _LANG.get(cc, "en"), name, osm_id)
         log(f"#{s['id']} {s['kind']} at {lat:.5f},{lon:.5f} [{cc}]:\n    "
@@ -241,17 +243,25 @@ def post_notes(conn, api: OsmApi, dry_run: bool = False, max_age_days: int = 90,
         if dry_run:
             counts["posted"] += 1
         else:
+            # -1 first: should the write after a successful post fail, the next
+            # run still looks for this note before posting it again.
+            set_note_id(conn, s["id"], -1)
             try:
                 nid = api.create_note(lat, lon, text)
             except _CALL_ERRORS + (KeyError, TypeError) as exc:
                 sent = _maybe_sent(exc)
                 log(f"#{s['id']} {s['kind']}: posting failed ({exc})"
                     + ("; it may have arrived, the next run looks before posting" if sent else ""))
-                if sent:
-                    set_note_id(conn, s["id"], -1)
+                if not sent:
+                    set_note_id(conn, s["id"], s["osm_note_id"])
                 counts["failed"] += 1
                 continue
-            resolve(s, nid, _note_url(nid))
+            try:
+                resolve(s, nid, _note_url(nid))
+            except sqlite3.Error as exc:
+                log(f"#{s['id']} {s['kind']}: POSTED AS NOTE {nid} ({_note_url(nid)}) but "
+                    f"recording it failed ({exc}); left at -1, the next run finds the note")
+                counts["failed"] += 1
         noted.append(report)
     return counts
 
@@ -274,7 +284,8 @@ def auto(conn, limit: int = 5, grace_hours: float = 24, dry_run: bool = False,
         f"({','.join('?' * len(before))})", sorted(before))] if before else []
     log(f"osm_notes --auto: {'would post' if dry_run else 'posted'} {counts['posted']} "
         f"(notes {', '.join(map(str, ids)) or '-'}), resolved without a note "
-        f"{counts['resolved']}, failed {counts['failed']}, pending "
+        f"{counts['resolved']}, left for a human {counts['skipped']}, "
+        f"failed {counts['failed']}, pending "
         f"{counts['young'] + counts['capped']} (in grace {counts['young']}, "
         f"over the cap {counts['capped']}), older than the cutoff {counts['old']}")
     return 1 if counts["failed"] else 0
@@ -301,6 +312,7 @@ def main(argv: list[str] | None = None) -> int:
         p.error("--auto takes no --drop: that is a human's call")
 
     conn = get_connection(args.db)
+    conn.execute("PRAGMA busy_timeout = 600000")  # wait out a running build's write, 10 min
     init_db(conn)
     if args.auto:
         return auto(conn, limit=args.max, grace_hours=args.grace_hours, dry_run=args.dry_run,

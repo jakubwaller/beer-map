@@ -43,7 +43,7 @@ exported GeoJSON belongs in `web-data/`**. The app refuses to start if
 ```cron
 0 4 * * * cd ~/beer-map && flock --verbose -w 21600 /tmp/overpass.lock docker compose run --rm pipeline timeout -k 5m 6h python -m pipeline.run >> ~/beer-map/pipeline.log 2>&1
 0 5 * * 0 cd ~/beer-map && flock --verbose -w 21600 /tmp/overpass.lock docker compose run --rm pipeline timeout -k 5m 6h python -m pipeline.country >> ~/beer-map/country.log 2>&1
-30 6 * * * cd ~/beer-map && docker compose run --rm pipeline sh -c 'python -m pipeline.osm_push --auto; python -m pipeline.osm_notes --auto' >> ~/beer-map/osm-upload.log 2>&1
+30 6 * * * cd ~/beer-map && flock --verbose -w 21600 /tmp/overpass.lock docker compose run --rm pipeline sh -c 'python -m pipeline.osm_push --auto; python -m pipeline.osm_notes --auto' >> ~/beer-map/osm-upload.log 2>&1
 ```
 The `pipeline` service is the same image on the host network (IPv6, see
 `docker-compose.yml`). Both jobs wait up to 6 h for the host's shared Overpass lock, which
@@ -51,8 +51,10 @@ papa-map's 02:00 build and Dopivatel's Monday refresh take too, so no two sweeps
 Overpass bans per source IP, and did on 2026-08-23 and 2026-10-25. `timeout` inside the container
 ends a hung run after 6 h so it cannot hold the lock.
 The 06:30 job uploads moderator-approved hours and notes to OSM
-([`OSM-WRITEBACK.md`](OSM-WRITEBACK.md#automatic-mode)); it calls only the OSM API
-(the notes' dedupe check uses its `map` call), never Overpass, so it takes no lock.
+([`OSM-WRITEBACK.md`](OSM-WRITEBACK.md#automatic-mode)). It calls only the OSM API
+(the notes' dedupe check uses its `map` call), never Overpass, but takes the same lock anyway so
+it never runs while `pipeline.run` holds its long write transaction on the DB: a late build
+delays the uploads instead of colliding with them.
 
 ## Moderation
 

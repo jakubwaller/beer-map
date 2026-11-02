@@ -1,3 +1,4 @@
+import sqlite3
 from datetime import datetime, timezone
 import urllib.parse
 
@@ -130,7 +131,7 @@ def test_skips_linked_old_and_duplicate_reports():
     fake = FakeOsm()
     counts, _ = _run(conn, fake)
     assert len(fake.posts) == 1
-    assert counts == dict(posted=1, resolved=2, old=1, failed=0, young=0, capped=0)
+    assert counts == dict(posted=1, resolved=2, old=1, failed=0, young=0, capped=0, skipped=0)
     assert get_submission(conn, linked)["osm_note_id"] == 0
     assert get_submission(conn, dup)["osm_note_id"] == 0
     assert get_submission(conn, old)["osm_note_id"] is None  # a wider cutoff still gets it
@@ -271,4 +272,53 @@ def test_auto_without_the_notes_scope_logs_one_line_and_exits_0(monkeypatch):
     fake = AutoOsm(granted=["allow_write_api"])
     code, lines = _auto(conn, fake, monkeypatch)
     assert code == 0 and fake.posts == [] and len(lines) == 1 and "allow_write_notes" in lines[0]
+    assert get_submission(conn, sid)["osm_note_id"] is None
+
+
+def test_the_row_is_at_minus_one_while_the_note_is_posted():
+    conn = _conn()
+    sid = _add(conn)
+    seen = []
+
+    def post(request):
+        seen.append(get_submission(conn, sid)["osm_note_id"])
+        return httpx.Response(200, json={"type": "Feature", "properties": {"id": 901}})
+
+    counts, _ = _run(conn, FakeOsm(post=post))
+    assert seen == [-1] and counts["posted"] == 1
+    assert get_submission(conn, sid)["osm_note_id"] == 901
+
+
+def test_a_refused_post_puts_the_row_back():
+    conn = _conn()
+    sid = _add(conn)
+    counts, _ = _run(conn, FakeOsm(post=lambda r: httpx.Response(400, text="no")))
+    assert counts["failed"] == 1 and get_submission(conn, sid)["osm_note_id"] is None
+
+
+def test_a_failed_write_after_the_post_leaves_minus_one_for_the_next_run(monkeypatch):
+    conn = _conn()
+    sid = _add(conn)
+    real = osm_notes.set_note_id
+
+    def flaky(c, i, n):
+        if n > 0:
+            raise sqlite3.OperationalError("database is locked")
+        real(c, i, n)
+
+    monkeypatch.setattr(osm_notes, "set_note_id", flaky)
+    counts, out = _run(conn, FakeOsm())
+    assert counts["failed"] == 1 and "POSTED AS NOTE 901" in out
+    assert get_submission(conn, sid)["osm_note_id"] == -1
+    monkeypatch.setattr(osm_notes, "set_note_id", real)
+    fake = FakeOsm(near=[(901, note_text(dict(get_submission(conn, sid)), "cs", "Pivnice Nová"))])
+    counts, _ = _run(conn, fake)
+    assert fake.posts == [] and get_submission(conn, sid)["osm_note_id"] == 901
+
+
+def test_no_coordinates_is_left_for_a_human_not_a_failure():
+    conn = _conn()
+    sid = _add(conn, lat=None, lon=None)
+    counts, _ = _run(conn, FakeOsm())
+    assert counts["failed"] == 0 and counts["skipped"] == 1
     assert get_submission(conn, sid)["osm_note_id"] is None

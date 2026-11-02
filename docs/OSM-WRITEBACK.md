@@ -101,16 +101,19 @@ docker compose run --rm pipeline python -m pipeline.osm_notes --auto
 
 It is the same run as by hand, with three limits. Only reports whose
 moderator decision is at least `--grace-hours` (24) old, so a wrong approval
-can still be undone first (`decided_at` is a bare date, read as that day's
+can still be withdrawn first — with `--drop N` on the server (the admin UI
+has no undo for a decided report) (`decided_at` is a bare date, read as that day's
 end; for the hours, a venue with any report still in its grace waits
 whole). At most `--max` (5) uploads or notes per run. And never `--force`:
 whatever the rules above refuse (edited on OSM after the report, a tag the
 grid cannot show whole, a 409) stays pending, is logged every day, and waits
 for a human with `--force --id N` or `--drop N`. A missing token, or one
 without the scope it needs (`write_api` for the hours, `write_notes` for the
-notes), logs one line and exits 0. Each run ends with one summary line
-(uploaded, changeset or note ids, resolved, left for a human, pending);
-the exit status is 1 only when a call failed. `--dry-run` works with it.
+notes), logs one line and exits 0. A note report without coordinates, or
+whose country lookup failed, is left for a human (or the next run) too.
+Each run ends with one summary line (uploaded, changeset or note ids,
+resolved, left for a human, pending); the exit status is 1 only when an OSM
+call or a DB write failed. `--dry-run` works with it.
 
 This does not make it an automated edit: every upload is still a single
 visitor report a moderator read and approved, one venue per changeset,
@@ -169,6 +172,7 @@ the element for a closure — and resolves the submission without a note if a
 mapper got there first. Reports older than `--max-age-days` (default 90) are
 left untouched; `--drop N` gives up on one. `submissions.osm_note_id`:
 NULL = to post, N = note N, 0 = resolved without a note, -1 = a post
-that failed after it may have reached OSM (read timeout, unreadable answer):
-the next run looks for a note with its text at the point before posting again. Same token as the
+that failed after it may have reached OSM (read timeout, unreadable answer),
+or whose id could not be recorded — -1 is written before each post, so the
+next run looks for a note with its text at the point before posting again. Same token as the
 hours push; a token minted before `write_notes` was added must be re-minted.

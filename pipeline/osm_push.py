@@ -9,7 +9,7 @@ Run by hand (`python -m pipeline.osm_push --dry-run` first), or unattended
 from a daily cron with `--auto`, never as a pipeline step. Each upload is an
 edit under a real OSM account, of a single report a moderator has already
 approved; `--auto` only waits out a grace period after that approval (so a
-wrong one can still be undone), caps the uploads per run, and never forces
+wrong one can still be dropped with `--drop N`), caps the uploads per run, and never forces
 past any of the rules below — what they refuse stays pending for a human.
 
 Rules, all of which exist because they were the cheap way to be a good OSM
@@ -557,7 +557,9 @@ def _close_quietly(api: OsmApi, cid: int, log) -> None:
 # --- unattended (--auto) ------------------------------------------------------
 
 def aged(sub: dict, hours: float, now: datetime | None = None) -> bool:
-    """Whether the moderator decided at least `hours` ago. The admin stores
+    """Whether the moderator decided at least `hours` ago — the window in
+    which a wrong approval can still be withdrawn with `--drop N` (the admin
+    UI has no undo for a decided report). The admin stores
     decided_at as a bare date, read here as that day's last second, so the
     grace is never shorter than asked. No decided_at at all predates the
     column, i.e. is long past."""
@@ -665,6 +667,7 @@ def main(argv: list[str] | None = None) -> int:
         p.error("--auto takes no --force, --id or --drop: those are a human's calls")
 
     conn = get_connection(args.db)
+    conn.execute("PRAGMA busy_timeout = 600000")  # wait out a running build's write, 10 min
     init_db(conn)
     if args.auto:
         return auto(conn, limit=args.max, grace_hours=args.grace_hours, dry_run=args.dry_run)
