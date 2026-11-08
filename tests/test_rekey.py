@@ -254,7 +254,8 @@ def test_a_missed_weekly_sweep_merges_nothing_osm_still_has():
 
 def test_generic_names_merge_only_close_by_and_addresses_must_agree():
     conn = _db()
-    _venue(conn, "node/1", "Kiosk", 5000)                         # a third Kiosk: the name is generic
+    _venue(conn, "node/1", "Kiosk", 5000)                         # more Kiosks: the name is generic
+    _venue(conn, "node/2", "Kiosk", 6000)
     _venue(conn, "node/10", "Kiosk", seen=OLD)
     _venue(conn, "node/11", "Kiosk", north_m=30)                 # another kiosk across the square
     _venue(conn, "node/20", "Imbiss", 1000, seen=OLD)
@@ -302,3 +303,55 @@ def test_cached_candidates_link_to_the_survivor(tmp_path):
     assert approve_submission(conn, sid, TODAY, str(tmp_path / "venues.json"))
     assert _ids(conn) == ["node/20"]
     assert _brands(conn, "node/20") == {("Astra", "community", "fass", TODAY)}
+
+
+def test_partner_name_differing_from_the_live_osm_name_is_not_gone():
+    """Probe A: the stored name is the partner's; OSM's live element is named
+    differently and still there, so a nearby namesake must not absorb it."""
+    conn = _db()
+    sid = insert_submission(conn, {"kind": "add", "venue_osm_id": "node/99", "venue_name": "Pivovar Test",
+                                   "brand": "Test Lager", "serving": "tank", "partner": "dopivatel",
+                                   "ref": "r1", "hint_lat": 50.0, "hint_lon": 14.0},
+                            "2026-10-01T10:00:00")
+    set_submission_status(conn, sid, "approved", "2026-10-01")
+    apply_approved(conn, "2026-10-01")
+    upsert_venue(conn, Venue("node/1", "Pivovar Test", 50.0 + 30 * M, 14.0), "2026-10-12")
+    api = _osm({"node/99": "Pivovar Test - varna"})
+    assert rekey.rekey_gone(conn, "2026-10-12", log=lambda _: None, api=api) == 0
+    assert resolve_osm_id(conn, "node/99") == "node/99"
+
+
+def test_a_404_skips_the_venue_and_the_night_goes_on():
+    """Probe B: a 404 is an id that never existed (wrong OSM_API_URL), not a deletion."""
+    conn = _db()
+    _venue(conn, "node/10", seen=OLD)
+    _venue(conn, "node/20", north_m=1)
+    _venue(conn, "node/30", "Zum Testkrug", 500, seen=OLD)
+    _venue(conn, "node/31", "Zum Testkrug", 501)
+    logs, api = [], _osm({"node/10": 404, "node/30": DELETED})
+    assert rekey.rekey_gone(conn, TODAY, log=logs.append, api=api) == 1
+    assert api.asked == ["node/10", "node/30"]
+    assert _ids(conn) == ["node/10", "node/20", "node/31"]
+    assert any("node/10 (404)" in m for m in logs)
+    assert conn.execute("SELECT updated_at FROM venues WHERE osm_id='node/10'").fetchone()[0] == OLD
+
+
+def test_namesakes_are_counted_beside_the_pair_visible_and_nearby():
+    """Probe C: a far-off namesake, a hidden one and the pair itself do not make a name generic."""
+    conn = _db()
+    _venue(conn, "way/50", "Café Central", seen=OLD)
+    _venue(conn, "node/51", "Cafe Central", 40)
+    for i, (north, hidden) in enumerate(((500_000, 0), (2000, 1), (3000, 1))):
+        vid = _venue(conn, f"node/9{i}", "Café Central", north)
+        if hidden:
+            set_venue_hidden(conn, f"node/9{i}", True)
+    assert rekey.rekey_gone(conn, TODAY, log=lambda _: None, api=_osm({"way/50": DELETED})) == 1
+    assert resolve_osm_id(conn, "way/50") == "node/51"
+    # Two visible namesakes in town: genuinely generic, 40 m is too far.
+    conn = _db()
+    _venue(conn, "node/10", "Kiosk", seen=OLD)
+    _venue(conn, "node/11", "Kiosk", 40)
+    _venue(conn, "node/12", "Kiosk", 2000)
+    _venue(conn, "node/13", "Kiosk", 3000)
+    api = _osm({"node/10": DELETED})
+    assert rekey.rekey_gone(conn, TODAY, log=lambda _: None, api=api) == 0 and api.asked == []

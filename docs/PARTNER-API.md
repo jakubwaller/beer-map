@@ -55,13 +55,14 @@ position should the sweep ever import that element.
 When a mapper deletes one of two elements for the same place, or moves a pub from its building way
 onto a new node, the nightly build re-keys the venue. That happens once no import has seen its
 element for 10 days, exactly one other OSM venue with the same name lies within 50 m (10 m for a
-name many venues share, and never at another street address), and the OSM API confirms the old
-element is deleted or no longer carries that name. Its beers and reports then move to the
+name that 2+ other visible venues within 300 km carry, and never at another street address), and
+the OSM API confirms the old element is deleted (HTTP 410) or has no `name` tag at all. Its beers and reports then move to the
 survivor, and `venues.json` carries the new `osm_id` from then on. Reports end up on that venue
 under either id: one sent with the old id afterwards resolves to it (no `venue` hint needed), and
 one sent with the survivor's id before the re-key is merged in with the rest.
 
-A partner's hinted venue is only re-keyed when OSM confirms its element is gone.
+A partner's hinted venue is only re-keyed when OSM confirms its element is gone. Its name in
+OSM is not compared with the partner's name; a 404 (unknown id) is skipped, not taken as deleted.
 
 ## Responses
 

@@ -14,8 +14,8 @@ Candidate: a visible OSM venue no import has seen for GONE_AFTER_DAYS.
 Survivor: a visible OSM venue an import did see in that window, with the same
 fold()ed name, within RADIUS_M (GENERIC_RADIUS_M for a name many venues share),
 and no other street address when both have one. With exactly one survivor the
-OSM API is asked about the candidate; only an element that is deleted or no
-longer carries the name is merged into the survivor. None or several
+OSM API is asked about the candidate; only an element that is deleted (410) or has no
+name tag any more is merged into the survivor. None or several
 survivors, or an element still there: left alone. The sweeps import every named
 pub/bar/biergarten/restaurant/cafe, so a survivor is already a venue row and a
 re-key is always a merge. Hidden (closed) venues take no part: they are off the
@@ -30,7 +30,7 @@ writes nothing.
 from __future__ import annotations
 
 import time
-from collections import Counter
+from collections import defaultdict
 from datetime import date, timedelta
 
 import httpx
@@ -53,10 +53,14 @@ GONE_AFTER_DAYS = 10
 # replaced); 150 m found no more. Ways and relations sit at their centre, as the
 # import stores them, so a node and a way of one place compare like two nodes.
 RADIUS_M = 50
-# A name on this many venues ("Kiosk", "Občerstvení", "Zur Post") says little:
-# two of them 40 m apart can be two places, so they must be this close.
-GENERIC_MIN = 3
+# A name that this many OTHER visible venues (not the pair itself) carry within
+# NAMESAKE_KM ("Kiosk", "Občerstvení", "Zur Post") says little: two of them 40 m
+# apart can be two places, so they must be this close. venues has no country
+# column and Nominatim is a network call, so "same country" is approximated by a
+# distance that covers a country's cities but not a far-off namesake.
+GENERIC_MIN = 2
 GENERIC_RADIUS_M = 10
+NAMESAKE_KM = 300
 # OSM API lookups per night, branded venues first; the first run has a backlog,
 # later nights only what was deleted since (and a recheck every GONE_AFTER_DAYS
 # of what OSM said is still there).
@@ -86,7 +90,7 @@ def plan(conn, today: str):
         "WHERE vb.venue_id = venues.id) AS branded "
         f"FROM venues WHERE {_LIVE} AND updated_at < ? ORDER BY id", (cutoff,)).fetchall()
     moves, ambiguous, unmatched = [], [], []
-    names = None  # fold(name) -> venues carrying it, counted once, only if needed
+    names = None  # fold(name) -> visible venues carrying it, read once, only if needed
     for v in gone:
         key = fold(v["name"])  # '' (a name in another script) matches nothing
         s, w, n, e = _bbox(v["lat"], v["lon"], RADIUS_M)
@@ -96,10 +100,17 @@ def plan(conn, today: str):
             (w, e, s, n, cutoff)) if key and fold(c["name"]) == key]
         if found:
             if names is None:
-                names = Counter(fold(r[0]) for r in conn.execute("SELECT name FROM venues"))
-            radius = GENERIC_RADIUS_M if names[key] >= GENERIC_MIN else RADIUS_M
-            found = [c for c, dist in found
-                     if dist <= radius and _same_street(v["address"], c["address"])]
+                names = defaultdict(list)
+                for r in conn.execute("SELECT id, name, lat, lon FROM venues "
+                                      "WHERE COALESCE(hidden, 0) = 0"):
+                    names[fold(r["name"])].append(r)
+            found = [(c, dist, sum(
+                o["id"] not in (v["id"], c["id"])
+                and haversine_m(v["lat"], v["lon"], o["lat"], o["lon"]) <= NAMESAKE_KM * 1000
+                for o in names[key]) >= GENERIC_MIN) for c, dist in found]
+            found = [c for c, dist, generic in found
+                     if dist <= (GENERIC_RADIUS_M if generic else RADIUS_M)
+                     and _same_street(v["address"], c["address"])]
         if len(found) == 1:
             moves.append((v, found[0]))
         elif found:
@@ -110,16 +121,18 @@ def plan(conn, today: str):
 
 
 def _gone_from_osm(api, v) -> bool:
-    """True when OSM has deleted the venue's element or it no longer carries the
-    venue's name (a pub moved off its building way). Raises when OSM can't say."""
+    """True when OSM has deleted the venue's element (410) or it has no name tag
+    at all (a pub moved off its building way). Raises when OSM can't say; a 404
+    (an id that never existed: wrong OSM_API_URL) is raised as such."""
     kind, oid = parse_osm_id(v["osm_id"])
     try:
         el = api.get_element(kind, oid)
     except httpx.HTTPStatusError as exc:
-        if exc.response.status_code in (404, 410):
+        if exc.response.status_code == 410:
             return True
         raise
-    return el.get("visible") == "false" or fold(tag_value(el, "name")) != fold(v["name"])
+    # Not compared with the stored name: a partner's name for the venue differs from OSM's.
+    return el.get("visible") == "false" or not tag_value(el, "name")
 
 
 def merge(conn, old, new, today: str) -> None:
@@ -167,7 +180,7 @@ def rekey_gone(conn, today: str, dry_run: bool = False, log=print, api=None) -> 
     asked about again in GONE_AFTER_DAYS, not every night."""
     moves, ambiguous, unmatched = plan(conn, today)
     moves.sort(key=lambda m: not m[0]["branded"])  # the cap must not starve the map
-    confirmed, kept = [], []
+    confirmed, kept, skipped = [], [], 0
     own_api = api is None and bool(moves)
     api = OsmApi() if own_api else api
     try:
@@ -179,6 +192,14 @@ def rekey_gone(conn, today: str, dry_run: bool = False, log=print, api=None) -> 
                 time.sleep(LOOKUP_DELAY_S)
             try:
                 gone = _gone_from_osm(api, old)
+            except httpx.HTTPStatusError as exc:
+                if exc.response.status_code != 404:
+                    log(f"rekey: OSM lookup of {old['osm_id']} failed ({exc}); "
+                        f"{len(moves) - i} left for the next nights")
+                    break
+                skipped += 1  # 404: never existed (wrong OSM_API_URL?), says nothing about the venue
+                log(f"rekey: OSM has no record of {old['osm_id']} (404), skipped; check OSM_API_URL")
+                continue
             except Exception as exc:  # noqa: BLE001 — any failure: merge nothing on a guess
                 log(f"rekey: OSM lookup of {old['osm_id']} failed ({exc}); "
                     f"{len(moves) - i} left for the next nights")
@@ -210,7 +231,7 @@ def rekey_gone(conn, today: str, dry_run: bool = False, log=print, api=None) -> 
                 log(f"rekey: left {old['osm_id']} ({old['name']}), no matching survivor")
     log(f"rekey: {len(confirmed)} {'to re-key' if dry_run else 're-keyed'} "
         f"({sum(o['branded'] for o, _ in confirmed)} with brands), {len(kept)} still in OSM, "
-        f"{len(moves) - len(confirmed) - len(kept)} not asked yet, "
+        f"{len(moves) - len(confirmed) - len(kept) - skipped} not asked yet, "
         f"{len(ambiguous)} with several survivors, {len(unmatched)} without a matching one")
     return len(confirmed)
 
