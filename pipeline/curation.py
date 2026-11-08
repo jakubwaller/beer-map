@@ -6,7 +6,8 @@ import yaml
 from rapidfuzz import fuzz
 
 from .config import normalize_brand
-from .db import delete_edges, list_submissions, upsert_brand, upsert_edge, upsert_venue
+from .db import (delete_edges, list_submissions, resolve_osm_id, upsert_brand, upsert_edge,
+                 upsert_venue)
 from .models import Venue
 
 
@@ -24,13 +25,16 @@ def slugify(name: str) -> str:
 
 def _resolve_venue_id(conn, entry, venues, today):
     if entry.get("osm_id"):
-        row = conn.execute("SELECT id FROM venues WHERE osm_id=?", (entry["osm_id"],)).fetchone()
+        # An entry written before its element was deleted as a duplicate
+        # follows the venue to the survivor (pipeline/rekey.py).
+        osm_id = resolve_osm_id(conn, entry["osm_id"])
+        row = conn.execute("SELECT id FROM venues WHERE osm_id=?", (osm_id,)).fetchone()
         if row:
             return row["id"]
         # An osm_id plus coordinates recreates the venue (e.g. re-importing
         # exported community add_venue entries into a fresh database).
         if entry.get("lat") is not None and entry.get("lon") is not None:
-            return upsert_venue(conn, Venue(entry["osm_id"], entry["venue"],
+            return upsert_venue(conn, Venue(osm_id, entry["venue"],
                                             entry["lat"], entry["lon"],
                                             entry.get("address"), entry.get("website")), today)
         return None

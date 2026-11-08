@@ -97,6 +97,14 @@ CREATE TABLE IF NOT EXISTS looked_up_addresses (
     address TEXT NOT NULL,  -- '' = Nominatim had none either
     fetched_at TEXT NOT NULL
 );
+-- A venue whose OSM element is gone, merged into the surviving element for the
+-- same place (pipeline/rekey.py). Ids from outside the DB — curation.yaml, a
+-- partner's older data — follow it through resolve_osm_id.
+CREATE TABLE IF NOT EXISTS osm_rekeys (
+    old_osm_id TEXT PRIMARY KEY,
+    new_osm_id TEXT NOT NULL,
+    rekeyed_at TEXT NOT NULL
+);
 -- The /api/gray tile endpoint answers viewport queries straight from this
 -- table; the composite index turns them into a narrow lon-range scan.
 CREATE INDEX IF NOT EXISTS idx_venues_lon_lat ON venues(lon, lat);
@@ -246,6 +254,16 @@ def upsert_venue(conn, venue, seen: str) -> int:
          venue.opening_hours, _search_key(venue.name, venue.address), seen),
     )
     return conn.execute("SELECT id FROM venues WHERE osm_id=?", (venue.osm_id,)).fetchone()["id"]
+
+
+def resolve_osm_id(conn, osm_id: str | None) -> str | None:
+    """The venue an id names today: itself while it is a venue, else the
+    survivor it was re-keyed to (pipeline/rekey.py), else itself."""
+    if not osm_id or conn.execute("SELECT 1 FROM venues WHERE osm_id=?", (osm_id,)).fetchone():
+        return osm_id
+    row = conn.execute("SELECT new_osm_id FROM osm_rekeys WHERE old_osm_id=?",
+                       (osm_id,)).fetchone()
+    return row["new_osm_id"] if row else osm_id
 
 
 def upsert_brand(conn, name: str) -> int:

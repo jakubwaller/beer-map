@@ -3,7 +3,7 @@ from __future__ import annotations
 import sys
 from datetime import date, datetime
 
-from . import curation, osm, submissions
+from . import curation, osm, rekey, submissions
 from .config import CURATION_PATH, DB_PATH, OUT_PATH, SKIP_BRANDS, normalize_brand
 from .db import (get_connection, init_db, prune_stale_osm_edges, renormalize_brands,
                  upsert_brand, upsert_edge, upsert_venue)
@@ -30,6 +30,10 @@ def run_pipeline(db_path=DB_PATH, out_path=OUT_PATH, curation_path=CURATION_PATH
 
 def _build(conn, out_path, curation_path, overpass_fetch, finders, today):
     venues, osm_edges = osm.parse_overpass(overpass_fetch())
+    # Before the first write, so its OSM API lookups don't hold the write lock;
+    # the dead element's osm edges it moves onto a survivor fetched today are
+    # then pruned below with the rest of what OSM no longer says.
+    rekeyed = rekey.rekey_gone(conn, today)
     id_by_osm = {v.osm_id: upsert_venue(conn, v, today) for v in venues}
     for e in osm_edges:
         _store_edge(conn, id_by_osm[e.venue_osm_id], e.brand, e.source, today, serving=e.serving)
@@ -57,7 +61,8 @@ def _build(conn, out_path, curation_path, overpass_fetch, finders, today):
     conn.commit()
     exported = export_geojson(conn, out_path)
     return {
-        "venues": len(venues), "osm_edges": len(osm_edges), "finder_edges": finder_edges,
+        "venues": len(venues), "osm_edges": len(osm_edges), "rekeyed": rekeyed,
+        "finder_edges": finder_edges,
         "unmatched": unmatched_total, "manual_added": cur["added"],
         "manual_removed": cur["removed"], "community": community,
         "brands_folded": folded, "exported": exported,

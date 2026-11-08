@@ -34,7 +34,7 @@ def test_run_pipeline_applies_curation_over_finders(tmp_path):
         overpass_fetch=lambda: FAKE_OVERPASS, finders=[FakeFinder()], today="2026-06-24",
     )
     assert summary == {
-        "venues": 2, "osm_edges": 1, "finder_edges": 1,
+        "venues": 2, "osm_edges": 1, "rekeyed": 0, "finder_edges": 1,
         "unmatched": 0, "manual_added": 1, "manual_removed": 1,
         "community": 0, "brands_folded": 0, "exported": 2,
     }
