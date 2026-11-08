@@ -62,7 +62,7 @@ under either id: one sent with the old id afterwards resolves to it (no `venue` 
 one sent with the survivor's id before the re-key is merged in with the rest.
 
 A partner's hinted venue is only re-keyed when OSM confirms its element is gone. Its name in
-OSM is not compared with the partner's name; a 404 (unknown id) is skipped, not taken as deleted.
+OSM is not compared with the partner's name; a 404 (unknown id) is not taken as deleted: the venue is left alone and asked about again in 10 days.
 
 ## Responses
 

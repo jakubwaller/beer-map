@@ -333,7 +333,11 @@ def test_a_404_skips_the_venue_and_the_night_goes_on():
     assert api.asked == ["node/10", "node/30"]
     assert _ids(conn) == ["node/10", "node/20", "node/31"]
     assert any("node/10 (404)" in m for m in logs)
-    assert conn.execute("SELECT updated_at FROM venues WHERE osm_id='node/10'").fetchone()[0] == OLD
+    # Backed off like a kept venue: not merged, not asked again tonight or tomorrow.
+    assert conn.execute("SELECT updated_at FROM venues WHERE osm_id='node/10'").fetchone()[0] == TODAY
+    api.asked.clear()
+    rekey.rekey_gone(conn, TODAY, log=logs.append, api=api)
+    assert api.asked == []
 
 
 def test_namesakes_are_counted_beside_the_pair_visible_and_nearby():

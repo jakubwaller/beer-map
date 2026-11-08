@@ -180,7 +180,7 @@ def rekey_gone(conn, today: str, dry_run: bool = False, log=print, api=None) -> 
     asked about again in GONE_AFTER_DAYS, not every night."""
     moves, ambiguous, unmatched = plan(conn, today)
     moves.sort(key=lambda m: not m[0]["branded"])  # the cap must not starve the map
-    confirmed, kept, skipped = [], [], 0
+    confirmed, kept, skipped = [], [], []
     own_api = api is None and bool(moves)
     api = OsmApi() if own_api else api
     try:
@@ -197,8 +197,8 @@ def rekey_gone(conn, today: str, dry_run: bool = False, log=print, api=None) -> 
                     log(f"rekey: OSM lookup of {old['osm_id']} failed ({exc}); "
                         f"{len(moves) - i} left for the next nights")
                     break
-                skipped += 1  # 404: never existed (wrong OSM_API_URL?), says nothing about the venue
-                log(f"rekey: OSM has no record of {old['osm_id']} (404), skipped; check OSM_API_URL")
+                skipped.append(old)  # 404: never existed (wrong OSM_API_URL?); backed off like a kept one
+                log(f"rekey: OSM has no record of {old['osm_id']} (404), skipped for {GONE_AFTER_DAYS} days; check OSM_API_URL")
                 continue
             except Exception as exc:  # noqa: BLE001 — any failure: merge nothing on a guess
                 log(f"rekey: OSM lookup of {old['osm_id']} failed ({exc}); "
@@ -220,7 +220,7 @@ def rekey_gone(conn, today: str, dry_run: bool = False, log=print, api=None) -> 
         for old, new in confirmed:
             merge(conn, old, new, today)
         conn.executemany("UPDATE venues SET updated_at=? WHERE id=?",
-                         [(today, v["id"]) for v in kept])
+                         [(today, v["id"]) for v in kept + skipped])
     for old, found in ambiguous:
         if old["branded"]:
             log(f"rekey: left {old['osm_id']} ({old['name']}), several survivors: "
@@ -231,7 +231,7 @@ def rekey_gone(conn, today: str, dry_run: bool = False, log=print, api=None) -> 
                 log(f"rekey: left {old['osm_id']} ({old['name']}), no matching survivor")
     log(f"rekey: {len(confirmed)} {'to re-key' if dry_run else 're-keyed'} "
         f"({sum(o['branded'] for o, _ in confirmed)} with brands), {len(kept)} still in OSM, "
-        f"{len(moves) - len(confirmed) - len(kept) - skipped} not asked yet, "
+        f"{len(moves) - len(confirmed) - len(kept) - len(skipped)} not asked yet, "
         f"{len(ambiguous)} with several survivors, {len(unmatched)} without a matching one")
     return len(confirmed)
 
