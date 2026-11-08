@@ -657,6 +657,32 @@ def test_partner_daily_cap(partner, monkeypatch):
     assert _submit(c).status_code == 200    # the public endpoint has its own limit
 
 
+def test_reports_land_on_the_survivor_of_a_rekey(partner):
+    from pipeline import dedupe, rekey
+    c, out = partner
+    conn = get_connection(config.DB_PATH)
+    # node/1 (imported 2026-06-24) is a duplicate a mapper deleted; node/2 survived 1 m away.
+    upsert_venue(conn, Venue("node/2", "Bar X", 53.50001, 10.0), "2026-11-08")
+    conn.commit()
+    assert [d["osm_id"] for d in dedupe.db_candidates(conn, "Bar X", 53.5, 10.0)] == ["node/1", "node/2"]
+    # Dopivatel knows the survivor only; before the re-key that is the gray twin.
+    assert _partner(c, ref="before", venue_osm_id="node/2").json() == {"ok": True}
+    rekey.rekey_gone(conn, "2026-11-08", log=lambda _: None)
+    conn.commit()
+    # After it, the dead id still works: no hint needed, stored as the survivor.
+    assert _partner(c, ref="after", venue_osm_id="node/1", brand="Gambrinus").json() == {"ok": True}
+    assert _submit(c, venue_osm_id="node/1").json() == {"ok": True}   # a map loaded before the re-key
+    rows = list_submissions(conn, "pending")
+    assert [r["venue_osm_id"] for r in rows] == ["node/2"] * 3
+    for r in rows:
+        assert c.post(f"/api/admin/{r['id']}/approve", auth=("admin", "secret")).json() == {"ok": True}
+    feats = json.loads(open(out, encoding="utf-8").read())["features"]
+    assert [(f["properties"]["osm_id"], sorted(b["brand"] for b in f["properties"]["brands"]))
+            for f in feats] == [("node/2", ["Astra", "Gambrinus", "Kozel"])]
+    # The #77 duplicate check now sees one venue there, not the dead one beside it.
+    assert [d["osm_id"] for d in dedupe.db_candidates(conn, "Bar X", 53.5, 10.0)] == ["node/2"]
+
+
 class _OK:  # a 2xx Telegram answer
     @staticmethod
     def raise_for_status():

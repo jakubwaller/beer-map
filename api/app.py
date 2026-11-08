@@ -26,7 +26,8 @@ from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
 
 from pipeline import config, dedupe, submissions
 from pipeline.db import (fetch_gray_in_bbox, get_connection, init_db,
-                         insert_submission, list_submissions, search_venues_db)
+                         insert_submission, list_submissions, resolve_osm_id,
+                         search_venues_db)
 from pipeline.export import _feature
 from pipeline.geocode import lookup_address
 
@@ -420,6 +421,7 @@ def create_app() -> FastAPI:
     def submit(sub: Submission, request: Request, conn=Depends(_db)):
         if sub.hp:  # bot filled the honeypot
             return {"ok": True}
+        sub.venue_osm_id = resolve_osm_id(conn, sub.venue_osm_id)  # a map loaded before a re-key
         payload = sub.model_dump()
         err = submissions.validate_submission(payload)
         if err:
@@ -457,6 +459,8 @@ def create_app() -> FastAPI:
         # (partner, ref) is unique, so a retry of a stored report changes nothing.
         if submissions.partner_ref_exists(conn, partner, sub.ref):
             return {"ok": True, "duplicate": True}
+        # The partner's OSM data may still hold an element deleted as a duplicate.
+        sub.venue_osm_id = resolve_osm_id(conn, sub.venue_osm_id)
         payload = sub.model_dump()
         payload["address"] = (sub.address or "").strip() or None
         known = sub.kind != "add_venue" and conn.execute(
