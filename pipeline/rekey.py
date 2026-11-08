@@ -70,6 +70,8 @@ _LIVE = ("(osm_id LIKE 'node/%' OR osm_id LIKE 'way/%' OR osm_id LIKE 'relation/
 def _same_street(a: str | None, b: str | None) -> bool:
     """The first address line ("Heußweg 93, 20255 Hamburg" -> "heussweg 93")
     is the same, or one of the two venues has none."""
+    # shortcut: an addr:place address ("21a, 6215 Hinterriß") has no street line and
+    # never matches one that has; compare housenumber + postcode if that blocks real merges.
     a, b = (fold((x or "").split(",")[0]) for x in (a, b))
     return not a or not b or a == b
 
