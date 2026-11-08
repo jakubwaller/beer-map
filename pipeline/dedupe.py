@@ -17,7 +17,7 @@ from datetime import datetime, timedelta
 import httpx
 
 from . import config
-from .db import fold
+from .db import fold, resolve_osm_id
 from .geocode import geocode_address
 from .matching import haversine_m
 
@@ -187,7 +187,10 @@ def candidates(conn, sub: dict, budget: Budget | None = None) -> tuple[list[dict
     found = [dict(c, source="db") for c in db_candidates(conn, sub["venue_name"], lat, lon)]
     osm, ok = None, None
     if sub.get("osm_candidates") is not None:
-        osm, ok = json.loads(sub["osm_candidates"]), True
+        # Cached answers can name an element re-keyed since (pipeline/rekey.py).
+        osm = [dict(c, osm_id=resolve_osm_id(conn, c["osm_id"]))
+               for c in json.loads(sub["osm_candidates"])]
+        ok = True
     elif budget and not budget.osm_down and budget.take():
         try:
             osm, ok = osm_candidates(sub["venue_name"], lat, lon), True

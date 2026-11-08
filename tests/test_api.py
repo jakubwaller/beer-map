@@ -658,7 +658,8 @@ def test_partner_daily_cap(partner, monkeypatch):
 
 
 def test_reports_land_on_the_survivor_of_a_rekey(partner):
-    from pipeline import dedupe, rekey
+    import httpx
+    from pipeline import dedupe, osm_push, rekey
     c, out = partner
     conn = get_connection(config.DB_PATH)
     # node/1 (imported 2026-06-24) is a duplicate a mapper deleted; node/2 survived 1 m away.
@@ -667,7 +668,9 @@ def test_reports_land_on_the_survivor_of_a_rekey(partner):
     assert [d["osm_id"] for d in dedupe.db_candidates(conn, "Bar X", 53.5, 10.0)] == ["node/1", "node/2"]
     # Dopivatel knows the survivor only; before the re-key that is the gray twin.
     assert _partner(c, ref="before", venue_osm_id="node/2").json() == {"ok": True}
-    rekey.rekey_gone(conn, "2026-11-08", log=lambda _: None)
+    deleted = osm_push.OsmApi("https://osm.test", transport=httpx.MockTransport(
+        lambda request: httpx.Response(410)))                        # OSM: node/1 is deleted
+    assert rekey.rekey_gone(conn, "2026-11-08", log=lambda _: None, api=deleted) == 1
     conn.commit()
     # After it, the dead id still works: no hint needed, stored as the survivor.
     assert _partner(c, ref="after", venue_osm_id="node/1", brand="Gambrinus").json() == {"ok": True}

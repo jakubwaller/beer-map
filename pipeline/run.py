@@ -30,12 +30,13 @@ def run_pipeline(db_path=DB_PATH, out_path=OUT_PATH, curation_path=CURATION_PATH
 
 def _build(conn, out_path, curation_path, overpass_fetch, finders, today):
     venues, osm_edges = osm.parse_overpass(overpass_fetch())
+    # Before the first write, so its OSM API lookups don't hold the write lock;
+    # the dead element's osm edges it moves onto a survivor fetched today are
+    # then pruned below with the rest of what OSM no longer says.
+    rekeyed = rekey.rekey_gone(conn, today)
     id_by_osm = {v.osm_id: upsert_venue(conn, v, today) for v in venues}
     for e in osm_edges:
         _store_edge(conn, id_by_osm[e.venue_osm_id], e.brand, e.source, today, serving=e.serving)
-    # Before the prune, so the dead element's osm edges moved onto a survivor
-    # fetched today are dropped with the rest of what OSM no longer says.
-    rekeyed = rekey.rekey_gone(conn, today)
     prune_stale_osm_edges(conn, id_by_osm.values(), today)
 
     finder_edges = unmatched_total = 0

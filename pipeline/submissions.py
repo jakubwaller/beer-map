@@ -8,8 +8,8 @@ from . import config, dedupe
 from .curation import slugify
 from .db import (
     count_submissions_since, delete_edges, get_submission, list_submissions,
-    rename_venue, set_submission_status, set_venue_hidden, update_venue_address,
-    update_venue_hours, upsert_brand, upsert_edge, upsert_venue,
+    rename_venue, resolve_osm_id, set_submission_status, set_venue_hidden,
+    update_venue_address, update_venue_hours, upsert_brand, upsert_edge, upsert_venue,
 )
 from .export import export_geojson
 from .geocode import geocode_address
@@ -181,7 +181,7 @@ def _apply_add_venue(conn, sub: dict, today: str) -> bool:
     A venue that already exists (linked by the moderator, or created by an
     earlier apply) is left as it is; only the brand is attached.
     """
-    osm_id = sub.get("assigned_osm_id")
+    osm_id = resolve_osm_id(conn, sub.get("assigned_osm_id"))  # linked before a re-key
     vid = _venue_id(conn, osm_id) if osm_id else None
     if vid is None:
         vid = _create_add_venue(conn, sub, osm_id, today)
@@ -325,6 +325,7 @@ def link_submission(conn, sub_id: int, osm_id: str) -> bool:
                      (sub_id,))
         conn.commit()
         return True
+    osm_id = resolve_osm_id(conn, osm_id)  # an /admin page rendered before a re-key
     cands, _ = dedupe.candidates(conn, sub)
     point = dedupe.origin(sub)
     hit = next((c for c in cands if c["osm_id"] == osm_id), None)
