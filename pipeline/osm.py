@@ -170,8 +170,17 @@ def _recover(url: str) -> None:
     st["strikes"] = st["trips"] = 0
 
 
+def read_timeout_s(ql: str) -> float:
+    """Overpass sends nothing until the query is done, so the client must wait as
+    long as the query's own [timeout:N] budget (plus slack), else it hangs up on
+    an answer that was coming. 120 s when the QL names no budget."""
+    m = re.search(r"\[timeout:(\d+)\]", ql)
+    return int(m.group(1)) + 30 if m else 120
+
+
 def _fetch_once(url: str, ql: str) -> dict:
-    resp = httpx.get(url, params={"data": ql}, headers={"User-Agent": USER_AGENT}, timeout=120)
+    resp = httpx.get(url, params={"data": ql}, headers={"User-Agent": USER_AGENT},
+                     timeout=httpx.Timeout(read_timeout_s(ql), connect=15))
     resp.raise_for_status()
     data = resp.json()
     # A query that blows its [timeout:...] budget still answers HTTP 200 — with
