@@ -287,3 +287,10 @@ def test_rest_doubles_with_each_consecutive_trip_and_caps(monkeypatch):
     osm._recover("http://m1")
     osm._trip("http://m1", "refused")
     assert osm._state("http://m1")["until"] - clock[0] == 900  # a success resets the ladder
+
+
+def test_read_timeout_follows_query_budget():
+    from pipeline.osm import read_timeout_s
+    assert read_timeout_s("[out:json][timeout:300];node;out;") == 330
+    assert read_timeout_s("[out:json][timeout:120];node;out;") == 150
+    assert read_timeout_s("[out:json];node;out;") == 120
