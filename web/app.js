@@ -28,11 +28,11 @@ const OSM_STYLE = {
   layers: [{ id: "osm", type: "raster", source: "osm" }],
 };
 
-// Whole-map view (Germany + Czechia + Austria); `bounds` at init adapts the
+// Whole-map view (Germany, Czechia, Austria, Poland, Slovakia); `bounds` at init adapts the
 // zoom to the viewport (a phone gets a wider zoom than a desktop for the same
 // box). The topbar overlays the map, so the fit needs extra top padding or
 // Hamburg hides under the chips.
-const MAP_BOUNDS = [[5.5, 46.2], [19.2, 55.1]];
+const MAP_BOUNDS = [[5.5, 46.2], [24.3, 55.1]];
 const CITY_VIEWS = {
   berlin: { center: [13.4050, 52.5200], zoom: 11 },
   bremen: { center: [8.8017, 53.0793], zoom: 11.5 },
@@ -452,7 +452,7 @@ function placeLabels(singles, dotBoxes) {
 
 // ---- Gray dots: venues without beer data ----
 // Unlike the (few) beer venues above, these are the brandless rest of the
-// dataset — since the nationwide sweep ~250k venues across DE+CZ+AT — so they
+// dataset — since the nationwide sweep ~250k venues across DE+CZ+AT+PL+SK — so they
 // render as a WebGL circle layer instead of DOM markers, and they are not
 // shipped as a file at all: the viewport's slippy tiles load on demand from
 // /api/gray. Clicking a dot opens the normal venue modal, whose "Marke

@@ -28,7 +28,7 @@ nightly digest show. With `PARTNER_TOKENS` unset, every request gets 401.
 | `ref` | string, 1-64 chars, **required** | The partner's own id for the report. `(partner, ref)` is unique. |
 | `kind` | `add` \| `remove` \| `edit_venue` \| `close_venue` \| `add_venue` | Default `add`. |
 | `venue_osm_id` | string | OSM style, `node/123`, `way/123`, `relation/123`. Required unless `kind` is `add_venue`, where it is ignored. |
-| `venue` | object `{name, lat, lon}` | The venue as the partner knows it. **Required** when `venue_osm_id` is not on Zapfkompass yet (otherwise ignored), and `lat`/`lon` are required for `add_venue`. Coordinates must lie inside the map's bbox (DE, AT, CZ). |
+| `venue` | object `{name, lat, lon}` | The venue as the partner knows it. **Required** when `venue_osm_id` is not on Zapfkompass yet (otherwise ignored), and `lat`/`lon` are required for `add_venue`. Coordinates must lie inside the map's bbox (DE, AT, CZ, PL, SK). |
 | `brand` | string, 1-80 chars | Required for `add` and `remove`; optional for `add_venue`. |
 | `serving` | `fass` \| `tank` \| `unknown` | For `add`, and for `add_venue` with a brand. Default `unknown`. |
 | `beer` | string, max 80 chars | Optional specific product, e.g. `"11°"`. On `remove` it removes just that beer; without it the whole brand goes. |

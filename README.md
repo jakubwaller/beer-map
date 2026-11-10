@@ -3,9 +3,9 @@
 **Live at [zapfkompass.de](https://zapfkompass.de)** — the site is called *Zapfkompass*;
 the repo, Docker service and env files stay `beermap`.
 
-A map of German, Austrian and Czech drinking venues, filterable by draft beer
+A map of German, Austrian, Czech, Polish and Slovak drinking venues, filterable by draft beer
 brand and serving type (Fassbier/Tankbier). Every pub, bar, restaurant, café and
-Biergarten in all three countries appears as at least a clickable gray dot — the
+Biergarten in all five countries appears as at least a clickable gray dot — the
 nationwide sweep (`pipeline/country.py`) ingests them all, and the frontend
 loads the brandless majority per viewport from `/api/gray` instead of shipping
 a country-sized file. Venues with a known brand (OSM `brewery=` tag, curation,
@@ -42,10 +42,10 @@ type hints working on the system Python.)
 ## Build the dataset
 ```bash
 python -m pipeline.run        # OSM -> finders -> curation -> web/data/venues.json
-python -m pipeline.country    # nationwide venue sweep, tile by tile (~145 requests)
+python -m pipeline.country    # nationwide venue sweep, tile by tile (171 tiles before splitting)
 ```
 The nightly `pipeline.run` refreshes the sweep cities, brewery-tagged venues,
-finders and curation; `pipeline.country` fills the DB with every venue in DE+CZ+AT
+finders and curation; `pipeline.country` fills the DB with every venue in DE+CZ+AT+PL+SK
 (the gray-dot substrate served by `/api/gray`) and is meant to run weekly —
 `--resume` continues an interrupted sweep.
 

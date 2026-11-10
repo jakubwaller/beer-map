@@ -44,14 +44,16 @@ OVERPASS_MAX_DATA_AGE_H = float(os.environ.get("BEERMAP_OVERPASS_MAX_DATA_AGE_H"
 _AMENITY = '"amenity"~"^(pub|bar|biergarten|restaurant|cafe)$"'
 # Countries the map covers: the city sweep and the brewery-tagged layer are
 # both clipped to these ISO codes.
-COUNTRY_CODES = ("DE", "CZ", "AT")
-# One bbox (south, west, north, east) covering Germany, Czechia and Austria.
+COUNTRY_CODES = ("DE", "CZ", "AT", "PL", "SK")
+# One bbox (south, west, north, east) covering Germany, Czechia, Austria,
+# Poland and Slovakia.
 # The nationwide sweep (pipeline/country.py) tiles it; each tile query is
 # clipped to COUNTRY_CODES, so the foreign slivers inside the box only cost
-# near-empty tiles, never foreign venues. The south edge sits exactly 1.0°
-# (one tile row) below the pre-Austria 47.2, so the existing tile keys in
-# country_tiles stay aligned.
-COUNTRY_BBOX = (46.2, 5.8, 55.1, 19.0)
+# near-empty tiles, never foreign venues. South and west stay put (46.2 is
+# exactly 1.0° below the pre-Austria 47.2), so the 1° tile grid stays aligned
+# with the keys already in country_tiles; the east edge moved from 19.0 to 24.2
+# for Poland (the old 18.8-19.0 sliver is now the 18.8-19.8 tile).
+COUNTRY_BBOX = (46.2, 5.8, 55.1, 24.2)
 # Cities swept in full: every pub/bar/restaurant/cafe there becomes at least a
 # gray dot (the substrate community submissions turn into data). Overpass area
 # filters; Germany: admin_level 4 = Stadtstaat, 6 = kreisfreie Stadt, 8 = Stadt

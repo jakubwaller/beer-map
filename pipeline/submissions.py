@@ -110,7 +110,7 @@ def validate_partner_submission(payload: dict, venue_known: bool) -> str | None:
     if hint is not None:
         south, west, north, east = config.COUNTRY_BBOX  # also refuses NaN
         if not (south <= hint["lat"] <= north and west <= hint["lon"] <= east):
-            return "venue lat/lon outside the map (DE, AT, CZ)"
+            return "venue lat/lon outside the map (DE, AT, CZ, PL, SK)"
     if kind == _NEW_VENUE_KIND:
         if hint is None:
             return "venue {lat, lon} required for add_venue"
