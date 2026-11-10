@@ -42,10 +42,10 @@ type hints working on the system Python.)
 ## Build the dataset
 ```bash
 python -m pipeline.run        # OSM -> finders -> curation -> web/data/venues.json
-python -m pipeline.country    # nationwide venue sweep, tile by tile (~145 requests)
+python -m pipeline.country    # nationwide venue sweep, tile by tile (171 tiles before splitting)
 ```
 The nightly `pipeline.run` refreshes the sweep cities, brewery-tagged venues,
-finders and curation; `pipeline.country` fills the DB with every venue in DE+CZ+AT
+finders and curation; `pipeline.country` fills the DB with every venue in DE+CZ+AT+PL+SK
 (the gray-dot substrate served by `/api/gray`) and is meant to run weekly —
 `--resume` continues an interrupted sweep.
 

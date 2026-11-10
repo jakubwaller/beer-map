@@ -41,7 +41,7 @@ from .dedupe import _bbox
 from .matching import haversine_m
 from .osm_push import OsmApi, parse_osm_id, tag_value
 
-# The weekly country sweep (Sunday 05:00) refreshes every venue in DE/CZ/AT, so
+# The weekly country sweep (Sunday 05:00) refreshes every venue in DE/CZ/AT/PL/SK, so
 # a live one is at most 7 days old at the 04:00 build before it; 10 leaves room
 # for a sweep that ends late. Age only nominates, it proves nothing: partner-hint
 # and /admin-linked venues are never refreshed by an import, and a failed sweep
