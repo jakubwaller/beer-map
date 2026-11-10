@@ -9,7 +9,7 @@ from pipeline.db import (
 from pipeline.models import Venue
 from pipeline.submissions import (
     validate_submission, within_rate_limit, apply_approved,
-    approve_submission, reject_submission,
+    approve_submission, reject_submission, validate_partner_submission,
 )
 
 
@@ -370,3 +370,15 @@ def test_validate_edit_hours_rejects_newlines_and_non_ascii_digits():
     assert validate_submission({**base, "opening_hours": "Mo-Fr 10:00-22:00; Sa off"}) is None
     assert validate_submission({**base, "opening_hours": "Mo-Fr\n10:00-22:00"})
     assert validate_submission({**base, "opening_hours": "Mo-Fr 1٣:00-22:00"})
+
+
+def test_partner_venue_hint_bbox_covers_poland_and_slovakia():
+    def err(lat, lon):
+        return validate_partner_submission(
+            {"kind": "add_venue", "ref": "r1", "name": "X", "brand": "Budvar", "serving": "tank",
+             "venue": {"name": "X", "lat": lat, "lon": lon}}, venue_known=False)
+    assert err(54.35, 18.65) is None   # Gdansk
+    assert err(48.72, 21.26) is None   # Kosice
+    assert err(49.78, 22.77) is None   # near Przemysl, east of the old edge
+    assert "outside the map" in err(55.9, 21.0)   # Lithuania
+    assert "outside the map" in err(49.0, 25.5)   # Ukraine

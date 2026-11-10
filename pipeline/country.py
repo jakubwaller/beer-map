@@ -167,7 +167,7 @@ if __name__ == "__main__":
     ap.add_argument("--tile-deg", type=float, default=1.0,
                     help="edge length of the starting tiles (default 1.0)")
     ap.add_argument("--bbox", metavar="S,W,N,E",
-                    help="sweep only this bbox (default: all of DE+CZ+AT)")
+                    help="sweep only this bbox (default: all of DE+CZ+AT+PL+SK)")
     args = ap.parse_args()
     box = (tuple(float(p) for p in args.bbox.split(","))
            if args.bbox else COUNTRY_BBOX)

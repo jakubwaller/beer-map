@@ -13,10 +13,21 @@ def test_grid_covers_bbox_and_clamps_edge_tiles():
     assert all(t[2] <= 55.1 and t[3] <= 19.0 for t in tiles)
 
 
+def test_default_bbox_covers_poland_and_slovakia_on_the_old_grid():
+    tiles = grid()
+    # south/west unchanged: every pre-Poland tile key still exists in the grid
+    old = {(t[0], t[1]) for t in grid((46.2, 5.8, 55.1, 19.0))}
+    assert old <= {(t[0], t[1]) for t in tiles}
+    assert tiles[-1][3] == 24.2 and len(tiles) == 9 * 19
+    # Gdańsk-ish, Przemyśl-ish, Košice-ish points fall in some tile
+    for lat, lon in ((54.35, 18.65), (49.78, 22.77), (48.72, 21.26)):
+        assert any(s <= lat < n and w <= lon < e for s, w, n, e in tiles)
+
+
 def test_tile_ql_clips_to_countries():
     ql = build_tile_ql(50.0, 14.0, 51.0, 15.0)
     assert "(50.0,14.0,51.0,15.0)" in ql
-    assert 'ISO3166-1' in ql and "(DE|CZ|AT)" in ql
+    assert 'ISO3166-1' in ql and "(DE|CZ|AT|PL|SK)" in ql
     assert "amenity" in ql and "out center tags" in ql
 
 

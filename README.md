@@ -3,9 +3,9 @@
 **Live at [zapfkompass.de](https://zapfkompass.de)** — the site is called *Zapfkompass*;
 the repo, Docker service and env files stay `beermap`.
 
-A map of German, Austrian and Czech drinking venues, filterable by draft beer
+A map of German, Austrian, Czech, Polish and Slovak drinking venues, filterable by draft beer
 brand and serving type (Fassbier/Tankbier). Every pub, bar, restaurant, café and
-Biergarten in all three countries appears as at least a clickable gray dot — the
+Biergarten in all five countries appears as at least a clickable gray dot — the
 nationwide sweep (`pipeline/country.py`) ingests them all, and the frontend
 loads the brandless majority per viewport from `/api/gray` instead of shipping
 a country-sized file. Venues with a known brand (OSM `brewery=` tag, curation,

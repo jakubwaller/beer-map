@@ -27,9 +27,9 @@ def test_overpass_ql_sweeps_cities_and_national_brewery_layer():
     assert '"brewery"](area.countries)' in ql
     assert ql.count('nwr["amenity"') == 2
     # City names are not globally unique, so the sweep must stay inside the
-    # covered countries (DE + CZ + AT).
+    # covered countries (DE + CZ + AT + PL + SK).
     assert '(area.cities)(area.countries)' in ql
-    assert '"ISO3166-1"~"^(DE|CZ|AT)$"' in ql
+    assert '"ISO3166-1"~"^(DE|CZ|AT|PL|SK)$"' in ql
 
 
 def test_overpass_ql_takes_custom_sweep_areas():

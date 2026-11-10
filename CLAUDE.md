@@ -4,7 +4,7 @@ Guidance for coding agents working in this repository.
 
 ## What this is
 
-A map of German, Austrian and Czech drinking venues filterable by draft beer brand and serving type (Fassbier/Tankbier); every venue in all three countries is in the DB (`pipeline/country.py` sweeps nationwide, tile by tile), branded venues are exported to GeoJSON, and the brandless majority is served per viewport via `/api/gray`. A Python pipeline builds a SQLite DB + GeoJSON export; a static vanilla-JS frontend renders it; a FastAPI app adds tile/search endpoints and anonymous submissions with a moderation queue. Deployed as a Docker container behind Caddy on a Linux VPS (it ran on a Raspberry Pi until August 2026 — older notes still say "the Pi").
+A map of German, Austrian, Czech, Polish and Slovak drinking venues filterable by draft beer brand and serving type (Fassbier/Tankbier); every venue in all five countries is in the DB (`pipeline/country.py` sweeps nationwide, tile by tile), branded venues are exported to GeoJSON, and the brandless majority is served per viewport via `/api/gray`. A Python pipeline builds a SQLite DB + GeoJSON export; a static vanilla-JS frontend renders it; a FastAPI app adds tile/search endpoints and anonymous submissions with a moderation queue. Deployed as a Docker container behind Caddy on a Linux VPS (it ran on a Raspberry Pi until August 2026 — older notes still say "the Pi").
 
 ## Working in this repo
 
@@ -66,7 +66,7 @@ One idempotent build, run nightly via cron and by `docker-run.sh`:
 
 `osm.py` also has a circuit breaker, and it is deliberately blunt: a host whose port refuses the connection is rested on the spot with a doubling cool-down (15 min → 2 h), three queries in a row exhausting their retries rest it too, and when every host is resting `fetch_overpass` raises `OverpassUnavailable` without a packet — `country.py` then waits for the first host to come back (three times, then stops with a `--resume` hint) instead of quartering tiles that were never asked. Earned on 2026-08-23, when Overpass had banned the host's IPv4 and the sweep kept knocking 1,500 times. Don't trade it for more retries.
 
-Separately, `pipeline/country.py` sweeps every venue in DE+CZ+AT into the same `venues` table: a grid of 1° bbox tiles (a single country-wide Overpass query times out), each clipped to the country areas, quartered on failure, recorded in `country_tiles` for `--resume`. It runs weekly; the nightly run never deletes its venues (everything is upserts).
+Separately, `pipeline/country.py` sweeps every venue in DE+CZ+AT+PL+SK into the same `venues` table: a grid of 1° bbox tiles (a single country-wide Overpass query times out), each clipped to the country areas, quartered on failure, recorded in `country_tiles` for `--resume`. It runs weekly; the nightly run never deletes its venues (everything is upserts).
 
 Everything is upserts keyed on `(venue_id, brand_id, source, beer)` — `beer` (specific product, `''` = brand-only) is part of the PK so one venue can list several beers of a brand. Schema migrations are hand-rolled in `pipeline/db.py` (`_MIGRATIONS` + `_migrate_venue_brand_pk`); the DB was created with `CREATE TABLE IF NOT EXISTS`, so new columns must be added there too.
 
