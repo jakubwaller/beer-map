@@ -202,7 +202,12 @@ def post_notes(conn, api: OsmApi, dry_run: bool = False, max_age_days: int = 90,
             time.sleep(pause_s)  # OSM and Nominatim etiquette: one place at a time
         try:
             if osm_id is None:
-                found = find_osm(name, lat, lon)
+                # Wide radius only for a row nobody checked against OSM: a moderator who
+                # saw the candidates in /admin and approved as new has decided, and the
+                # unattended job must not drop the Note over a 75-250 m look-alike.
+                radius = dedupe.name_radius(s) if s.get("osm_candidates") is None \
+                    else dedupe.NAME_RADIUS_M
+                found = find_osm(name, lat, lon, radius)
                 if found:
                     c = found[0]
                     resolve(s, 0, f"OSM has it now: {c['osm_id']} {c['name']!r} {c['dist']} m away")
