@@ -162,7 +162,7 @@ def test_osm_failure_leaves_it_pending():
     conn = _conn()
     sid = _add(conn)
 
-    def down(*a):
+    def down(*a, **kw):
         raise httpx.ConnectError("down")
 
     fake = FakeOsm()
@@ -348,3 +348,17 @@ def test_a_failed_mark_before_the_post_skips_the_row(monkeypatch):
     counts, out = _run(conn, fake)
     assert counts["failed"] == 1 and fake.posts == [] and "could not mark it" in out
     assert get_submission(conn, sid)["osm_note_id"] is None
+
+
+def test_visitor_report_far_from_a_same_named_osm_element_is_resolved(monkeypatch):
+    from pipeline import dedupe
+    monkeypatch.setattr(dedupe, "_get_map", lambda *bbox: {"elements": [
+        {"type": "node", "id": 5, "lat": 50.08 + 0.00097, "lon": 14.42,
+         "tags": {"amenity": "fast_food", "name": "Pivnice Nová"}}]})
+    conn = _conn()
+    sid = _add(conn, assigned_osm_id=None)  # a visitor: no partner, pin from an address
+    fake = FakeOsm()
+    counts = post_notes(conn, _api(fake), now=NOW, find_osm=dedupe.osm_candidates,
+                        country=lambda *a: "cz", log=lambda *a: None, pause_s=0)
+    assert counts["resolved"] == 1 and fake.posts == []
+    assert get_submission(conn, sid)["osm_note_id"] == 0

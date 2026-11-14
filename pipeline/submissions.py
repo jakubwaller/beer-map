@@ -307,7 +307,8 @@ def possible_duplicate(conn, sub: dict) -> bool:
     """An unlinked add_venue with a look-alike venue already in our DB."""
     return (sub["kind"] == _NEW_VENUE_KIND and not sub.get("assigned_osm_id")
             and dedupe.origin(sub) is not None
-            and bool(dedupe.db_candidates(conn, sub["venue_name"], *dedupe.origin(sub))))
+            and bool(dedupe.db_candidates(conn, sub["venue_name"], *dedupe.origin(sub),
+                                          dedupe.name_radius(sub))))
 
 
 def link_submission(conn, sub_id: int, osm_id: str) -> bool:

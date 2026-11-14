@@ -22,6 +22,11 @@ from .geocode import geocode_address
 from .matching import haversine_m
 
 NAME_RADIUS_M = 75   # a similar name this close is probably the same place
+# A visitor's pin is a geocoded address; without a house number that is the
+# street's or square's centre, often further than 75 m from the place itself.
+# shortcut: a long street's centre can still be further than this; upgrade by
+# asking Nominatim for the street's extent (or require a house number).
+GEOCODED_RADIUS_M = 250
 NEAR_RADIUS_M = 15   # this close it is, whatever the name says
 GEOCODE_INTERVAL_S = 1.0  # Nominatim usage policy
 GEOCODE_TIMEOUT_S = 5.0   # /admin waits on it; approval keeps geocode's own 15 s
@@ -41,8 +46,15 @@ def similar(a: str | None, b: str | None) -> bool:
     return short == long_ or (len(short) >= 4 and f" {short} " in f" {long_} ")
 
 
-def _matches(name, cand_name, dist, venue_like) -> bool:
-    return (dist <= NAME_RADIUS_M and similar(name, cand_name)) or \
+def name_radius(sub: dict) -> int:
+    """How far a look-alike may be: wide for a visitor's address-placed
+    add_venue, the usual radius for rows with real coordinates (partners)."""
+    geocoded = sub.get("kind") == "add_venue" and not sub.get("partner")
+    return GEOCODED_RADIUS_M if geocoded else NAME_RADIUS_M
+
+
+def _matches(name, cand_name, dist, venue_like, radius=NAME_RADIUS_M) -> bool:
+    return (dist <= radius and similar(name, cand_name)) or \
         (dist <= NEAR_RADIUS_M and venue_like)
 
 
@@ -52,16 +64,16 @@ def _bbox(lat, lon, r):
     return lat - dlat, lon - dlon, lat + dlat, lon + dlon
 
 
-def db_candidates(conn, name, lat, lon) -> list[dict]:
+def db_candidates(conn, name, lat, lon, radius=NAME_RADIUS_M) -> list[dict]:
     """Visible venues in our DB that look like the submitted place."""
-    s, w, n, e = _bbox(lat, lon, NAME_RADIUS_M)
+    s, w, n, e = _bbox(lat, lon, radius)
     rows = conn.execute(
         "SELECT osm_id, name, lat, lon FROM venues WHERE lat BETWEEN ? AND ? "
         "AND lon BETWEEN ? AND ? AND COALESCE(hidden, 0)=0", (s, n, w, e)).fetchall()
     out = []
     for r in rows:
         dist = haversine_m(lat, lon, r["lat"], r["lon"])
-        if _matches(name, r["name"], dist, True):  # every DB venue is a venue
+        if _matches(name, r["name"], dist, True, radius):  # every DB venue is a venue
             out.append({"osm_id": r["osm_id"], "name": r["name"], "kind": "",
                         "lat": r["lat"], "lon": r["lon"], "dist": round(dist)})
     return sorted(out, key=lambda c: c["dist"])
@@ -69,7 +81,8 @@ def db_candidates(conn, name, lat, lon) -> list[dict]:
 
 def _get_map(south, west, north, east) -> dict:
     """The OSM API `map` call: every element in the bbox, ways with their nodes.
-    Read-only, no slot queue like Overpass, and the bbox is ~150 m across."""
+    Read-only, no slot queue like Overpass, and the bbox is up to ~500 m across
+    (12.6k nodes at most in the centre of a big city)."""
     resp = httpx.get(f"{config.OSM_API_URL.rstrip('/')}/api/0.6/map.json",
                      params={"bbox": f"{west:.6f},{south:.6f},{east:.6f},{north:.6f}"},
                      headers={"User-Agent": config.USER_AGENT}, timeout=10)
@@ -77,10 +90,10 @@ def _get_map(south, west, north, east) -> dict:
     return resp.json()
 
 
-def osm_candidates(name, lat, lon) -> list[dict]:
+def osm_candidates(name, lat, lon, radius=NAME_RADIUS_M) -> list[dict]:
     """OSM elements (any tags) that look like the submitted place. Raises
     httpx.HTTPError / ValueError when OSM can't be asked."""
-    elements = _get_map(*_bbox(lat, lon, NAME_RADIUS_M)).get("elements") or []
+    elements = _get_map(*_bbox(lat, lon, radius)).get("elements") or []
     nodes = {e["id"]: (e["lat"], e["lon"]) for e in elements
              if e.get("type") == "node" and "lat" in e}
     out = []
@@ -97,7 +110,7 @@ def osm_candidates(name, lat, lon) -> list[dict]:
         if not pts:
             continue
         dist = min(haversine_m(lat, lon, a, b) for a, b in pts)
-        if _matches(name, tags.get("name"), dist, tags.get("amenity") in _VENUE_AMENITIES):
+        if _matches(name, tags.get("name"), dist, tags.get("amenity") in _VENUE_AMENITIES, radius):
             kind = next((f"{k}={tags[k]}" for k in _KIND_KEYS if k in tags), "")
             out.append({"osm_id": f"{el['type']}/{el['id']}", "name": tags.get("name") or "",
                         "kind": kind,
@@ -184,7 +197,8 @@ def candidates(conn, sub: dict, budget: Budget | None = None) -> tuple[list[dict
         conn.execute("UPDATE submissions SET lat=?, lon=? WHERE id=?", (*point, sub["id"]))
         conn.commit()
     lat, lon = point
-    found = [dict(c, source="db") for c in db_candidates(conn, sub["venue_name"], lat, lon)]
+    radius = name_radius(sub)
+    found = [dict(c, source="db") for c in db_candidates(conn, sub["venue_name"], lat, lon, radius)]
     osm, ok = None, None
     if sub.get("osm_candidates") is not None:
         # Cached answers can name an element re-keyed since (pipeline/rekey.py).
@@ -193,7 +207,7 @@ def candidates(conn, sub: dict, budget: Budget | None = None) -> tuple[list[dict
         ok = True
     elif budget and not budget.osm_down and budget.take():
         try:
-            osm, ok = osm_candidates(sub["venue_name"], lat, lon), True
+            osm, ok = osm_candidates(sub["venue_name"], lat, lon, radius), True
         except (httpx.HTTPError, ValueError, KeyError, TypeError):
             ok, budget.osm_down = False, True  # moderation goes on without OSM
         else:

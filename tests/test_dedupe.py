@@ -227,3 +227,51 @@ def test_unlink_restores_new_venue(client):
     client.post(f"/api/admin/{sid}/link", auth=AUTH, json={"osm_id": "node/77"})
     assert client.post(f"/api/admin/{sid}/link", auth=AUTH, json={"osm_id": ""}).json() == {"ok": True}
     assert get_submission(get_connection(config.DB_PATH), sid)["assigned_osm_id"] is None
+
+
+# A visitor's pin is the street's centre: 108 m from the real, same-named place.
+FAR = 0.00097
+_FAR_MAP = {"elements": [
+    {"type": "node", "id": 5, "lat": LAT + FAR, "lon": LON,
+     "tags": {"amenity": "fast_food", "name": "Trojbistro"}},
+    {"type": "node", "id": 6, "lat": LAT + FAR, "lon": LON + 0.0001,
+     "tags": {"amenity": "fast_food"}},  # unnamed venue 100+ m away: not the place
+]}
+
+
+def _mem():
+    from pipeline.db import insert_submission
+    conn = get_connection(":memory:")
+    init_db(conn)
+    return conn, insert_submission
+
+
+def test_visitor_address_row_finds_a_look_alike_beyond_75_m(monkeypatch):
+    monkeypatch.setattr(dedupe, "_get_map", lambda *bbox: _FAR_MAP)
+    conn, ins = _mem()
+    base = dict(kind="add_venue", venue_name="Trojbistro", brand="", serving="unknown",
+                lat=LAT, lon=LON)
+    visitor = dict(base, id=ins(conn, base, "2026-11-01T10:00:00"))
+    found, ok = dedupe.candidates(conn, visitor, dedupe.Budget())
+    # the unnamed fast_food (~110 m) is not within the 15 m NEAR rule
+    assert ok and [(c["osm_id"], c["dist"]) for c in found] == [("node/5", 108)]
+    partner = dict(base, partner="dopivatel", ref="r9")
+    partner["id"] = ins(conn, partner, "2026-11-01T10:00:01")
+    assert dedupe.candidates(conn, partner, dedupe.Budget()) == ([], True)
+
+
+def test_visitor_db_duplicate_beyond_75_m_makes_possible_duplicate():
+    conn, ins = _mem()
+    upsert_venue(conn, Venue("node/77", "Trojbistro", LAT + FAR, LON), "2026-11-01")
+    sub = dict(kind="add_venue", venue_name="Trojbistro", lat=LAT, lon=LON)
+    assert [c["osm_id"] for c in dedupe.db_candidates(conn, "Trojbistro", LAT, LON,
+                                                      dedupe.name_radius(sub))] == ["node/77"]
+    assert dedupe.db_candidates(conn, "Trojbistro", LAT, LON) == []
+    assert submissions.possible_duplicate(conn, sub)
+    assert not submissions.possible_duplicate(conn, dict(sub, partner="dopivatel"))
+
+
+def test_name_radius():
+    assert dedupe.name_radius({"kind": "add_venue"}) == dedupe.GEOCODED_RADIUS_M
+    assert dedupe.name_radius({"kind": "add_venue", "partner": "x"}) == dedupe.NAME_RADIUS_M
+    assert dedupe.name_radius({"kind": "close_venue"}) == dedupe.NAME_RADIUS_M

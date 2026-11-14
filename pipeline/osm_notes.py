@@ -202,7 +202,7 @@ def post_notes(conn, api: OsmApi, dry_run: bool = False, max_age_days: int = 90,
             time.sleep(pause_s)  # OSM and Nominatim etiquette: one place at a time
         try:
             if osm_id is None:
-                found = find_osm(name, lat, lon)
+                found = find_osm(name, lat, lon, dedupe.name_radius(s))
                 if found:
                     c = found[0]
                     resolve(s, 0, f"OSM has it now: {c['osm_id']} {c['name']!r} {c['dist']} m away")
