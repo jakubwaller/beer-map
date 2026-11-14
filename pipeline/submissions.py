@@ -304,7 +304,9 @@ def approve_all_pending(conn, today: str, out_path: str) -> int:
 
 
 def possible_duplicate(conn, sub: dict) -> bool:
-    """An unlinked add_venue with a look-alike venue already in our DB."""
+    """An unlinked add_venue with a look-alike venue already in our DB, within
+    `dedupe.name_radius(sub)` (250 m for a visitor's address-placed report, so
+    approve-all leaves more of those for a moderator's look)."""
     return (sub["kind"] == _NEW_VENUE_KIND and not sub.get("assigned_osm_id")
             and dedupe.origin(sub) is not None
             and bool(dedupe.db_candidates(conn, sub["venue_name"], *dedupe.origin(sub),

@@ -362,3 +362,19 @@ def test_visitor_report_far_from_a_same_named_osm_element_is_resolved(monkeypatc
                         country=lambda *a: "cz", log=lambda *a: None, pause_s=0)
     assert counts["resolved"] == 1 and fake.posts == []
     assert get_submission(conn, sid)["osm_note_id"] == 0
+
+
+def test_visitor_report_a_moderator_saw_the_wide_candidates_for_is_posted(monkeypatch):
+    import json
+    from pipeline import dedupe
+    el = {"type": "node", "id": 5, "lat": 50.08 + 0.00097, "lon": 14.42,
+          "tags": {"amenity": "fast_food", "name": "Pivnice Nová"}}
+    monkeypatch.setattr(dedupe, "_get_map", lambda *bbox: {"elements": [el]})
+    conn = _conn()
+    sid = _add(conn, assigned_osm_id=None)
+    conn.execute("UPDATE submissions SET osm_candidates=? WHERE id=?",
+                 (json.dumps([{"osm_id": "node/5", "name": "Pivnice Nová", "dist": 108}]), sid))
+    fake = FakeOsm()
+    counts = post_notes(conn, _api(fake), now=NOW, find_osm=dedupe.osm_candidates,
+                        country=lambda *a: "cz", log=lambda *a: None, pause_s=0)
+    assert counts["posted"] == 1 and len(fake.posts) == 1  # decided as new: 75 m as before
