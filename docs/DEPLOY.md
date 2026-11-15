@@ -59,7 +59,7 @@ delays the uploads instead of colliding with them.
 ## Moderation
 
 `https://zapfkompass.de/admin` — HTTP Basic (`admin` / `BEERMAP_ADMIN_PW`).
-Approvals apply the edit and re-export `venues.json` instantly.
+Approvals apply the edit and re-export `venues.json` instantly. Brand and beer of a report can be corrected in the card before approving.
 Reports forwarded by a partner app (Dopivatel) land in the same queue, tagged with the partner's
 name. They are not announced one by one: the 04:00 `pipeline.run` cron sends one digest of the
 new ones. Their tokens live in `PARTNER_TOKENS` in `deploy/beermap.env` (`name:secret`, comma-separated);

@@ -191,6 +191,8 @@ button:hover { border-color: var(--accent); color: var(--accent-strong); }
 .venue { font-family: var(--serif); font-weight: 600; font-size: 17px; }
 .addr { color: var(--muted); font-size: 13px; }
 .detail { margin-top: 8px; font-size: 15px; }
+.detail input { font: inherit; font-size: 14px; width: 11em; padding: 2px 6px; }
+.detail .kind { margin: 0 4px; }
 .note { margin-top: 6px; font-style: italic; color: var(--muted); font-size: 14px; }
 .foot {
   display: flex; align-items: center; justify-content: space-between; gap: 12px;
@@ -238,6 +240,11 @@ class VenueHint(BaseModel):
 
 class Link(BaseModel):
     osm_id: str = ""  # one of the submission's duplicate candidates; "" unlinks
+
+
+class BrandEdit(BaseModel):
+    brand: str
+    beer: str = ""
 
 
 class PartnerSubmission(Submission):
@@ -588,12 +595,26 @@ def create_app() -> FastAPI:
                 return "Neu anlegen bei " + _coords(r["hint_lat"], r["hint_lon"])
             return venue.get("address") or ""
 
+        brand_names = [x["name"] for x in conn.execute("SELECT name FROM brands ORDER BY name")]
+        known_brands = set(brand_names)
+        brand_list = ('<datalist id="brands">' + "".join(
+            f'<option value="{html.escape(n, quote=True)}">' for n in brand_names) + "</datalist>")
+
+        def _edit(r):
+            # Brand and beer are editable before approval (partner apps forward
+            # whatever a player typed). Read back by element id in d().
+            new = ("" if config.normalize_brand(r["brand"]) in known_brands
+                   else ' <span class="kind">Neue Marke</span>')
+            return (f'<label>Marke <input id="brand-{r["id"]}" list="brands" maxlength="80" '
+                    f'value="{html.escape(r["brand"], quote=True)}"></label>{new} '
+                    f'<label>Bier <input id="beer-{r["id"]}" maxlength="80" '
+                    f'value="{html.escape(r.get("beer") or "", quote=True)}"></label>')
+
         def _detail(r):
             if r["kind"] == "add_venue":
-                brand = (f" · {html.escape(r['brand'])} ({html.escape(r['serving'])})"
-                         if r["brand"] else "")
+                brand = (f" · {html.escape(r['serving'])}" if r["brand"] else "")
                 where = r["address"] or (_coords(r["lat"], r["lon"]) if r["lat"] is not None else "")
-                return html.escape(where) + brand
+                return html.escape(where) + brand + (f"<br>{_edit(r)}" if r["brand"] else "")
             if r["kind"] == "edit_venue":
                 parts = [f"Neuer Name: {html.escape(r['new_name'])}"] if r.get("new_name") else []
                 if r["address"]:
@@ -603,8 +624,7 @@ def create_app() -> FastAPI:
                 return "Neue Zeiten: " + html.escape(r["opening_hours"] or "")
             if r["kind"] == "close_venue":
                 return "Als geschlossen gemeldet"
-            beer = f" – {html.escape(r['beer'])}" if r.get("beer") else ""
-            return f"{html.escape(r['brand'])}{beer} ({html.escape(r['serving'])})"
+            return f"{_edit(r)} ({html.escape(r['serving'])})"
 
         items = "".join(
             f"""<li class="card">
@@ -649,10 +669,20 @@ def create_app() -> FastAPI:
     {approve_all_btn}
   </div>
   <ul class="subs">{items}</ul>
+  {brand_list}
 </main>
 <script>
 async function d(id, a) {{
-  await fetch('/api/admin/' + id + '/' + a, {{method: 'POST'}});
+  const brand = document.getElementById('brand-' + id);
+  const edit = a === 'approve' && brand;
+  const r = await fetch('/api/admin/' + id + '/' + a, edit ? {{method: 'POST',
+    headers: {{'Content-Type': 'application/json'}},
+    body: JSON.stringify({{brand: brand.value, beer: document.getElementById('beer-' + id).value}})}}
+    : {{method: 'POST'}});
+  if (!r.ok && edit) {{  // keep the typed text; other failures just reload
+    alert('Fehlgeschlagen: ' + ((await r.json().catch(() => ({{}}))).detail || r.status));
+    return;
+  }}
   location.reload();
 }}
 async function link(id, osm) {{
@@ -662,6 +692,10 @@ async function link(id, osm) {{
   location.reload();
 }}
 async function approveAll(n) {{
+  if ([...document.querySelectorAll('.detail input')].some(i => i.value !== i.defaultValue)) {{
+    alert('Geänderte Meldungen bitte einzeln freigeben – Änderungen gelten nur dort.');
+    return;
+  }}
   if (!confirm('Alle ' + n + ' Meldungen freigeben? (Neue Orte mit Duplikat-Verdacht bleiben offen.)')) return;
   await fetch('/api/admin/approve-all', {{method: 'POST'}});
   location.reload();
@@ -676,7 +710,16 @@ async function approveAll(n) {{
         return {"ok": True, "approved": n}
 
     @app.post("/api/admin/{sub_id}/approve")
-    def approve(sub_id: int, conn=Depends(_db), _=Depends(_require_admin)):
+    def approve(sub_id: int, body: Optional[BrandEdit] = None, conn=Depends(_db),
+                _=Depends(_require_admin)):
+        # shortcut: edits ride only on single approve; approve-all refuses client-side, move to a server check if a second client appears
+        if body is not None:  # the moderator corrected brand/beer on the card
+            try:
+                edited = submissions.edit_pending_brand(conn, sub_id, body.brand, body.beer)
+            except ValueError as e:
+                raise HTTPException(400, str(e))
+            if not edited:
+                raise HTTPException(404, "not pending")
         if not submissions.approve_submission(conn, sub_id, date.today().isoformat(), config.OUT_PATH):
             raise HTTPException(404, "not pending, or could not be applied "
                                      "(venue gone / address not geocodable)")

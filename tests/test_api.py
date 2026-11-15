@@ -817,3 +817,76 @@ def test_partner_malformed_json_needs_auth_first(partner):
     assert c.post("/api/partner/submit", **bad).status_code == 401
     assert c.post("/api/partner/submit", content="{nope",
                   headers={**_AUTH, "Content-Type": "application/json"}).status_code == 400
+
+
+def _brand_names():
+    return {r["name"] for r in get_connection(config.DB_PATH).execute("SELECT name FROM brands")}
+
+
+def _pending(**kw):
+    return list_submissions(get_connection(config.DB_PATH), "pending")
+
+
+def test_admin_approve_with_corrected_brand_joins_existing_brand(client):
+    c, _ = client
+    conn = get_connection(config.DB_PATH)
+    conn.execute("INSERT INTO brands (name) VALUES ('Vinohradský pivovar')")
+    conn.commit()
+    _submit(c, brand="Vinohrady")
+    sid = _pending()[0]["id"]
+    r = c.post(f"/api/admin/{sid}/approve", auth=("admin", "secret"),
+               json={"brand": " Vinohradský pivovar ", "beer": " Ležák "})
+    assert r.json() == {"ok": True}
+    assert _brand_names() == {"Vinohradský pivovar"}
+    row = get_connection(config.DB_PATH).execute(
+        "SELECT beer FROM venue_brand").fetchone()
+    assert row["beer"] == "Ležák"
+
+
+def test_admin_approve_with_body_on_add_venue_with_brand(client, monkeypatch):
+    c, _ = client
+    monkeypatch.setattr(submissions, "geocode_address", lambda address, near=None: (53.57, 9.96))
+    c.post("/api/submit", json={"kind": "add_venue", "name": "Craft Eck", "address": "Musterstraße 5, Hamburg",
+                                "brand": "Astr", "serving": "fass"})
+    sid = _pending()[0]["id"]
+    r = c.post(f"/api/admin/{sid}/approve", auth=("admin", "secret"), json={"brand": "Astra", "beer": ""})
+    assert r.json() == {"ok": True}
+    assert _brand_names() == {"Astra"}
+
+
+def test_admin_approve_with_invalid_edit_changes_nothing(client):
+    c, _ = client
+    _submit(c)
+    sid = _pending()[0]["id"]
+    for bad in ({"brand": "  "}, {"brand": "x" * 81}, {"brand": "Jever", "beer": "y" * 81}):
+        r = c.post(f"/api/admin/{sid}/approve", auth=("admin", "secret"), json=bad)
+        assert r.status_code == 400
+    row = _pending()[0]
+    assert row["brand"] == "Astra" and row["status"] == "pending"
+    assert _brand_names() == set()
+
+
+def test_admin_approve_without_body_and_non_pending(client):
+    c, _ = client
+    _submit(c, brand="Jever")
+    sid = _pending()[0]["id"]
+    assert c.post(f"/api/admin/{sid}/approve", auth=("admin", "secret")).json() == {"ok": True}
+    assert _brand_names() == {"Jever"}
+    assert c.post(f"/api/admin/{sid}/approve", auth=("admin", "secret"),
+                  json={"brand": "Astra"}).status_code == 404
+
+
+def test_admin_page_inputs_escaped_datalist_and_new_brand_badge(client):
+    c, _ = client
+    conn = get_connection(config.DB_PATH)
+    conn.execute("INSERT INTO brands (name) VALUES ('Jever'), ('Vinohradský pivovar')")
+    conn.commit()
+    _submit(c, brand='Ev"il <b>x')
+    page = c.get("/admin", auth=("admin", "secret")).text
+    assert 'value="Ev&quot;il &lt;b&gt;x"' in page and "<b>x" not in page
+    assert '<datalist id="brands"><option value="Jever"><option value="Vinohradský pivovar"></datalist>' in page
+    assert "Neue Marke" in page
+    sid = _pending()[0]["id"]
+    c.post(f"/api/admin/{sid}/reject", auth=("admin", "secret"))
+    _submit(c, brand="Jever")
+    assert "Neue Marke" not in c.get("/admin", auth=("admin", "secret")).text
