@@ -191,6 +191,7 @@ button:hover { border-color: var(--accent); color: var(--accent-strong); }
 .venue { font-family: var(--serif); font-weight: 600; font-size: 17px; }
 .addr { color: var(--muted); font-size: 13px; }
 .detail { margin-top: 8px; font-size: 15px; }
+.detail label { white-space: nowrap; }
 .detail input { font: inherit; font-size: 14px; width: 11em; padding: 2px 6px; }
 .detail .kind { margin: 0 4px; }
 .note { margin-top: 6px; font-style: italic; color: var(--muted); font-size: 14px; }
