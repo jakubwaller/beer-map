@@ -288,6 +288,27 @@ def approve_submission(conn, sub_id: int, today: str, out_path: str) -> bool:
     return True
 
 
+def edit_pending_brand(conn, sub_id: int, brand: str, beer: str) -> bool:
+    """Correct the brand and beer of a pending report before approval (a partner
+    app forwards whatever a player typed). Same rules as a new report; raises
+    ValueError with the message when they fail, the row stays untouched.
+    False when the row is not pending."""
+    sub = get_submission(conn, sub_id)
+    if not sub or sub["status"] != "pending":
+        return False
+    brand, beer = brand.strip(), beer.strip()
+    if sub["kind"] not in _BRAND_KINDS + (_NEW_VENUE_KIND,):
+        raise ValueError("this report has no brand")
+    err = validate_submission({**sub, "name": sub["venue_name"], "brand": brand, "beer": beer},
+                              partner=bool(sub.get("partner")))
+    if err:
+        raise ValueError(err)
+    conn.execute("UPDATE submissions SET brand=?, beer=? WHERE id=?",
+                 (brand, beer or None, sub_id))
+    conn.commit()
+    return True
+
+
 def approve_all_pending(conn, today: str, out_path: str) -> int:
     approved = 0
     for sub in list_submissions(conn, "pending"):
