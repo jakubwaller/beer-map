@@ -823,7 +823,7 @@ def _brand_names():
     return {r["name"] for r in get_connection(config.DB_PATH).execute("SELECT name FROM brands")}
 
 
-def _pending(**kw):
+def _pending():
     return list_submissions(get_connection(config.DB_PATH), "pending")
 
 
@@ -890,3 +890,25 @@ def test_admin_page_inputs_escaped_datalist_and_new_brand_badge(client):
     c.post(f"/api/admin/{sid}/reject", auth=("admin", "secret"))
     _submit(c, brand="Jever")
     assert "Neue Marke" not in c.get("/admin", auth=("admin", "secret")).text
+
+
+def test_admin_approve_with_body_on_partner_rows(partner):
+    c, _ = partner
+    assert _partner(c, venue_osm_id="node/77", serving="unknown", venue=_HINT, beer="Ležák").json()["ok"]
+    sid = _pending()[0]["id"]
+    assert c.post(f"/api/admin/{sid}/approve", auth=("admin", "secret"),
+                  json={"brand": "Astra", "beer": "Ležák"}).json() == {"ok": True}
+    assert _brand_names() == {"Astra"}
+    assert _partner(c, kind="add_venue", ref="r2", venue_osm_id="", name="Nova Hospoda", serving="unknown",
+                    brand="Kozel", venue={"lat": 50.08, "lon": 14.42}).json()["ok"]
+    sid = _pending()[0]["id"]
+    assert c.post(f"/api/admin/{sid}/approve", auth=("admin", "secret"),
+                  json={"brand": "Kozel", "beer": ""}).json() == {"ok": True}
+
+
+def test_admin_page_collapses_whitespace_in_input_values(client):
+    c, _ = client
+    _submit(c, brand="Ast\nra", beer="a  b")
+    page = c.get("/admin", auth=("admin", "secret")).text
+    assert 'value="Ast ra"' in page and 'value="a b"' in page
+    assert page.count('autocomplete="off"') == 2

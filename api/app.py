@@ -602,13 +602,18 @@ def create_app() -> FastAPI:
 
         def _edit(r):
             # Brand and beer are editable before approval (partner apps forward
-            # whatever a player typed). Read back by element id in d().
+            # whatever a player typed). Read back by element id in d(). Values are
+            # whitespace-collapsed so value === defaultValue on load (the browser
+            # strips newlines from .value but not from .defaultValue); autocomplete
+            # off so Firefox does not restore typed text into another card after a reload.
+            def val(text):
+                return html.escape(" ".join((text or "").split()), quote=True)
             new = ("" if config.normalize_brand(r["brand"]) in known_brands
                    else ' <span class="kind">Neue Marke</span>')
             return (f'<label>Marke <input id="brand-{r["id"]}" list="brands" maxlength="80" '
-                    f'value="{html.escape(r["brand"], quote=True)}"></label>{new} '
+                    f'autocomplete="off" value="{val(r["brand"])}"></label>{new} '
                     f'<label>Bier <input id="beer-{r["id"]}" maxlength="80" '
-                    f'value="{html.escape(r.get("beer") or "", quote=True)}"></label>')
+                    f'autocomplete="off" value="{val(r.get("beer"))}"></label>')
 
         def _detail(r):
             if r["kind"] == "add_venue":
@@ -672,12 +677,14 @@ def create_app() -> FastAPI:
   {brand_list}
 </main>
 <script>
+const edited = (i) => i.value !== i.defaultValue;
 async function d(id, a) {{
   const brand = document.getElementById('brand-' + id);
-  const edit = a === 'approve' && brand;
+  const beer = document.getElementById('beer-' + id);
+  const edit = a === 'approve' && brand && (edited(brand) || edited(beer));
   const r = await fetch('/api/admin/' + id + '/' + a, edit ? {{method: 'POST',
     headers: {{'Content-Type': 'application/json'}},
-    body: JSON.stringify({{brand: brand.value, beer: document.getElementById('beer-' + id).value}})}}
+    body: JSON.stringify({{brand: brand.value, beer: beer.value}})}}
     : {{method: 'POST'}});
   if (!r.ok && edit) {{  // keep the typed text; other failures just reload
     alert('Fehlgeschlagen: ' + ((await r.json().catch(() => ({{}}))).detail || r.status));
@@ -692,7 +699,7 @@ async function link(id, osm) {{
   location.reload();
 }}
 async function approveAll(n) {{
-  if ([...document.querySelectorAll('.detail input')].some(i => i.value !== i.defaultValue)) {{
+  if ([...document.querySelectorAll('.detail input')].some(edited)) {{
     alert('Geänderte Meldungen bitte einzeln freigeben – Änderungen gelten nur dort.');
     return;
   }}
