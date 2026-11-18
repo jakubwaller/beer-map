@@ -930,3 +930,28 @@ def test_gray_tiles_survive_concurrent_requests(client):
         return [r.status_code for r in rs]
 
     assert asyncio.run(burst()) == [200] * 64
+
+
+def test_api_docs_closed(client):
+    c, _ = client
+    for path in ("/docs", "/redoc", "/openapi.json"):
+        assert c.get(path).status_code == 404, path
+
+
+def test_unknown_page_gets_html_404(client):
+    c, _ = client
+    r = c.get("/nope")
+    assert r.status_code == 404
+    assert r.headers["content-type"].startswith("text/html")
+    assert "Seite nicht gefunden" in r.text
+
+
+def test_unknown_api_path_keeps_json_404(client):
+    c, _ = client
+    r = c.get("/api/nope")
+    assert r.status_code == 404
+    assert r.headers["content-type"] == "application/json"
+    assert r.json() == {"detail": "Not Found"}
+    r = c.get("/api/gray/10/9999/331")   # a real route's own 404 is untouched
+    assert r.status_code == 404
+    assert r.json() == {"detail": "tile out of range"}

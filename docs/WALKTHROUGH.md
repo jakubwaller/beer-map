@@ -109,8 +109,7 @@ and closures are carried on to OpenStreetMap. The walk must never send one.
     ever shows, dismiss it), "Zeiten vorschlagen" and "+ Ort melden" in the "Bier melden" modal;
   - pressing Enter in any field of those forms submits them. Enter in the map's search box is fine.
   - "+ Weiteres Bier" only stages a row in the browser and may be used.
-- **No `/admin`, `/admin/login`, `/api/admin/…` or `/api/partner/submit`**, and not `/docs` or
-  `/openapi.json` (its "Try it out" can send real requests).
+- **No `/admin`, `/admin/login`, `/api/admin/…` or `/api/partner/submit`.**
 - **Contact:** do not mail beermap@jakubwaller.eu. Open the buergerwecker.de contact form and read it;
   do not fill or submit it.
 - **Ko-fi:** open the page, no payment, no sign-in. **OpenStreetMap links:** read only, no login, edit or note.
