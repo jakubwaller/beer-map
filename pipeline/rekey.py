@@ -81,8 +81,9 @@ def _same_street(a: str | None, b: str | None) -> bool:
     """The first address line ("Heußweg 93, 20255 Hamburg" -> "heussweg 93")
     is the same, or one of the two venues has none."""
     # An addr:place address leads with the place ("Hinterriß 21a"), so it compares like a street.
-    a, b = (fold((x or "").split(",")[0]) for x in (a, b))
-    return not a or not b or a == b
+    # Rows imported before that format keep "21a, 6215 Hinterriß": one side's words may be a subset of the other's.
+    a, b = (set(fold((x or "").split(",")[0]).split()) for x in (a, b))
+    return not a or not b or a <= b or b <= a
 
 
 def plan(conn, today: str):

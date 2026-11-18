@@ -397,3 +397,10 @@ def test_merge_by_hand_refuses_unknown_ids():
             continue
         raise AssertionError(args)
     assert _ids(conn) == ["node/20"]
+
+
+def test_same_street_pairs_an_old_house_number_only_address_with_the_place_format():
+    assert rekey._same_street("21a, 6215 Hinterriß", "Hinterriß 21a, 6215 Hinterriß")
+    assert rekey._same_street("Heußweg 93, 20255 Hamburg", "Heussweg 93, Hamburg")
+    assert not rekey._same_street("Hinterriß 21a", "Hinterriß 22")
+    assert not rekey._same_street("Lange Reihe 5", "Kurze Straße 5")
