@@ -49,6 +49,9 @@ def test_address_falls_back_to_addr_place():
     assert osm._address({"addr:street": "Lange Reihe", "addr:housenumber": "5",
                          "addr:postcode": "20099", "addr:city": "Hamburg",
                          "addr:place": "St. Georg"}) == "Lange Reihe 5, 20099 Hamburg"
+    # A bare place is not repeated as the town.
+    assert osm._address({"addr:place": "Testdorf"}) == "Testdorf"
+    assert osm._address({"addr:place": "Testdorf", "addr:postcode": "91327"}) == "Testdorf, 91327"
 
 
 def _fake_get(sequence):
