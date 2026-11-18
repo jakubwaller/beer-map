@@ -39,6 +39,18 @@ def test_parse_extracts_venues_and_brewery_edges():
     assert all(e.source == "osm" and e.serving == "unknown" for e in edges)
 
 
+def test_address_falls_back_to_addr_place():
+    # Village addresses: "14, 91327 Gößweinstein" and "Neuer Pferdemarkt 1, 20359" were shown.
+    assert osm._address({"addr:place": "Testdorf", "addr:housenumber": "14",
+                         "addr:postcode": "91327", "addr:city": "Gößweinstein"}) \
+        == "Testdorf 14, 91327 Gößweinstein"
+    assert osm._address({"addr:place": "Testdorf", "addr:housenumber": "21a",
+                         "addr:postcode": "6215"}) == "Testdorf 21a, 6215 Testdorf"
+    assert osm._address({"addr:street": "Lange Reihe", "addr:housenumber": "5",
+                         "addr:postcode": "20099", "addr:city": "Hamburg",
+                         "addr:place": "St. Georg"}) == "Lange Reihe 5, 20099 Hamburg"
+
+
 def _fake_get(sequence):
     """Return a stand-in for httpx.get that yields one entry of `sequence` per
     call (an int status code -> Response with an empty element list, a dict -> a

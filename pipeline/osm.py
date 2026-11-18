@@ -29,8 +29,10 @@ def _coords(el):
 
 
 def _address(tags):
-    line1 = " ".join(p for p in (tags.get("addr:street"), tags.get("addr:housenumber")) if p)
-    line2 = " ".join(p for p in (tags.get("addr:postcode"), tags.get("addr:city")) if p)
+    # A village address carries addr:place instead of a street, often without a city.
+    place = tags.get("addr:place")
+    line1 = " ".join(p for p in (tags.get("addr:street") or place, tags.get("addr:housenumber")) if p)
+    line2 = " ".join(p for p in (tags.get("addr:postcode"), tags.get("addr:city") or place) if p)
     return ", ".join(p for p in (line1, line2) if p) or None
 
 
