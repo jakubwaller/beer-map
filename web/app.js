@@ -1420,6 +1420,9 @@ function writeLangToUrl(l) {
   } catch { /* the switcher itself still works */ }
 }
 if (langForUrl) writeLangToUrl(langForUrl);
+// A language switch closes an open card with history.back(), which lands on the entry
+// written in the old language: put the current one back.
+window.addEventListener("popstate", () => writeLangToUrl(langSelect.value));
 langSelect.addEventListener("change", () => {
   setLang(langSelect.value);
   writeLangToUrl(langSelect.value);
