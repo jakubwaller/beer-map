@@ -404,3 +404,8 @@ def test_same_street_pairs_an_old_house_number_only_address_with_the_place_forma
     assert rekey._same_street("Heußweg 93, 20255 Hamburg", "Heussweg 93, Hamburg")
     assert not rekey._same_street("Hinterriß 21a", "Hinterriß 22")
     assert not rekey._same_street("Lange Reihe 5", "Kurze Straße 5")
+
+
+def test_same_street_does_not_pair_a_street_with_a_longer_street_name():
+    assert not rekey._same_street("Hauptstraße 5", "Neue Hauptstraße 5")
+    assert not rekey._same_street("Neue Hauptstraße 5, Hamburg", "Hauptstraße 5, Hamburg")
