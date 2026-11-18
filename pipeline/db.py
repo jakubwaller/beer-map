@@ -149,8 +149,8 @@ def _search_key(name: str | None, address: str | None) -> str:
     return fold(f"{name or ''} {address or ''}")
 
 
-def get_connection(path: str) -> sqlite3.Connection:
-    conn = sqlite3.connect(path)
+def get_connection(path: str, check_same_thread: bool = True) -> sqlite3.Connection:
+    conn = sqlite3.connect(path, check_same_thread=check_same_thread)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys = ON")
     conn.execute("PRAGMA journal_mode = WAL")

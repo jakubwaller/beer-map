@@ -912,3 +912,21 @@ def test_admin_page_collapses_whitespace_in_input_values(client):
     page = c.get("/admin", auth=("admin", "secret")).text
     assert 'value="Ast ra"' in page and 'value="a b"' in page
     assert page.count('autocomplete="off"') == 2
+
+
+def test_gray_tiles_survive_concurrent_requests(client):
+    # FastAPI opens a sync dependency's connection on one worker thread and runs
+    # the endpoint on another; a burst of tiles (one map move) used to 500 with
+    # "SQLite objects created in a thread can only be used in that same thread".
+    # One event loop, like uvicorn: TestClient's per-request loop never shows it.
+    import asyncio
+    import httpx
+    from api.app import create_app
+
+    async def burst():
+        transport = httpx.ASGITransport(app=create_app(), raise_app_exceptions=False)
+        async with httpx.AsyncClient(transport=transport, base_url="http://t") as ac:
+            rs = await asyncio.gather(*(ac.get("/api/gray/10/540/331") for _ in range(64)))
+        return [r.status_code for r in rs]
+
+    assert asyncio.run(burst()) == [200] * 64
