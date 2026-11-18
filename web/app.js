@@ -8,7 +8,7 @@ import { initLang, getLang, setLang, t, tn }
   from "./i18n.js?v=__ASSET_VERSION__";
 import { nearestTarget, edgeGap, lerpStops } from "./hittest.js?v=__ASSET_VERSION__";
 
-initLang();
+const langForUrl = initLang();
 
 const servingLabel = (s) =>
   s === "tank" ? t("badge.tank") : s === "fass" ? t("badge.fass") : "";
@@ -815,7 +815,7 @@ function showUserLocation(lngLat) {
   } else {
     userMarker.setLngLat(lngLat);
   }
-  map.flyTo({ center: lngLat, zoom: Math.max(map.getZoom(), 14) });
+  map.flyTo({ center: lngLat, zoom: Math.max(map.getZoom(), 14), padding: dePadding() });
 }
 
 locateBtn.addEventListener("click", () => {
@@ -849,9 +849,18 @@ function openModal(title, html) {
   closeSuggestions();
   modalTitle.textContent = title;
   modalBody.innerHTML = html;
+  // A history entry per open card, so the phone's back gesture closes it
+  // instead of leaving the site.
+  if (modalRoot.hidden) history.pushState({ modal: true }, "");
   modalRoot.hidden = false;
 }
-function closeModal() { modalRoot.hidden = true; modalBody.innerHTML = ""; }
+function hideModal() { modalRoot.hidden = true; modalBody.innerHTML = ""; }
+function closeModal() {
+  if (modalRoot.hidden) return;
+  hideModal();
+  if (history.state?.modal) history.back();
+}
+window.addEventListener("popstate", hideModal);
 
 document.getElementById("modal-close").addEventListener("click", closeModal);
 document.getElementById("modal-overlay").addEventListener("click", closeModal);
@@ -1184,7 +1193,7 @@ function pickVenue(v) {
   if (!v) return;
   closeSuggestions();
   searchEl.blur();
-  map.flyTo({ center: [v.lon, v.lat], zoom: Math.max(map.getZoom(), 16) });
+  map.flyTo({ center: [v.lon, v.lat], zoom: Math.max(map.getZoom(), 16), padding: dePadding() });
   openVenueModal(v);
 }
 
@@ -1195,7 +1204,13 @@ function showAllMatches() {
   searchEl.blur();
   const bounds = new maplibregl.LngLatBounds();
   for (const v of matches) bounds.extend([v.lon, v.lat]);
-  map.fitBounds(bounds, { padding: dePadding(), maxZoom: 15 });
+  const fit = { padding: dePadding(), maxZoom: 15 };
+  // The button counts gray hits too, which draw only from GRAY_MIN_ZOOM: say so.
+  const gray = matches.filter((v) => !v.brands.length).length;
+  if (gray && grayVisible() && (map.cameraForBounds(bounds, fit)?.zoom ?? 0) < GRAY_MIN_ZOOM) {
+    showToast(tn("suggest.grayHidden", gray));
+  }
+  map.fitBounds(bounds, fit);
 }
 
 function highlightSuggestion(delta) {
@@ -1393,15 +1408,19 @@ function applyStaticI18n() {
 
 const langSelect = document.getElementById("lang-select");
 langSelect.value = getLang();
-langSelect.addEventListener("change", () => {
-  setLang(langSelect.value);
-  // Keep the address bar shareable: copying the URL reproduces the language
-  // the visitor is looking at.
+// Keep the address bar shareable: copying the URL reproduces the language
+// the visitor is looking at, switched or taken from storage or the browser.
+function writeLangToUrl(l) {
   try {
     const u = new URL(location.href);
-    u.searchParams.set("lang", langSelect.value);
+    u.searchParams.set("lang", l);
     history.replaceState(null, "", u);
   } catch { /* the switcher itself still works */ }
+}
+if (langForUrl) writeLangToUrl(langForUrl);
+langSelect.addEventListener("change", () => {
+  setLang(langSelect.value);
+  writeLangToUrl(langSelect.value);
   applyStaticI18n();
   closeModal();
   closeSuggestions();

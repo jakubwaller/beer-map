@@ -116,7 +116,7 @@ export const MESSAGES = {
     "modal.add": "Bier melden",
     "stats.empty": "Noch keine Daten.",
 
-    "about.body": "Zapfkompass zeigt, wo es in Deutschland, Österreich, Tschechien, Polen und der Slowakei Bier vom Fass oder Tank gibt — Marke für Marke. Vierundzwanzig Großstädte — Berlin, Bremen, Dresden, Düsseldorf, Frankfurt am Main, Hamburg, Hannover, Köln, Leipzig, München, Nürnberg und Stuttgart, dazu Wien, Graz, Linz, Salzburg, Innsbruck und Klagenfurt sowie Prag, Brünn, Pilsen, Ostrava, Budweis und Mladá Boleslav — sind vollständig erfasst (dort ist jede Kneipe anklickbar), im Rest aller fünf Länder alle Orte mit bekannter Biermarke. Die Basis bilden von Hand geprüfte Einträge, ergänzt um OpenStreetMap-Daten und die „Wo gibt's das?“-Seiten der Brauereien — darunter die bekannten Prager Tankovnas mit Tankbier von Pilsner Urquell und Budvar. Jede Verknüpfung trägt eine Quelle und ein Prüfdatum.",
+    "about.body": "Zapfkompass zeigt, wo es in Deutschland, Österreich, Tschechien, Polen und der Slowakei Bier vom Fass oder Tank gibt — Marke für Marke. Vierundzwanzig Großstädte — Berlin, Bremen, Dresden, Düsseldorf, Frankfurt am Main, Hamburg, Hannover, Köln, Leipzig, München, Nürnberg und Stuttgart, dazu Wien, Graz, Linz, Salzburg, Innsbruck und Klagenfurt sowie Prag, Brünn, Pilsen, Ostrava, Budweis und Mladá Boleslav — sind vollständig erfasst (dort ist jede Kneipe anklickbar), im Rest aller fünf Länder alle Orte mit bekannter Biermarke. Die Basis bilden von Hand geprüfte Einträge, ergänzt um OpenStreetMap-Daten und die „Wo gibt's das?“-Seiten der Brauereien — darunter die bekannten Prager Tankovnas mit Tankbier von Pilsner Urquell und Budvar. Jede Verknüpfung trägt eine Quelle und ein Prüfdatum: „✓ verifiziert“ heißt von Hand geprüft, „✓ geprüft“ eine Besuchermeldung, die nach Prüfung freigegeben wurde.",
 
     "contact.intro": "Fehler entdeckt oder eine Kneipe fehlt? Schreib uns:",
     "contact.legal": "Rechtliches",
@@ -146,13 +146,15 @@ export const MESSAGES = {
 
     "toast.noGeo": "Standortbestimmung wird von diesem Browser nicht unterstützt.",
     "toast.denied": "Standortfreigabe abgelehnt — bitte in den Browser-Einstellungen erlauben.",
-    "toast.failed": "Standort konnte nicht ermittelt werden.",
+    "toast.failed": "Standort konnte nicht ermittelt werden — bitte erneut versuchen oder oben einen Ort suchen.",
 
     "suggest.open": "geöffnet",
     "suggest.closed": "geschlossen",
     "suggest.unnamed": "Ohne Namen",
     "suggest.showAll.one": "Den einen Treffer auf der Karte zeigen",
     "suggest.showAll.other": "Alle {n} Treffer auf der Karte zeigen",
+    "suggest.grayHidden.one": "{n} Treffer ohne erfasste Biere erscheint erst beim Hineinzoomen.",
+    "suggest.grayHidden.other": "{n} Treffer ohne erfasste Biere erscheinen erst beim Hineinzoomen.",
     "suggest.none": "Keine Treffer für „{q}“",
   },
 
@@ -269,12 +271,12 @@ export const MESSAGES = {
     "modal.add": "Nahlásit pivo",
     "stats.empty": "Zatím žádná data.",
 
-    "about.body": "Zapfkompass ukazuje, kde v Německu, Rakousku, Česku, Polsku a na Slovensku najdete pivo ze sudu nebo z tanku — značku po značce. Dvacet čtyři velkých měst — Berlín, Brémy, Drážďany, Düsseldorf, Frankfurt nad Mohanem, Hamburk, Hannover, Kolín nad Rýnem, Lipsko, Mnichov, Norimberk a Stuttgart, k tomu Vídeň, Štýrský Hradec, Linec, Salcburk, Innsbruck a Klagenfurt, spolu s Prahou, Brnem, Plzní, Ostravou, Českými Budějovicemi a Mladou Boleslaví — je zmapováno kompletně (každá hospoda je tam klikací), ve zbytku všech pěti zemí najdete všechna místa se známou pivní značkou. Základem jsou ručně ověřené záznamy, doplněné o data z OpenStreetMap a stránky pivovarů „kde načepují“ — včetně známých pražských tankoven s tankovým pivem Pilsner Urquell a Budvar. Každý záznam nese zdroj a datum ověření.",
+    "about.body": "Zapfkompass ukazuje, kde v Německu, Rakousku, Česku, Polsku a na Slovensku najdete pivo ze sudu nebo z tanku — značku po značce. Dvacet čtyři velkých měst — Berlín, Brémy, Drážďany, Düsseldorf, Frankfurt nad Mohanem, Hamburk, Hannover, Kolín nad Rýnem, Lipsko, Mnichov, Norimberk a Stuttgart, k tomu Vídeň, Štýrský Hradec, Linec, Salcburk, Innsbruck a Klagenfurt, spolu s Prahou, Brnem, Plzní, Ostravou, Českými Budějovicemi a Mladou Boleslaví — je zmapováno kompletně (každá hospoda je tam klikací), ve zbytku všech pěti zemí najdete všechna místa se známou pivní značkou. Základem jsou ručně ověřené záznamy, doplněné o data z OpenStreetMap a stránky pivovarů „kde načepují“ — včetně známých pražských tankoven s tankovým pivem Pilsner Urquell a Budvar. Každý záznam nese zdroj a datum ověření: „✓ ověřeno“ znamená ručně ověřeno, „✓ zkontrolováno“ hlášení návštěvníka schválené po kontrole.",
 
     "contact.intro": "Našli jste chybu, nebo chybí hospoda? Napište nám:",
     "contact.legal": "Právní informace",
-    "contact.imprint": "Impressum",
-    "contact.privacy": "Ochrana údajů",
+    "contact.imprint": "Impressum (německy)",
+    "contact.privacy": "Ochrana údajů (německy)",
     "kofi.short": "☕ Káva",
     "kofi.aria": "Kup mi kávu (Ko-fi)",
     "kofi.cta": "☕ Kup mi kávu",
@@ -299,7 +301,7 @@ export const MESSAGES = {
 
     "toast.noGeo": "Tento prohlížeč nepodporuje určení polohy.",
     "toast.denied": "Přístup k poloze byl zamítnut — povolte ho v nastavení prohlížeče.",
-    "toast.failed": "Polohu se nepodařilo zjistit.",
+    "toast.failed": "Polohu se nepodařilo zjistit — zkuste to znovu nebo nahoře vyhledejte místo.",
 
     "suggest.open": "otevřeno",
     "suggest.closed": "zavřeno",
@@ -307,6 +309,9 @@ export const MESSAGES = {
     "suggest.showAll.one": "Zobrazit jediný výsledek na mapě",
     "suggest.showAll.few": "Zobrazit všechny {n} výsledky na mapě",
     "suggest.showAll.other": "Zobrazit všech {n} výsledků na mapě",
+    "suggest.grayHidden.one": "{n} výsledek bez zapsaných piv se zobrazí až po přiblížení.",
+    "suggest.grayHidden.few": "{n} výsledky bez zapsaných piv se zobrazí až po přiblížení.",
+    "suggest.grayHidden.other": "{n} výsledků bez zapsaných piv se zobrazí až po přiblížení.",
     "suggest.none": "Žádné výsledky pro „{q}“",
   },
 
@@ -420,12 +425,12 @@ export const MESSAGES = {
     "modal.add": "Report beer",
     "stats.empty": "No data yet.",
 
-    "about.body": "Zapfkompass shows where to find keg or tank beer in Germany, Austria, Czechia, Poland and Slovakia — brand by brand. Twenty-four major cities — Berlin, Bremen, Dresden, Düsseldorf, Frankfurt am Main, Hamburg, Hanover, Cologne, Leipzig, Munich, Nuremberg and Stuttgart, plus Vienna, Graz, Linz, Salzburg, Innsbruck and Klagenfurt, and Prague, Brno, Pilsen, Ostrava, České Budějovice and Mladá Boleslav — are covered in full (every pub there is clickable); across the rest of all five countries you'll find every place with a known beer brand. The base is hand-checked entries, extended with OpenStreetMap data and the breweries' own “where to drink” pages — including Prague's famous tankovnas serving tank beer from Pilsner Urquell and Budvar. Every link carries a source and a verification date.",
+    "about.body": "Zapfkompass shows where to find keg or tank beer in Germany, Austria, Czechia, Poland and Slovakia — brand by brand. Twenty-four major cities — Berlin, Bremen, Dresden, Düsseldorf, Frankfurt am Main, Hamburg, Hanover, Cologne, Leipzig, Munich, Nuremberg and Stuttgart, plus Vienna, Graz, Linz, Salzburg, Innsbruck and Klagenfurt, and Prague, Brno, Pilsen, Ostrava, České Budějovice and Mladá Boleslav — are covered in full (every pub there is clickable); across the rest of all five countries you'll find every place with a known beer brand. The base is hand-checked entries, extended with OpenStreetMap data and the breweries' own “where to drink” pages — including Prague's famous tankovnas serving tank beer from Pilsner Urquell and Budvar. Every link carries a source and a verification date: “✓ verified” means checked by hand, “✓ reviewed” a visitor report approved after review.",
 
     "contact.intro": "Spotted an error, or is a pub missing? Write to us:",
     "contact.legal": "Legal",
-    "contact.imprint": "Imprint",
-    "contact.privacy": "Privacy",
+    "contact.imprint": "Imprint (in German)",
+    "contact.privacy": "Privacy (in German)",
     "kofi.short": "☕ Coffee",
     "kofi.aria": "Buy me a coffee (Ko-fi)",
     "kofi.cta": "☕ Buy me a coffee",
@@ -450,13 +455,15 @@ export const MESSAGES = {
 
     "toast.noGeo": "This browser does not support geolocation.",
     "toast.denied": "Location access denied — please allow it in your browser settings.",
-    "toast.failed": "Could not determine your location.",
+    "toast.failed": "Could not determine your location — please try again or search for a place above.",
 
     "suggest.open": "open",
     "suggest.closed": "closed",
     "suggest.unnamed": "Unnamed",
     "suggest.showAll.one": "Show the one result on the map",
     "suggest.showAll.other": "Show all {n} results on the map",
+    "suggest.grayHidden.one": "{n} result without listed beers appears once you zoom in.",
+    "suggest.grayHidden.other": "{n} results without listed beers appear once you zoom in.",
     "suggest.none": "No results for “{q}”",
   },
 };
@@ -464,14 +471,15 @@ export const MESSAGES = {
 let lang = "de";
 
 /** Pick the language: stored choice first, then the browser's language list,
- *  German as the site default. Pure — inputs are injected for testability. */
-export function detectLang(stored, browserLangs) {
+ *  `fallback` (German, the site default) when neither names one. Pure — inputs
+ *  are injected for testability. */
+export function detectLang(stored, browserLangs, fallback = "de") {
   if (LANGS.includes(stored)) return stored;
   for (const l of browserLangs || []) {
     const base = String(l).toLowerCase().slice(0, 2);
     if (LANGS.includes(base)) return base;
   }
-  return "de";
+  return fallback;
 }
 
 export function getLang() {
@@ -505,8 +513,11 @@ export function initLang() {
   } catch { /* ditto */ }
   const browserLangs = typeof navigator !== "undefined"
     ? (navigator.languages || [navigator.language]) : [];
-  lang = fromUrl || detectLang(stored, browserLangs);
-  return lang;
+  const detected = detectLang(stored, browserLangs, null);
+  lang = fromUrl || detected || "de";
+  // The language for the address bar: one taken from storage or the browser,
+  // so a copied link keeps it. null when the URL already says or nothing did.
+  return fromUrl ? null : detected;
 }
 
 const interpolate = (msg, vars) =>
