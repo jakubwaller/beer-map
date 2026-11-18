@@ -84,7 +84,7 @@ _INDEX_META = {
         "html_lang": "cs",
         "title": "Zapfkompass – pivo ze sudu a z tanku",
         "og:title": "Zapfkompass — pivo ze sudu a z tanku na mapě",
-        "description": "Kde točí pivo ze sudu a kde z tanku? Mapa ukazuje hospodu po hospodě, jaká značka se čepuje — se zdrojem a datem ověření. Dvacet čtyři velkých měst v Německu, Rakousku a Česku, od Hamburku po Vídeň, kompletně zmapovaných.",
+        "description": "Kde točí pivo ze sudu a kde z tanku? Mapa ukazuje hospodu po hospodě, jaká značka se čepuje — se zdrojem a datem ověření. 24 velkých měst v Německu, Rakousku a Česku je zmapováno kompletně, k tomu podniky se známou značkou piva v Polsku a na Slovensku.",
         "twitter:description": "Hospoda po hospodě: jaká značka se čepuje, sud nebo tank, a odkud údaj pochází.",
         "og:image:alt": "Mapa Německa, Rakouska a Česka se zmapovanými výčepy",
         "og:locale": "cs_CZ",
@@ -94,7 +94,7 @@ _INDEX_META = {
         "html_lang": "en",
         "title": "Zapfkompass – keg & tank beer",
         "og:title": "Zapfkompass — keg & tank beer on the map",
-        "description": "Where do they pour keg beer, and where tank beer? The map shows pub by pub which brand is on tap — with source and verification date. Twenty-four major cities in Germany, Austria and Czechia, from Hamburg to Vienna, fully mapped.",
+        "description": "Where do they pour keg beer, and where tank beer? The map shows pub by pub which brand is on tap — with source and verification date. The 24 major cities in Germany, Austria and Czechia are fully covered, plus places with a known beer brand in Poland and Slovakia.",
         "twitter:description": "Pub by pub: which brand is on tap, keg or tank, and where the claim comes from.",
         "og:image:alt": "Map of Germany, Austria and Czechia with the mapped taps",
         "og:locale": "en_US",
@@ -345,7 +345,8 @@ def _require_admin(request: Request,
 
 def create_app() -> FastAPI:
     _assert_db_not_served(config.DB_PATH, config.WEB_DIR)
-    app = FastAPI()
+    # No /docs, /redoc or /openapi.json in production: their "Try it out" sends real requests.
+    app = FastAPI(docs_url=None, redoc_url=None, openapi_url=None)
     # Derive the real client IP from X-Forwarded-For set by Caddy. trusted_hosts="*"
     # is safe because the container is only reachable via Caddy on the web_proxy
     # network (no public host port), so the immediate peer is always the proxy.
@@ -746,6 +747,11 @@ async function approveAll(n) {{
         if not submissions.reject_submission(conn, sub_id, date.today().isoformat()):
             raise HTTPException(404, "not pending")
         return {"ok": True}
+
+    # Unknown /api paths get a JSON 404, not the static mount's 404.html.
+    @app.get("/api/{rest:path}", include_in_schema=False)
+    def api_not_found(rest: str):
+        raise HTTPException(404, "Not Found")
 
     @app.get("/", response_class=HTMLResponse)
     def index(lang: Optional[str] = None):
