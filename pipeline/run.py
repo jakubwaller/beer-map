@@ -5,7 +5,7 @@ from datetime import date, datetime
 
 from . import curation, osm, rekey, submissions
 from .config import CURATION_PATH, DB_PATH, OUT_PATH, SKIP_BRANDS, normalize_brand
-from .db import (get_connection, init_db, prune_stale_osm_edges, renormalize_brands,
+from .db import (drop_merged, get_connection, init_db, prune_stale_osm_edges, renormalize_brands,
                  upsert_brand, upsert_edge, upsert_venue)
 from .export import export_geojson
 from .finders import FINDERS
@@ -34,6 +34,7 @@ def _build(conn, out_path, curation_path, overpass_fetch, finders, today):
     # the dead element's osm edges it moves onto a survivor fetched today are
     # then pruned below with the rest of what OSM no longer says.
     rekeyed = rekey.rekey_gone(conn, today)
+    venues, osm_edges = drop_merged(conn, venues, osm_edges)
     id_by_osm = {v.osm_id: upsert_venue(conn, v, today) for v in venues}
     for e in osm_edges:
         _store_edge(conn, id_by_osm[e.venue_osm_id], e.brand, e.source, today, serving=e.serving)

@@ -256,6 +256,14 @@ def upsert_venue(conn, venue, seen: str) -> int:
     return conn.execute("SELECT id FROM venues WHERE osm_id=?", (venue.osm_id,)).fetchone()["id"]
 
 
+def drop_merged(conn, venues, edges):
+    """Leave out OSM elements already merged into another venue (osm_rekeys):
+    a twin folded by hand (rekey --merge) is still in OSM and would come back."""
+    merged = {r[0] for r in conn.execute("SELECT old_osm_id FROM osm_rekeys")}
+    return ([v for v in venues if v.osm_id not in merged],
+            [e for e in edges if e.venue_osm_id not in merged])
+
+
 def resolve_osm_id(conn, osm_id: str | None) -> str | None:
     """The venue an id names today: itself while it is a venue, else the
     survivor it was re-keyed to (pipeline/rekey.py), else itself."""

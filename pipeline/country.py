@@ -26,7 +26,7 @@ from datetime import date, datetime, timedelta
 
 from . import osm
 from .config import _AMENITY, COUNTRY_BBOX, COUNTRY_CODES, DB_PATH, normalize_brand
-from .db import (get_connection, init_db, prune_stale_osm_edges, upsert_brand,
+from .db import (drop_merged, get_connection, init_db, prune_stale_osm_edges, upsert_brand,
                  upsert_edge, upsert_venue)
 
 # Tiles whose every span is at or below this give up instead of splitting
@@ -134,7 +134,7 @@ def sweep_country(db_path=DB_PATH, bbox=COUNTRY_BBOX, tile_deg=1.0, resume=False
                 failures.append(key)
                 print(f"WARN: tile {key} failed for good: {exc}", file=sys.stderr)
             continue
-        venues, edges = osm.parse_overpass(data)
+        venues, edges = drop_merged(conn, *osm.parse_overpass(data))
         id_by_osm = {v.osm_id: upsert_venue(conn, v, today) for v in venues}
         for ed in edges:
             bid = upsert_brand(conn, normalize_brand(ed.brand))
