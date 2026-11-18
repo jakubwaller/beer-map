@@ -64,7 +64,8 @@ through a partner API; that is outside the walk.
   and re-checks itself every minute, so the count can drop while the page sits still.
 - **Gray dots** (venues with no beer data) show only on "Alle Orte" with no brand chosen, and only from
   zoom 10; below that they are gone on purpose. They load per viewport, and the count includes only the
-  gray dots loaded so far, so it grows as you pan into new areas.
+  gray dots loaded so far, so it grows as you pan into new areas. "Alle N Treffer auf der Karte zeigen"
+  counts gray hits too; when the fitted view is below zoom 10, a toast says how many appear on zooming in.
 - **A tap opens the nearest dot**, not only the one under the finger: a near miss opens a venue. A tap
   while the map is still gliding from a swipe opens nothing (it stops the glide), and a near-miss tap
   waits a moment so a double tap can zoom instead. Rotate and tilt gestures are off.
@@ -80,11 +81,17 @@ through a partner API; that is outside the walk.
 - **No Polish or Slovak UI**, and no PL or SK city in the region menu. The 24 menu cities are the ones
   refreshed nightly in full.
 - **Language rules.** `?lang=` outranks the stored choice; the switcher writes `?lang=` into the address
-  bar so a copied URL keeps the language; `/?lang=cs|en` also serves a Czech or English page title and
+  bar so a copied URL keeps the language, and so does a language taken from storage or the browser (a
+  German browser gets `?lang=de`; one in a language the site lacks keeps the bare URL); `/?lang=cs|en` also serves a Czech or English page title and
   link preview. The preview image is the same in every language. On a phone the about button reads
   "Über" / "Info" / "About" instead of the long label.
 - **The site asks for location only when "Mein Standort" is tapped.** Mobile browsers may ask again on
   every visit; that is browser behaviour.
+- **Impressum and Datenschutz are German only.** In Czech and English the links say so ("(německy)",
+  "(in German)").
+- **Duplicates are merged in Zapfkompass's data only**, never in OpenStreetMap, one reported pair at a
+  time (`python -m pipeline.rekey --merge`); other same-address twins can still show until someone folds
+  them. A venue whose OSM element has neither `addr:city` nor `addr:place` shows an address without a town.
 - **The Impressum's contact form is on buergerwecker.de** (`/kontakt?projekt=zapfkompass`), a sister
   site of the same operator; the privacy page says so.
 - **No cookies, no tracking, no third-party scripts**; map tiles come from tile.openstreetmap.org and
