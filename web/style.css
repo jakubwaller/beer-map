@@ -145,7 +145,9 @@ header {
   -webkit-appearance: none;
   background: transparent;
   border: none;
-  padding: 0 12px 0 0;
+  /* A 40px-tall hit area; the negative margin keeps the header row as it was. */
+  padding: 14px 12px 14px 0;
+  margin: -14px 0;
   font-family: inherit;
   font-size: 11px;
   font-weight: 600;
@@ -291,7 +293,10 @@ header {
 .header-actions nav button {
   background: none;
   border: 0;
-  padding: 0;
+  /* Hit area of at least 40x40 without moving the row: padding out, margin back. */
+  padding: 12px 4px;
+  margin: -12px -4px;
+  min-width: 40px;
   font: inherit;
   font-size: 14px;
   font-weight: 500;
@@ -330,7 +335,8 @@ header {
   -webkit-appearance: none;
   background: transparent;
   border: none;
-  padding: 0;
+  padding: 14px 11px;
+  margin: -14px -8px;
   font-family: inherit;
   font-size: 12px;
   font-weight: 600;
@@ -524,6 +530,8 @@ header {
   bottom: calc(28px + var(--safe-bottom));
   transform: translateX(-50%);
   z-index: 30;
+  /* left: 50% alone shrinks it to half the screen: five lines on a phone. */
+  width: max-content;
   max-width: min(90vw, 420px);
   background: var(--ink);
   color: #fff;
@@ -687,7 +695,8 @@ header {
 .badge.manual { background: oklch(93% 0.06 150); color: var(--good); }
 .nobeers { color: var(--muted); font-style: italic; margin: 6px 0; font-size: 13px; }
 
-.beerform { display: inline-flex; align-items: center; gap: 4px; }
+/* ✓ and ✕ send at once: big enough for a thumb, and apart from the select and each other. */
+.beerform { display: inline-flex; align-items: center; gap: 10px; }
 .beerform select {
   padding: 4px 8px;
   font-size: 13px;
@@ -699,7 +708,7 @@ header {
 }
 .beerform button {
   flex: 0 0 auto;   /* never squeeze to a sliver next to a wide select */
-  width: 30px; height: 30px; padding: 0;
+  width: 40px; height: 40px; padding: 0;
   font-size: 14px; line-height: 1; font-weight: 700;
   color: #fff; background: var(--good-solid); border: 0; border-radius: 8px;
   cursor: pointer;

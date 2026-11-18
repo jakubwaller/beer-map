@@ -359,3 +359,53 @@ def test_namesakes_are_counted_beside_the_pair_visible_and_nearby():
     _venue(conn, "node/13", "Kiosk", 3000)
     api = _osm({"node/10": DELETED})
     assert rekey.rekey_gone(conn, TODAY, log=lambda _: None, api=api) == 0 and api.asked == []
+
+
+def test_a_twin_osm_still_has_is_merged_by_hand_and_stays_merged(tmp_path, monkeypatch):
+    # "The Irishman" / "The Irishman Hamburg": one pub, two OSM elements, one
+    # carrying the beers. rekey never nominates it; --merge folds it in our data.
+    monkeypatch.setattr(rekey, "OsmApi", lambda: _osm({}))
+    db, out, cur = str(tmp_path / "t.sqlite"), tmp_path / "venues.json", tmp_path / "curation.yaml"
+    cur.write_text("[]\n", encoding="utf-8")
+    conn = get_connection(db)
+    init_db(conn)
+    _edge(conn, _venue(conn, "node/20", name="The Testpub"), "Pilsner Urquell", serving="tank")
+    _venue(conn, "node/10", name="The Testpub Hamburg", north_m=3)
+    rekey.merge_by_hand(conn, "node/10", "node/20", TODAY)
+    conn.commit()
+    conn.close()
+    both = {"elements": [
+        {"type": "node", "id": 20, "lat": 53.5, "lon": 10.0,
+         "tags": {"amenity": "pub", "name": "The Testpub", "opening_hours": "Tu-Su 17:00+"}},
+        {"type": "node", "id": 10, "lat": 53.5 + 3 * M, "lon": 10.0,
+         "tags": {"amenity": "pub", "name": "The Testpub Hamburg", "brewery": "Astra"}}]}
+    run_pipeline(db_path=db, out_path=str(out), curation_path=str(cur),
+                 overpass_fetch=lambda: both, finders=[], today=TODAY)
+    conn = get_connection(db)
+    assert _ids(conn) == ["node/20"]                    # the twin did not come back
+    assert resolve_osm_id(conn, "node/10") == "node/20"
+    assert {b[0] for b in _brands(conn, "node/20")} == {"Pilsner Urquell"}
+
+
+def test_merge_by_hand_refuses_unknown_ids():
+    conn = _db()
+    _venue(conn, "node/20")
+    for args in (("node/10", "node/20"), ("node/20", "node/20")):
+        try:
+            rekey.merge_by_hand(conn, *args, TODAY)
+        except SystemExit:
+            continue
+        raise AssertionError(args)
+    assert _ids(conn) == ["node/20"]
+
+
+def test_same_street_pairs_an_old_house_number_only_address_with_the_place_format():
+    assert rekey._same_street("21a, 6215 Hinterriß", "Hinterriß 21a, 6215 Hinterriß")
+    assert rekey._same_street("Heußweg 93, 20255 Hamburg", "Heussweg 93, Hamburg")
+    assert not rekey._same_street("Hinterriß 21a", "Hinterriß 22")
+    assert not rekey._same_street("Lange Reihe 5", "Kurze Straße 5")
+
+
+def test_same_street_does_not_pair_a_street_with_a_longer_street_name():
+    assert not rekey._same_street("Hauptstraße 5", "Neue Hauptstraße 5")
+    assert not rekey._same_street("Neue Hauptstraße 5, Hamburg", "Hauptstraße 5, Hamburg")

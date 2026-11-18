@@ -43,6 +43,9 @@ test("detectLang: stored choice wins, then browser language, then German", () =>
   assert.equal(detectLang(null, ["fr-FR", "it"]), "de");
   assert.equal(detectLang("xx", []), "de");
   assert.equal(detectLang(null, undefined), "de");
+  // initLang asks with no fallback to tell "the browser said German" from "nobody said".
+  assert.equal(detectLang(null, ["de-AT"], null), "de");
+  assert.equal(detectLang(null, ["fr-FR"], null), null);
 });
 
 test("langFromQuery: shared-link param, case-insensitive, junk ignored", () => {

@@ -26,18 +26,24 @@ lookups never hold the DB's write lock, and before curation and the community
 re-apply, so both land on the survivor the same night. `python -m
 pipeline.rekey` prints what the next build will do (lookups included) and
 writes nothing.
+
+A twin OSM still has (two nodes for one pub, a renamed duplicate) is never
+nominated; `python -m pipeline.rekey --merge OLD NEW` folds it by hand with the
+same merge, in our data only, and the imports skip OLD from then on.
 """
 from __future__ import annotations
 
+import sys
 import time
 from collections import defaultdict
 from datetime import date, timedelta
 
 import httpx
 
-from .config import DB_PATH
+from .config import DB_PATH, OUT_PATH
 from .db import fold, get_connection, init_db
 from .dedupe import _bbox
+from .export import export_geojson
 from .matching import haversine_m
 from .osm_push import OsmApi, parse_osm_id, tag_value
 
@@ -74,10 +80,12 @@ _LIVE = ("(osm_id LIKE 'node/%' OR osm_id LIKE 'way/%' OR osm_id LIKE 'relation/
 def _same_street(a: str | None, b: str | None) -> bool:
     """The first address line ("Heußweg 93, 20255 Hamburg" -> "heussweg 93")
     is the same, or one of the two venues has none."""
-    # shortcut: an addr:place address ("21a, 6215 Hinterriß") has no street line and
-    # never matches one that has; compare housenumber + postcode if that blocks real merges.
-    a, b = (fold((x or "").split(",")[0]) for x in (a, b))
-    return not a or not b or a == b
+    # An addr:place address leads with the place ("Hinterriß 21a"), so it compares like a street.
+    # Rows imported before that format keep "21a, 6215 Hinterriß": a lone house number matches when the other side contains it.
+    # Any other subset ("Hauptstraße 5" in "Neue Hauptstraße 5") is a different street.
+    a, b = (set(fold((x or "").split(",")[0]).split()) for x in (a, b))
+    lone = lambda s, t: len(s) == 1 and any(c.isdigit() for c in next(iter(s))) and s <= t
+    return not a or not b or a == b or lone(a, b) or lone(b, a)
 
 
 def plan(conn, today: str):
@@ -236,10 +244,26 @@ def rekey_gone(conn, today: str, dry_run: bool = False, log=print, api=None) -> 
     return len(confirmed)
 
 
+def merge_by_hand(conn, old_osm_id: str, new_osm_id: str, today: str) -> None:
+    """merge() two venues named by osm_id; keep the one whose OSM hours are the
+    newer edit as `new`, since the import keeps writing each element's own."""
+    rows = [conn.execute("SELECT id, osm_id FROM venues WHERE osm_id=?", (i,)).fetchone()
+            for i in (old_osm_id, new_osm_id)]
+    if None in rows or old_osm_id == new_osm_id:
+        raise SystemExit(f"--merge needs two different venues in the DB: {old_osm_id} {new_osm_id}")
+    merge(conn, rows[0], rows[1], today)
+
+
 if __name__ == "__main__":
     conn = get_connection(DB_PATH)
     init_db(conn)
     try:
-        rekey_gone(conn, date.today().isoformat(), dry_run=True)
+        if sys.argv[1:2] == ["--merge"] and len(sys.argv) == 4:
+            merge_by_hand(conn, sys.argv[2], sys.argv[3], date.today().isoformat())
+            conn.commit()
+            export_geojson(conn, OUT_PATH)
+            print(f"rekey: merged {sys.argv[2]} into {sys.argv[3]}")
+        else:
+            rekey_gone(conn, date.today().isoformat(), dry_run=True)
     finally:
         conn.close()

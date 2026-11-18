@@ -53,6 +53,22 @@ def test_alias_lookup_is_case_insensitive():
     assert normalize_brand("guiness") == "Guinness"
 
 
+def test_split_brand_spellings_fold_to_one_chip():
+    # Spellings seen side by side in the brand picker (walkthrough 2026-11-18).
+    for raw, canonical in [
+            ("Budvar Č.Budějovice", "Budweiser Budvar"),
+            ("Budvar České Budějovice", "Budweiser Budvar"),
+            ("Hacker Pschorr", "Hacker-Pschorr"), ("Hacker-pschorr", "Hacker-Pschorr"),
+            ("Pschorr", "Hacker-Pschorr"), ("Becks", "Beck's"), ("Beck’s", "Beck's"),
+            ("Beck´s", "Beck's"), ("Beck‘s", "Beck's"), ("Köstrizer", "Köstritzer"),
+            ("Feldschlösschen", "Feldschlößchen"), ("Löwenbräu München", "Löwenbräu"),
+            ("Spatenbräu München", "Spaten"), ("Spatenbräu", "Spaten"),
+            ("Spaten Bräu", "Spaten"), ("Gaffel Kölsch", "Gaffel"),
+            ("Früh Kölsch", "Früh"), ("Trumer Pils", "Trumer"),
+            ("Birra Moretti", "Moretti")]:
+        assert normalize_brand(raw) == canonical, raw
+
+
 def test_underscores_become_spaces():
     assert normalize_brand("asahi_super_dry") == "Asahi Super Dry"
     assert normalize_brand("könig_ludwig") == "König Ludwig"

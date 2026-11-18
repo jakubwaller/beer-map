@@ -149,8 +149,8 @@ def _search_key(name: str | None, address: str | None) -> str:
     return fold(f"{name or ''} {address or ''}")
 
 
-def get_connection(path: str) -> sqlite3.Connection:
-    conn = sqlite3.connect(path)
+def get_connection(path: str, check_same_thread: bool = True) -> sqlite3.Connection:
+    conn = sqlite3.connect(path, check_same_thread=check_same_thread)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys = ON")
     conn.execute("PRAGMA journal_mode = WAL")
@@ -254,6 +254,14 @@ def upsert_venue(conn, venue, seen: str) -> int:
          venue.opening_hours, _search_key(venue.name, venue.address), seen),
     )
     return conn.execute("SELECT id FROM venues WHERE osm_id=?", (venue.osm_id,)).fetchone()["id"]
+
+
+def drop_merged(conn, venues, edges):
+    """Leave out OSM elements already merged into another venue (osm_rekeys):
+    a twin folded by hand (rekey --merge) is still in OSM and would come back."""
+    merged = {r[0] for r in conn.execute("SELECT old_osm_id FROM osm_rekeys")}
+    return ([v for v in venues if v.osm_id not in merged],
+            [e for e in edges if e.venue_osm_id not in merged])
 
 
 def resolve_osm_id(conn, osm_id: str | None) -> str | None:

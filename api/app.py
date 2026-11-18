@@ -274,7 +274,9 @@ async def _json_body(request: Request):
 
 
 def _db():
-    conn = get_connection(config.DB_PATH)
+    # FastAPI opens this on one worker thread and runs the endpoint on another;
+    # the connection is still used by one request at a time.
+    conn = get_connection(config.DB_PATH, check_same_thread=False)
     init_db(conn)
     try:
         yield conn
