@@ -63,6 +63,8 @@ const dePadding = () => ({
   top: document.getElementById("topbar").offsetHeight + 16,
   left: 24, right: 24, bottom: 24,
 });
+// flyTo's `padding` would stay on the map and double up in later fitBounds calls; an offset does not.
+const deOffset = () => { const p = dePadding(); return [(p.left - p.right) / 2, (p.top - p.bottom) / 2]; };
 
 const map = new maplibregl.Map({
   container: "map", style: OSM_STYLE, bounds: MAP_BOUNDS,
@@ -815,7 +817,7 @@ function showUserLocation(lngLat) {
   } else {
     userMarker.setLngLat(lngLat);
   }
-  map.flyTo({ center: lngLat, zoom: Math.max(map.getZoom(), 14), padding: dePadding() });
+  map.flyTo({ center: lngLat, zoom: Math.max(map.getZoom(), 14), offset: deOffset() });
 }
 
 locateBtn.addEventListener("click", () => {
@@ -1193,7 +1195,7 @@ function pickVenue(v) {
   if (!v) return;
   closeSuggestions();
   searchEl.blur();
-  map.flyTo({ center: [v.lon, v.lat], zoom: Math.max(map.getZoom(), 16), padding: dePadding() });
+  map.flyTo({ center: [v.lon, v.lat], zoom: Math.max(map.getZoom(), 16), offset: deOffset() });
   openVenueModal(v);
 }
 
@@ -1414,7 +1416,7 @@ function writeLangToUrl(l) {
   try {
     const u = new URL(location.href);
     u.searchParams.set("lang", l);
-    history.replaceState(null, "", u);
+    history.replaceState(history.state, "", u);
   } catch { /* the switcher itself still works */ }
 }
 if (langForUrl) writeLangToUrl(langForUrl);
