@@ -26,13 +26,12 @@
   note: "Not in PU locator — verify serving type."
 
 - venue: Pampa
-  lat: 53.5556
-  lon: 9.9636
+  osm_id: node/1525291972
   brand: Pilsner Urquell
   serving: tank
   action: add
   verified: 2026-06-24
-  note: "Coords approximate; not in PU locator — verify."
+  note: "Not in PU locator — verify. Was manual/pampa; folded into the OSM node."
 
 # --- Serving types verified from venue websites (2026-06-27) ---
 # Restaurantkneipe Hardy's: "Wir zapfen frisch vom Fass folgende Sorten:
